@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+db.sqlite3
+.env
+.env.local
+node_modules/
+.next/
+.expo/
+dist/
+build/
+coverage/
+*.log
+.DS_Store

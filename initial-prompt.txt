@@ -1,0 +1,302 @@
+You are my senior full-stack engineer and startup technical cofounder.
+
+We are building the first MVP of a Kenya-first investment decision platform called PesaRoute.
+
+The product is NOT an investment execution app, broker, fund manager, robo-adviser, crypto exchange, or wallet.
+
+The product helps users:
+- learn Kenyan investment options
+- compare routes from KES/M-Pesa/bank money into investment categories
+- simulate outcomes
+- check investment scam red flags
+- keep a private investment journal
+- manually mirror their portfolio using ranges or exact values
+- request review from verified professionals later
+
+The app must be privacy-first:
+- do not ask for bank passwords
+- do not ask for M-Pesa PIN
+- do not ask for broker credentials
+- do not connect to real financial accounts in MVP
+- allow users to use ranges instead of exact amounts
+- exact portfolio values should be optional
+- professional sharing should be designed as explicit, time-limited consent later
+- all sensitive operations should have audit logging
+
+Build a monorepo with this structure:
+
+/apps/api       Django backend API
+/apps/web       Next.js web app for landing pages, public product pages, professional/provider portals later
+/apps/mobile    Expo React Native mobile app for consumers
+/docs           architecture, product roadmap, API notes
+/docker-compose.yml
+/README.md
+
+Use this stack:
+
+Backend:
+- Python
+- Django
+- Django REST Framework or Django Ninja
+- PostgreSQL
+- Redis
+- Celery
+- pytest
+- ruff/black or equivalent formatting/linting
+- Docker support
+
+Frontend web:
+- Next.js
+- TypeScript
+- Tailwind CSS
+- basic landing page
+- public product passport pages placeholder
+- no complex auth yet
+
+Mobile:
+- Expo React Native
+- TypeScript
+- mobile-first consumer app
+- screens for:
+  - Home / “I have KES X” navigator
+  - Learn
+  - Simulators
+  - Scam Checker
+  - Journal
+  - Portfolio Mirror
+  - Professionals placeholder
+  - Privacy settings placeholder
+- use mock data first if backend connection is not ready
+- design for Android first
+
+MVP backend domains:
+
+1. accounts
+   - user model or default Django user
+   - roles: consumer, professional, provider, admin
+   - auth can be simple token/JWT/session-based placeholder for now
+
+2. catalog
+   - ProductCategory
+   - Provider
+   - ProductPassport
+   - ProductPassportVersion
+   - fields should support:
+     - category
+     - provider
+     - regulator_category
+     - minimum_amount
+     - liquidity_level
+     - risk_level
+     - withdrawal_timeline
+     - fees_summary
+     - tax_notes
+     - beginner_mistakes
+     - documents_needed
+     - execution_route_external
+     - disclosures
+     - is_sponsored
+     - status
+
+3. planning
+   - InvestmentGoal
+   - RouteRequest
+   - RouteResult
+   - SimulationRun
+   - support basic simulator functions:
+     - MMF simulator
+     - Treasury bill simulator
+     - SACCO simulator
+     - Global investing route simulator
+   - simulators should be educational and include disclaimers
+
+4. risk
+   - ScamCheck
+   - ScamFlag
+   - implement a simple deterministic red-flag checker first
+   - detect phrases like:
+     - guaranteed return
+     - 20% monthly
+     - recruit people
+     - limited slots
+     - send deposit now
+     - forex bot cannot lose
+     - double your money
+   - output:
+     - risk_score
+     - risk_level
+     - flags
+     - questions_to_ask
+     - disclaimer
+
+5. journal
+   - JournalEntry
+   - supports:
+     - goal
+     - decision
+     - amount_display_mode: exact, rounded, range, hidden
+     - amount_exact optional
+     - amount_range_min optional
+     - amount_range_max optional
+     - reason
+     - alternatives_considered
+     - risks_considered
+     - review_date
+     - visibility default private
+
+6. portfolio
+   - PortfolioItem
+   - supports:
+     - asset_type
+     - provider_name optional
+     - amount_display_mode: exact, rounded, range, hidden
+     - amount_exact optional
+     - amount_range_min optional
+     - amount_range_max optional
+     - liquidity_level
+     - risk_level
+     - maturity_date optional
+     - visibility default private
+   - create a simple portfolio summary endpoint:
+     - total known amount if exact amounts exist
+     - asset allocation by category where possible
+     - liquidity score
+     - risk concentration note
+
+7. marketplace
+   - Professional
+   - ProfessionalVerification
+   - ConsultationRequest
+   - include placeholders only for now
+   - no real booking or payment yet
+
+8. privacy
+   - DataGrant
+   - DataAccessLog
+   - model explicit future professional sharing
+   - every future shared access should be time-limited and revocable
+   - implement models now, simple endpoints later
+
+9. audit
+   - AuditEvent
+   - record important actions:
+     - journal created
+     - portfolio item created
+     - scam check created
+     - product passport updated
+     - consultation request created
+
+API endpoints to implement in MVP:
+
+Public:
+- GET /api/health/
+- GET /api/catalog/categories/
+- GET /api/catalog/product-passports/
+- GET /api/catalog/product-passports/{id}/
+
+Planning:
+- POST /api/planning/simulate/mmf/
+- POST /api/planning/simulate/tbill/
+- POST /api/planning/simulate/sacco/
+- POST /api/planning/simulate/global-route/
+
+Risk:
+- POST /api/risk/scam-check/
+
+Private/authenticated placeholders:
+- GET /api/journal/entries/
+- POST /api/journal/entries/
+- GET /api/portfolio/items/
+- POST /api/portfolio/items/
+- GET /api/portfolio/summary/
+- POST /api/marketplace/consultation-requests/
+
+Seed data:
+Create sample product categories:
+- Money Market Funds
+- Treasury Bills
+- Treasury Bonds
+- SACCOs
+- Chamas
+- NSE Stocks
+- US Stocks and ETFs
+- Land
+- REITs
+- Bitcoin and Crypto Risk
+- Fixed Deposits
+- Pension Products
+
+Create sample product passports:
+- Generic MMF
+- Generic Treasury Bill via DhowCSD
+- Generic SACCO Deposits
+- Generic NSE Shares
+- Generic US ETF route
+- Generic Land Due Diligence Checklist
+- Generic Bitcoin Self-Custody Risk Card
+
+Important regulatory/product wording:
+- Do not say “we recommend”
+- Use “educational simulation”
+- Use “compare options”
+- Use “speak to a licensed professional”
+- Use “we do not hold your money”
+- Use “we do not execute investments”
+- Use “we do not promise returns”
+
+Security requirements:
+- environment variables for secrets
+- no hardcoded secrets
+- CORS configured safely
+- input validation
+- rate limiting placeholder
+- audit logging for sensitive actions
+- database indexes for user_id, created_at, category, status, professional_id where relevant
+- README security notes
+- .env.example files
+- Docker Compose for Postgres and Redis
+
+Performance requirements:
+- add DB indexes for common filters
+- use pagination for list endpoints
+- avoid returning huge payloads
+- public catalog endpoints should support future caching
+- separate Celery worker for future heavy jobs
+- include notes in docs/performance.md
+
+Deliverables:
+1. Create the repo structure.
+2. Implement backend Django project with models, migrations, serializers/schemas, API routes, and seed command.
+3. Implement docker-compose for Postgres and Redis.
+4. Implement backend tests for:
+   - health check
+   - scam checker
+   - MMF simulator
+   - T-bill simulator
+   - creating a journal entry
+   - creating a portfolio item
+5. Implement Next.js landing page with:
+   - product positioning
+   - “I have KES X” hero
+   - feature cards
+   - trust/privacy promises
+   - waitlist CTA placeholder
+6. Implement Expo mobile app skeleton with the screens listed above.
+7. Implement mock mobile data if API integration is not complete.
+8. Write README with setup commands.
+9. Write docs/architecture.md explaining the system.
+10. Write docs/roadmap.md with MVP phases.
+
+Important implementation strategy:
+- Do not overbuild.
+- Do not add real payment integration yet.
+- Do not add OpenAI/AI calls yet.
+- Do not add M-Pesa integration yet.
+- Do not add real financial account linking.
+- First build a clean, runnable foundation.
+
+Before writing code:
+1. Inspect the empty repo.
+2. Propose the implementation plan.
+3. Then implement the foundation.
+4. After implementation, run tests and summarize what works, what is incomplete, and the next Codex prompt I should run.

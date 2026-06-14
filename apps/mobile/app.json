@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "PesaRoute",
+    "slug": "pesaroute",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "pesaroute",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f7b5f"
+      },
+      "package": "com.pesaroute.mobile"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:8000"
+    }
+  }
+}
