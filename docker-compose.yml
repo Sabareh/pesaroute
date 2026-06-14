@@ -22,7 +22,7 @@ services:
     environment:
       DJANGO_DEBUG: "true"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY before running docker compose}
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,10.0.2.2,api
       DATABASE_URL: postgres://pesaroute:pesaroute@postgres:5432/pesaroute
       REDIS_URL: redis://redis:6379/0
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:19006,http://localhost:8081
@@ -41,7 +41,7 @@ services:
     environment:
       DJANGO_DEBUG: "true"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY before running docker compose}
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,10.0.2.2,api
       DATABASE_URL: postgres://pesaroute:pesaroute@postgres:5432/pesaroute
       REDIS_URL: redis://redis:6379/0
     volumes:

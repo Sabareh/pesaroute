@@ -27,6 +27,14 @@ class PortfolioItemListCreateView(generics.ListCreateAPIView):
         )
 
 
+class PortfolioItemDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PortfolioItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return PortfolioItem.objects.filter(user=self.request.user)
+
+
 class PortfolioSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 

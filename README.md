@@ -93,13 +93,40 @@ npm run typecheck
 npm run test:logic
 ```
 
-The mobile app supports offline mock mode and a connected MVP API mode. Catalog, product passports, simulators, and scam checks call the backend when available; journal and portfolio writes call the backend only when temporary debug Basic Auth is configured in the API tab, otherwise they stay local-only.
+The mobile app supports offline mock mode and a connected MVP API mode. Catalog, product passports, simulators, and scam checks call the backend when available. Journal and portfolio mirror records are local-first: the app stores records and a sync queue on-device, then creates, updates, or deletes backend copies when a user is logged in and online. The Expo app stores the DRF auth token with `expo-secure-store` on native platforms and falls back to local storage on web. Anonymous users keep journal and portfolio entries local-only.
+
+## Auth Setup
+
+Run migrations before using auth endpoints; this creates the Django auth, PesaRoute profile, and DRF token tables:
+
+```bash
+cd apps/api
+python manage.py migrate
+```
+
+Register or log in through the API to receive a token:
+
+```bash
+POST /api/accounts/register/
+POST /api/accounts/login/
+```
+
+Authenticated private requests should send:
+
+```text
+Authorization: Token <token>
+```
+
+Supported PesaRoute roles are `consumer`, `professional`, `provider`, and `admin`. Public self-registration can create `consumer`, `professional`, or `provider` profiles; `admin` is reserved for staff/superuser accounts. Do not use PesaRoute auth fields for M-Pesa PINs, bank passwords, broker credentials, MMF credentials, or wallet secrets.
 
 ## MVP API
 
 Public:
 
 - `GET /api/health/`
+- `POST /api/accounts/register/`
+- `POST /api/accounts/login/`
+- `GET /api/accounts/me/`
 - `GET /api/catalog/categories/`
 - `GET /api/catalog/product-passports/`
 - `GET /api/catalog/product-passports/{id}/`
@@ -119,10 +146,17 @@ Authenticated placeholders:
 
 - `GET /api/journal/entries/`
 - `POST /api/journal/entries/`
+- `PATCH /api/journal/entries/{id}/`
+- `DELETE /api/journal/entries/{id}/`
 - `GET /api/portfolio/items/`
 - `POST /api/portfolio/items/`
+- `PATCH /api/portfolio/items/{id}/`
+- `DELETE /api/portfolio/items/{id}/`
 - `GET /api/portfolio/summary/`
 - `POST /api/marketplace/consultation-requests/`
+- `GET /api/privacy/data-grants/`
+- `POST /api/privacy/data-grants/`
+- `GET /api/privacy/access-logs/`
 
 ## Security Notes
 

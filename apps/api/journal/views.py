@@ -22,3 +22,11 @@ class JournalEntryListCreateView(generics.ListCreateAPIView):
             resource_type="JournalEntry",
             resource_id=entry.id,
         )
+
+
+class JournalEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = JournalEntrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return JournalEntry.objects.filter(user=self.request.user)

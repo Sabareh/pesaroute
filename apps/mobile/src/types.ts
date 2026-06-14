@@ -11,6 +11,9 @@ export type GoalId =
   | "speak-to-professional";
 
 export type AmountDisplayMode = "exact" | "rounded" | "range" | "hidden";
+export type SyncStatus = "local_only" | "pending" | "synced" | "failed" | "conflict";
+export type SyncEntity = "journal" | "portfolio";
+export type SyncAction = "create" | "update" | "delete";
 
 export type RouteProfile = {
   amountRangeId: AmountRangeId;
@@ -25,29 +28,61 @@ export type RouteProfile = {
 };
 
 export type JournalEntry = {
-  id: string;
+  localId: string;
+  serverId?: number;
+  syncStatus: SyncStatus;
+  syncError?: string;
+  version?: number;
   goal: string;
   decision: string;
   amountDisplayMode: AmountDisplayMode;
   amountText: string;
   reason: string;
   createdAt: string;
+  updatedAt: string;
+  pendingDelete?: boolean;
 };
 
 export type PortfolioItem = {
-  id: string;
+  localId: string;
+  serverId?: number;
+  syncStatus: SyncStatus;
+  syncError?: string;
+  version?: number;
   assetType: string;
   providerName: string;
   amountDisplayMode: AmountDisplayMode;
   amountText: string;
   liquidityLevel: "high" | "medium" | "low" | "locked";
   riskLevel: "low" | "moderate" | "high" | "very_high";
+  maturityDate?: string;
   createdAt: string;
+  updatedAt: string;
+  pendingDelete?: boolean;
+};
+
+export type JournalEntryDraft = Pick<JournalEntry, "goal" | "decision" | "amountDisplayMode" | "amountText" | "reason">;
+
+export type PortfolioItemDraft = Pick<
+  PortfolioItem,
+  "assetType" | "providerName" | "amountDisplayMode" | "amountText" | "liquidityLevel" | "riskLevel" | "maturityDate"
+>;
+
+export type SyncQueueItem = {
+  id: string;
+  entity: SyncEntity;
+  action: SyncAction;
+  localId: string;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
+  lastError?: string;
 };
 
 export type AuthCredentials = {
   username: string;
-  password: string;
+  password?: string;
+  token?: string;
 };
 
 export type ProductCategory = {

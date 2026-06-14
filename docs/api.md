@@ -26,6 +26,42 @@ Used by Home and API Debug:
 
 If catalog requests fail, the app falls back to cached in-memory data, then bundled mock catalog data.
 
+## Authentication
+
+The API uses Django users with DRF token authentication.
+
+- `POST /api/accounts/register/`
+- `POST /api/accounts/login/`
+- `GET /api/accounts/me/`
+- `PATCH /api/accounts/me/`
+
+Register and login return:
+
+```json
+{
+  "token": "token-value",
+  "user": {
+    "id": 1,
+    "username": "amina",
+    "profile": {
+      "role": "consumer",
+      "preferred_language": "en",
+      "user_type": "other",
+      "approximate_investment_range": "",
+      "privacy_mode_enabled": true
+    }
+  }
+}
+```
+
+Private mobile requests should send:
+
+```text
+Authorization: Token <token>
+```
+
+Roles are `consumer`, `professional`, `provider`, and `admin`. Self-registration may create `consumer`, `professional`, or `provider`; admin is reserved for staff/superuser accounts.
+
 ## Planning Simulators
 
 Used by the Simulators screen. Local calculations always remain available offline.
@@ -47,10 +83,28 @@ If the API is unavailable, the app uses the local deterministic red-flag checker
 
 ## Private MVP Writes
 
-Used by Journal and Portfolio Mirror only when temporary Basic Auth credentials are configured in the API Debug screen:
+Used by Journal and Portfolio Mirror after the mobile app registers or logs in and stores a DRF token securely. The mobile app writes to local storage first, keeps a local sync queue, and retries backend writes on login, app open, network return, or manual sync.
 
 - `POST /api/journal/entries/`
+- `GET /api/journal/entries/`
+- `PATCH /api/journal/entries/{id}/`
+- `DELETE /api/journal/entries/{id}/`
 - `POST /api/portfolio/items/`
+- `GET /api/portfolio/items/`
+- `PATCH /api/portfolio/items/{id}/`
+- `DELETE /api/portfolio/items/{id}/`
+- `GET /api/portfolio/summary/`
+- `POST /api/marketplace/consultation-requests/`
+- `GET /api/privacy/data-grants/`
+- `POST /api/privacy/data-grants/`
+- `POST /api/privacy/data-grants/{id}/revoke/`
+- `GET /api/privacy/access-logs/`
+
+Professional context access:
+
+- `GET /api/marketplace/consultation-requests/{id}/context/`
+
+This endpoint is for the authenticated professional assigned to the consultation request. It returns only fields allowed by an active, unrevoked, unexpired data grant. `consultation_context` is required before any context is returned. Exact portfolio values are withheld unless `portfolio_exact_values` is granted.
 
 If no credentials are set, entries remain local-only. If a backend write fails, the app keeps the local item and shows an error state.
 

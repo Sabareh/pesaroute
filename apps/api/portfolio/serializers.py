@@ -20,16 +20,17 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "visibility",
             "created_at",
             "updated_at",
+            "version",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "version"]
 
     def validate(self, attrs):
         mode = attrs.get(
             "amount_display_mode", getattr(self.instance, "amount_display_mode", PortfolioItem.AmountDisplayMode.HIDDEN)
         )
-        exact = attrs.get("amount_exact")
-        range_min = attrs.get("amount_range_min")
-        range_max = attrs.get("amount_range_max")
+        exact = attrs.get("amount_exact", getattr(self.instance, "amount_exact", None))
+        range_min = attrs.get("amount_range_min", getattr(self.instance, "amount_range_min", None))
+        range_max = attrs.get("amount_range_max", getattr(self.instance, "amount_range_max", None))
         if mode == PortfolioItem.AmountDisplayMode.EXACT and exact is None:
             raise serializers.ValidationError({"amount_exact": "Exact mode requires amount_exact."})
         if mode == PortfolioItem.AmountDisplayMode.RANGE:

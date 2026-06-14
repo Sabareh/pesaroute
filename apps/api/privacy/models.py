@@ -5,16 +5,31 @@ from marketplace.models import Professional
 
 
 class DataGrant(models.Model):
+    class GranteeType(models.TextChoices):
+        PROFESSIONAL = "professional", "Professional"
+        PROVIDER = "provider", "Provider"
+        ADMIN = "admin", "Admin"
+
+    class Scope(models.TextChoices):
+        CONTACT_INFO = "contact_info", "Contact info"
+        PORTFOLIO_SUMMARY = "portfolio_summary", "Portfolio summary"
+        PORTFOLIO_EXACT_VALUES = "portfolio_exact_values", "Portfolio exact values"
+        JOURNAL_ENTRIES = "journal_entries", "Journal entries"
+        SELECTED_DOCUMENTS = "selected_documents", "Selected documents"
+        CONSULTATION_CONTEXT = "consultation_context", "Consultation context"
+
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
         REVOKED = "revoked", "Revoked"
         EXPIRED = "expired", "Expired"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="data_grants")
+    grantee_type = models.CharField(max_length=32, choices=GranteeType.choices, default=GranteeType.PROFESSIONAL)
+    grantee_id = models.PositiveIntegerField(null=True, blank=True)
     professional = models.ForeignKey(
         Professional, null=True, blank=True, on_delete=models.SET_NULL, related_name="data_grants"
     )
-    scope = models.JSONField(default=list)
+    scopes = models.JSONField(default=list)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.ACTIVE)
     starts_at = models.DateTimeField()
     expires_at = models.DateTimeField()
@@ -25,6 +40,7 @@ class DataGrant(models.Model):
         indexes = [
             models.Index(fields=["user", "created_at"]),
             models.Index(fields=["professional", "created_at"]),
+            models.Index(fields=["grantee_type", "grantee_id", "created_at"]),
             models.Index(fields=["status", "expires_at"]),
         ]
 
@@ -34,6 +50,10 @@ class DataGrant(models.Model):
 
 class DataAccessLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="data_access_logs")
+    grantee_type = models.CharField(
+        max_length=32, choices=DataGrant.GranteeType.choices, default=DataGrant.GranteeType.PROFESSIONAL
+    )
+    grantee_id = models.PositiveIntegerField(null=True, blank=True)
     professional = models.ForeignKey(
         Professional, null=True, blank=True, on_delete=models.SET_NULL, related_name="data_access_logs"
     )
@@ -41,6 +61,7 @@ class DataAccessLog(models.Model):
         DataGrant, null=True, blank=True, on_delete=models.SET_NULL, related_name="access_logs"
     )
     action = models.CharField(max_length=120)
+    scope = models.CharField(max_length=80, blank=True)
     resource_type = models.CharField(max_length=80)
     resource_id = models.CharField(max_length=80, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -50,6 +71,7 @@ class DataAccessLog(models.Model):
         indexes = [
             models.Index(fields=["user", "created_at"]),
             models.Index(fields=["professional", "created_at"]),
+            models.Index(fields=["grantee_type", "grantee_id", "created_at"]),
             models.Index(fields=["resource_type", "created_at"]),
         ]
 

@@ -4,6 +4,8 @@ from django.db import models
 
 class AuditEvent(models.Model):
     class EventType(models.TextChoices):
+        USER_REGISTERED = "accounts.user_registered", "User registered"
+        USER_LOGGED_IN = "accounts.user_logged_in", "User logged in"
         JOURNAL_CREATED = "journal.created", "Journal created"
         PORTFOLIO_ITEM_CREATED = "portfolio.item_created", "Portfolio item created"
         SCAM_CHECK_CREATED = "risk.scam_check_created", "Scam check created"

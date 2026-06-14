@@ -11,6 +11,95 @@ export type ApiStatus = {
   service: string;
 };
 
+export type UserRole = "consumer" | "professional" | "provider" | "admin";
+
+export type UserProfileApiResponse = {
+  role: UserRole;
+  preferred_language: "en" | "sw";
+  user_type:
+    | "student"
+    | "first_jobber"
+    | "professional"
+    | "diaspora"
+    | "chama_member"
+    | "farmer"
+    | "jua_kali"
+    | "other";
+  approximate_investment_range: string;
+  privacy_mode_enabled: boolean;
+};
+
+export type UserApiResponse = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile: UserProfileApiResponse;
+};
+
+export type AuthApiResponse = {
+  token: string;
+  user: UserApiResponse;
+};
+
+export type LoginApiRequest = {
+  username: string;
+  password: string;
+};
+
+export type RegisterApiRequest = LoginApiRequest & {
+  email?: string;
+  role?: Exclude<UserRole, "admin">;
+  preferred_language?: "en" | "sw";
+  user_type?: UserProfileApiResponse["user_type"];
+  approximate_investment_range?: string;
+  privacy_mode_enabled?: boolean;
+};
+
+export type DataGrantScope =
+  | "contact_info"
+  | "portfolio_summary"
+  | "portfolio_exact_values"
+  | "journal_entries"
+  | "selected_documents"
+  | "consultation_context";
+
+export type DataGrantApiResponse = {
+  id: number;
+  grantee_type: "professional" | "provider" | "admin";
+  grantee_id: number;
+  professional: number | null;
+  scopes: DataGrantScope[];
+  status: "active" | "revoked" | "expired";
+  starts_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+};
+
+export type DataGrantApiRequest = {
+  grantee_type: "professional" | "provider" | "admin";
+  grantee_id: number;
+  scopes: DataGrantScope[];
+  expires_at: string;
+};
+
+export type ConsultationRequestApiRequest = {
+  professional?: number;
+  topic: string;
+  notes?: string;
+};
+
+export type ConsultationRequestApiResponse = {
+  id: number;
+  professional: number | null;
+  topic: string;
+  notes: string;
+  status: string;
+  created_at: string;
+};
+
 type Paginated<T> = {
   count: number;
   next: string | null;
@@ -64,6 +153,16 @@ export type JournalApiRequest = {
   visibility: "private";
 };
 
+export type JournalApiResponse = JournalApiRequest & {
+  id: number;
+  alternatives_considered: string;
+  risks_considered: string;
+  review_date: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
 export type PortfolioApiRequest = {
   asset_type: string;
   provider_name?: string;
@@ -73,11 +172,24 @@ export type PortfolioApiRequest = {
   amount_range_max?: string;
   liquidity_level: "high" | "medium" | "low" | "locked";
   risk_level: "low" | "moderate" | "high" | "very_high";
+  maturity_date?: string;
   visibility: "private";
 };
 
+export type PortfolioApiResponse = PortfolioApiRequest & {
+  id: number;
+  provider_name: string;
+  amount_exact: string | null;
+  amount_range_min: string | null;
+  amount_range_max: string | null;
+  maturity_date: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
 type RequestOptions = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   auth?: AuthCredentials | null;
 };
@@ -114,9 +226,14 @@ export class ApiError extends Error {
 
 export class PesaRouteApiClient {
   readonly baseUrl: string;
+  private authToken: string | null = null;
 
   constructor(baseUrl = getApiBaseUrl()) {
     this.baseUrl = baseUrl;
+  }
+
+  setAuthToken(token: string | null) {
+    this.authToken = token;
   }
 
   private async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -129,7 +246,10 @@ export class PesaRouteApiClient {
       headers["Content-Type"] = "application/json";
     }
 
-    if (options.auth?.username && options.auth.password) {
+    const token = options.auth?.token ?? this.authToken;
+    if (token) {
+      headers.Authorization = `Token ${token}`;
+    } else if (options.auth?.username && options.auth.password) {
       headers.Authorization = `Basic ${toBase64(`${options.auth.username}:${options.auth.password}`)}`;
     }
 
@@ -137,7 +257,8 @@ export class PesaRouteApiClient {
     const timeout = setTimeout(() => controller.abort(), 8000);
 
     try {
-      const response = await fetch(`${this.baseUrl}${path}`, {
+      const url = /^https?:\/\//i.test(path) ? path : `${this.baseUrl}${path}`;
+      const response = await fetch(url, {
         method: options.method ?? "GET",
         headers,
         body: requestBody,
@@ -146,7 +267,8 @@ export class PesaRouteApiClient {
       if (!response.ok) {
         throw new ApiError(`API returned ${response.status}`, response.status);
       }
-      return (await response.json()) as T;
+      const text = await response.text();
+      return (text ? JSON.parse(text) : undefined) as T;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -161,9 +283,36 @@ export class PesaRouteApiClient {
     return this.request<ApiStatus>("/api/health/");
   }
 
+  register(body: RegisterApiRequest) {
+    return this.request<AuthApiResponse>("/api/accounts/register/", { method: "POST", body });
+  }
+
+  login(body: LoginApiRequest) {
+    return this.request<AuthApiResponse>("/api/accounts/login/", { method: "POST", body });
+  }
+
+  me(auth: AuthCredentials) {
+    return this.request<UserApiResponse>("/api/accounts/me/", { auth });
+  }
+
+  updateMe(body: Partial<UserProfileApiResponse>, auth?: AuthCredentials | null) {
+    return this.request<UserApiResponse>("/api/accounts/me/", { method: "PATCH", body, auth });
+  }
+
   async productCategories() {
     const response = await this.request<Paginated<ProductCategory>>("/api/catalog/categories/");
     return response.results;
+  }
+
+  private async listAll<T>(path: string, auth?: AuthCredentials | null) {
+    const collected: T[] = [];
+    let nextPath: string | null = path;
+    while (nextPath) {
+      const response: Paginated<T> = await this.request<Paginated<T>>(nextPath, { auth });
+      collected.push(...response.results);
+      nextPath = response.next;
+    }
+    return collected;
   }
 
   async productPassports() {
@@ -194,11 +343,59 @@ export class PesaRouteApiClient {
     return this.request<Record<string, unknown>>("/api/planning/simulate/global-route/", { method: "POST", body });
   }
 
+  listJournalEntries(auth: AuthCredentials) {
+    return this.listAll<JournalApiResponse>("/api/journal/entries/", auth);
+  }
+
   createJournalEntry(body: JournalApiRequest, auth: AuthCredentials) {
-    return this.request<Record<string, unknown>>("/api/journal/entries/", { method: "POST", body, auth });
+    return this.request<JournalApiResponse>("/api/journal/entries/", { method: "POST", body, auth });
+  }
+
+  updateJournalEntry(id: number, body: Partial<JournalApiRequest>, auth: AuthCredentials) {
+    return this.request<JournalApiResponse>(`/api/journal/entries/${id}/`, { method: "PATCH", body, auth });
+  }
+
+  deleteJournalEntry(id: number, auth: AuthCredentials) {
+    return this.request<void>(`/api/journal/entries/${id}/`, { method: "DELETE", auth });
+  }
+
+  listPortfolioItems(auth: AuthCredentials) {
+    return this.listAll<PortfolioApiResponse>("/api/portfolio/items/", auth);
   }
 
   createPortfolioItem(body: PortfolioApiRequest, auth: AuthCredentials) {
-    return this.request<Record<string, unknown>>("/api/portfolio/items/", { method: "POST", body, auth });
+    return this.request<PortfolioApiResponse>("/api/portfolio/items/", { method: "POST", body, auth });
+  }
+
+  updatePortfolioItem(id: number, body: Partial<PortfolioApiRequest>, auth: AuthCredentials) {
+    return this.request<PortfolioApiResponse>(`/api/portfolio/items/${id}/`, { method: "PATCH", body, auth });
+  }
+
+  deletePortfolioItem(id: number, auth: AuthCredentials) {
+    return this.request<void>(`/api/portfolio/items/${id}/`, { method: "DELETE", auth });
+  }
+
+  async listDataGrants(auth: AuthCredentials) {
+    const response = await this.request<Paginated<DataGrantApiResponse>>("/api/privacy/data-grants/", { auth });
+    return response.results;
+  }
+
+  createDataGrant(body: DataGrantApiRequest, auth: AuthCredentials) {
+    return this.request<DataGrantApiResponse>("/api/privacy/data-grants/", { method: "POST", body, auth });
+  }
+
+  revokeDataGrant(id: number, auth: AuthCredentials) {
+    return this.request<DataGrantApiResponse>(`/api/privacy/data-grants/${id}/revoke/`, {
+      method: "POST",
+      auth
+    });
+  }
+
+  createConsultationRequest(body: ConsultationRequestApiRequest, auth: AuthCredentials) {
+    return this.request<ConsultationRequestApiResponse>("/api/marketplace/consultation-requests/", {
+      method: "POST",
+      body,
+      auth
+    });
   }
 }

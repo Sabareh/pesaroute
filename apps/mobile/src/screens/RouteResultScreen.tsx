@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { JournalEntry, ProductPassport, RouteProfile } from "../types";
+import type { JournalEntryDraft, ProductPassport, RouteProfile } from "../types";
 
 function BulletList({ items, tone = "neutral" }: { items: string[]; tone?: "neutral" | "warning" | "good" }) {
   return (
@@ -22,7 +22,7 @@ export function RouteResultScreen({
 }: {
   passports: ProductPassport[];
   profile: RouteProfile;
-  onSaveJournal: (entry: JournalEntry) => void;
+  onSaveJournal: (entry: JournalEntryDraft) => void;
 }) {
   const [saved, setSaved] = useState(false);
   const relatedPassports = passports
@@ -31,13 +31,11 @@ export function RouteResultScreen({
 
   function saveDraft() {
     onSaveJournal({
-      id: `route-${Date.now()}`,
       goal: profile.goalLabel,
       decision: `Explore ${profile.goalLabel} route for ${profile.amountLabel}`,
       amountDisplayMode: "range",
       amountText: profile.amountLabel.replace("I have ", ""),
-      reason: "Saved from route result placeholder.",
-      createdAt: new Date().toLocaleDateString("en-KE")
+      reason: "Saved from route result placeholder."
     });
     setSaved(true);
   }

@@ -29,6 +29,7 @@ class JournalEntry(models.Model):
     visibility = models.CharField(max_length=32, choices=Visibility.choices, default=Visibility.PRIVATE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         ordering = ["-created_at"]
@@ -36,3 +37,8 @@ class JournalEntry(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id}:{self.decision[:40]}"
+
+    def save(self, *args, **kwargs):
+        if self.pk and not kwargs.get("force_insert"):
+            self.version = (self.version or 1) + 1
+        super().save(*args, **kwargs)
