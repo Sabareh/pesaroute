@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { DataGrantApiResponse, PesaRouteApiClient, UserApiResponse } from "../api/client";
+import { PrivacyPromiseCard, maliPrime, maliPrimeText } from "../components/maliprime";
 import type { AuthCredentials } from "../types";
 
 const settings = [
@@ -73,8 +74,9 @@ export function PrivacySettingsScreen({
 
   return (
     <View>
-      <Text style={styles.title}>Profile & Privacy</Text>
-      <Text style={styles.copy}>Trust promises for the consumer MVP. Keep control of your money and your information.</Text>
+      <Text style={maliPrimeText.title}>Profile & Privacy</Text>
+      <Text style={maliPrimeText.subtitle}>Plan privately. Share only when ready. Keep control of your money and your information.</Text>
+      <Text style={styles.sectionTitle}>Profile/account</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Account status</Text>
         <Text style={styles.account}>{accountLabel}</Text>
@@ -95,14 +97,20 @@ export function PrivacySettingsScreen({
           </Pressable>
         )}
       </View>
+      <Text style={styles.sectionTitle}>Privacy Mode</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Default privacy posture</Text>
+        <Text style={styles.meta}>
+          Use ranges instead of exact amounts, keep anonymous learning available, and share with professionals only when
+          you explicitly choose scopes.
+        </Text>
+      </View>
       <View style={styles.list}>
         {settings.map((setting) => (
-          <View key={setting} style={styles.row}>
-            <View style={styles.dot} />
-            <Text style={styles.setting}>{setting}</Text>
-          </View>
+          <PrivacyPromiseCard key={setting} text={setting} />
         ))}
       </View>
+      <Text style={styles.sectionTitle}>Data Sharing</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Active sharing</Text>
         <Text style={styles.meta}>You control what professionals see. Access expires automatically. You can revoke access anytime.</Text>
@@ -131,9 +139,15 @@ export function PrivacySettingsScreen({
             </View>
           ))}
       </View>
+      <Text style={styles.sectionTitle}>Account Security</Text>
       <View style={styles.card}>
-        <Text style={styles.label}>Coming later</Text>
+        <Text style={styles.label}>Security placeholders</Text>
         <Text style={styles.meta}>Biometric app lock placeholder</Text>
+        <Text style={styles.meta}>Password reset and email verification placeholder</Text>
+      </View>
+      <Text style={styles.sectionTitle}>Delete/Export</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Data controls roadmap</Text>
         <Text style={styles.meta}>Delete and export data placeholder</Text>
       </View>
     </View>
@@ -141,65 +155,53 @@ export function PrivacySettingsScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
     borderWidth: 1,
     marginTop: 16,
-    padding: 14
+    padding: 14,
+    ...maliPrime.shadow
   },
-  label: { color: "#15221d", fontSize: 15, fontWeight: "900" },
-  account: { color: "#0f7b5f", fontSize: 16, fontWeight: "900", marginTop: 6 },
-  meta: { color: "#627469", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  label: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "900" },
+  sectionTitle: { color: maliPrime.colors.textPrimary, fontSize: 17, fontWeight: "900", marginTop: 22 },
+  account: { color: maliPrime.colors.primary, fontSize: 16, fontWeight: "900", marginTop: 6 },
+  meta: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0f7b5f",
-    borderRadius: 8,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 14,
     minHeight: 48
   },
-  primaryText: { color: "#ffffff", fontSize: 14, fontWeight: "900" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "900" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#dff5ec",
-    borderRadius: 8,
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
   },
-  secondaryText: { color: "#0f7b5f", fontSize: 13, fontWeight: "900" },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 8 },
+  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
+  error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19, marginTop: 8 },
   grantRow: {
-    borderTopColor: "#e3ece7",
+    borderTopColor: maliPrime.colors.border,
     borderTopWidth: 1,
     marginTop: 12,
     paddingTop: 12
   },
-  grantTitle: { color: "#15221d", fontSize: 14, fontWeight: "900" },
+  grantTitle: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "900" },
   revokeButton: {
     alignItems: "center",
-    backgroundColor: "#fff0e4",
-    borderRadius: 8,
+    backgroundColor: "#FDECEC",
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 10,
     minHeight: 42
   },
-  revokeText: { color: "#7a431e", fontSize: 13, fontWeight: "900" },
-  list: { gap: 10, marginTop: 20 },
-  row: {
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    padding: 14
-  },
-  dot: { backgroundColor: "#0f7b5f", borderRadius: 6, height: 12, width: 12 },
-  setting: { color: "#15221d", flex: 1, fontSize: 14, fontWeight: "800", lineHeight: 20 }
+  revokeText: { color: maliPrime.colors.danger, fontSize: 13, fontWeight: "900" },
+  list: { gap: 10, marginTop: 20 }
 });

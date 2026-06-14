@@ -15,6 +15,7 @@ class SimulationAPIView(APIView):
     serializer_class = None
     simulator_type = None
     simulator = None
+    throttle_scope = "simulators"
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)

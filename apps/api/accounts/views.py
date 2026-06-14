@@ -17,6 +17,7 @@ def auth_payload(user):
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -33,6 +34,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})

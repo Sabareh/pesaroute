@@ -26,10 +26,12 @@ export function PortfolioMirrorScreen({
   items,
   lastSyncAt,
   onDeleteItem,
+  onOpenPricing,
   onRequestAuth,
   onSaveItem,
   onSyncNow,
   portfolioSummary,
+  premiumEnabled,
   syncError,
   syncing,
   syncSummary
@@ -38,6 +40,7 @@ export function PortfolioMirrorScreen({
   items: PortfolioItem[];
   lastSyncAt: string | null;
   onDeleteItem: (localId: string) => void;
+  onOpenPricing: () => void;
   onRequestAuth: () => void;
   onSaveItem: (item: PortfolioItemDraft, localId?: string) => void;
   onSyncNow: () => Promise<void>;
@@ -49,6 +52,7 @@ export function PortfolioMirrorScreen({
     liquidityScore: number | null;
     riskNote: string;
   };
+  premiumEnabled: boolean;
   syncError: string | null;
   syncing: boolean;
   syncSummary: { pending: number; failed: number; conflict: number; localOnly: number };
@@ -111,11 +115,24 @@ export function PortfolioMirrorScreen({
   return (
     <View>
       <Text style={styles.title}>Portfolio Mirror</Text>
-      <Text style={styles.copy}>Manual mirror only. No account links, no broker credentials, and no execution.</Text>
+      <Text style={styles.copy}>Manual mirror only. No account links, no broker credentials, and no execution. Exact amounts are optional.</Text>
+
+      {!premiumEnabled ? (
+        <View style={styles.lockCard}>
+          <Text style={styles.lockTitle}>Premium feature</Text>
+          <Text style={styles.lockCopy}>
+            Portfolio Mirror is prepared as a premium entitlement. You can still test local behavior during MVP development.
+          </Text>
+          <Pressable accessibilityRole="button" onPress={onOpenPricing} style={styles.upgradeButton}>
+            <Text style={styles.upgradeText}>View Premium</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Summary</Text>
-        <Text style={styles.summaryLine}>Categories: {categoryText || "No items yet"}</Text>
+        <Text style={styles.summaryTitle}>Portfolio summary</Text>
+        <Text style={styles.summaryKicker}>Privacy mode: ranges and hidden values stay hidden in totals.</Text>
+        <Text style={styles.summaryLine}>Asset mix: {categoryText || "No items yet"}</Text>
         <Text style={styles.summaryLine}>
           Total:{" "}
           {portfolioSummary.itemsCount === 0
@@ -127,7 +144,8 @@ export function PortfolioMirrorScreen({
         <Text style={styles.summaryLine}>
           Liquidity score: {portfolioSummary.liquidityScore === null ? "Not enough data" : `${portfolioSummary.liquidityScore}/3`}
         </Text>
-        <Text style={styles.summaryLine}>{portfolioSummary.riskNote}</Text>
+        <Text style={styles.summaryLine}>Risk concentration: {portfolioSummary.riskNote}</Text>
+        <Text style={styles.summaryLine}>Maturity reminders: add optional maturity dates to track lockups.</Text>
       </View>
 
       <View style={styles.syncCard}>
@@ -160,11 +178,11 @@ export function PortfolioMirrorScreen({
       </View>
 
       <View style={styles.form}>
-        <TextInput onChangeText={setAssetType} placeholder="Asset type" placeholderTextColor="#7b8a83" style={styles.input} value={assetType} />
+        <TextInput onChangeText={setAssetType} placeholder="Asset type" placeholderTextColor="#7D8794" style={styles.input} value={assetType} />
         <TextInput
           onChangeText={setProviderName}
           placeholder="Provider name optional"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={styles.input}
           value={providerName}
         />
@@ -172,14 +190,14 @@ export function PortfolioMirrorScreen({
           editable={amountDisplayMode !== "hidden"}
           onChangeText={setAmountText}
           placeholder="Amount e.g. KES 10k-20k"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={[styles.input, amountDisplayMode === "hidden" && styles.inputDisabled]}
           value={amountDisplayMode === "hidden" ? "" : amountText}
         />
         <TextInput
           onChangeText={setMaturityDate}
           placeholder="Maturity date optional YYYY-MM-DD"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={styles.input}
           value={maturityDate}
         />
@@ -245,7 +263,8 @@ export function PortfolioMirrorScreen({
               </Text>
               {item.providerName ? <Text style={styles.meta}>{item.providerName}</Text> : null}
               {item.maturityDate ? <Text style={styles.meta}>Matures {item.maturityDate}</Text> : null}
-              <Text style={styles.amount}>{item.amountDisplayMode === "hidden" ? "Hidden" : item.amountText}</Text>
+              <Text style={styles.amount}>Amount mode: {item.amountDisplayMode} - {item.amountDisplayMode === "hidden" ? "Hidden" : item.amountText}</Text>
+              <Text style={styles.privacyPill}>Private mirror item</Text>
               <Text style={styles.meta}>Updated {formatDate(item.updatedAt)}</Text>
               {item.syncError ? <Text style={styles.error}>{item.syncError}</Text> : null}
               <View style={styles.itemActions}>
@@ -265,32 +284,52 @@ export function PortfolioMirrorScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
-  summaryCard: {
-    backgroundColor: "#edf8f3",
-    borderColor: "#cfe8dd",
-    borderRadius: 8,
+  title: { color: "#0B1220", fontSize: 30, fontWeight: "900" },
+  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  lockCard: {
+    backgroundColor: "#FFF7E8",
+    borderColor: "#F7D79A",
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 16,
     padding: 14
   },
-  summaryTitle: { color: "#0f7b5f", fontSize: 15, fontWeight: "900" },
-  summaryLine: { color: "#234238", fontSize: 13, lineHeight: 19, marginTop: 5 },
+  lockTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
+  lockCopy: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 5 },
+  upgradeButton: {
+    alignItems: "center",
+    backgroundColor: "#A86500",
+    borderRadius: 16,
+    justifyContent: "center",
+    marginTop: 12,
+    minHeight: 42
+  },
+  upgradeText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
+  summaryCard: {
+    backgroundColor: "#F1F4F9",
+    borderColor: "#cfe8dd",
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 16,
+    padding: 14
+  },
+  summaryTitle: { color: "#2457FF", fontSize: 15, fontWeight: "900" },
+  summaryKicker: { color: "#5B6472", fontSize: 12, fontWeight: "800", lineHeight: 18, marginTop: 5 },
+  summaryLine: { color: "#0B1220", fontSize: 13, lineHeight: 19, marginTop: 5 },
   syncCard: {
     backgroundColor: "#fff8ef",
-    borderColor: "#ead7bd",
-    borderRadius: 8,
+    borderColor: "#F7D79A",
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 14,
     padding: 14
   },
-  syncTitle: { color: "#7a431e", fontSize: 14, fontWeight: "900" },
-  syncCopy: { color: "#7a5b3f", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  syncTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
+  syncCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 4 },
   syncButton: {
     alignItems: "center",
-    backgroundColor: "#15221d",
-    borderRadius: 8,
+    backgroundColor: "#0B1220",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
@@ -298,8 +337,8 @@ const styles = StyleSheet.create({
   syncButtonText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
   promptButton: {
     alignItems: "center",
-    backgroundColor: "#0f7b5f",
-    borderRadius: 8,
+    backgroundColor: "#2457FF",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
@@ -308,40 +347,40 @@ const styles = StyleSheet.create({
   form: { gap: 10, marginTop: 14 },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
-    color: "#15221d",
+    color: "#0B1220",
     fontSize: 15,
     minHeight: 50,
     paddingHorizontal: 14
   },
-  inputDisabled: { backgroundColor: "#eef3ef" },
-  groupTitle: { color: "#15221d", fontSize: 14, fontWeight: "900", marginTop: 14 },
+  inputDisabled: { backgroundColor: "#F1F4F9" },
+  groupTitle: { color: "#0B1220", fontSize: 14, fontWeight: "900", marginTop: 14 },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
-  pill: { backgroundColor: "#ffffff", borderColor: "#dbe6df", borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
-  pillActive: { backgroundColor: "#dff5ec", borderColor: "#0f7b5f" },
-  pillText: { color: "#52645b", fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
-  pillTextActive: { color: "#0f7b5f" },
+  pill: { backgroundColor: "#ffffff", borderColor: "#E5EAF0", borderRadius: 16, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
+  pillActive: { backgroundColor: "#EAF0FF", borderColor: "#2457FF" },
+  pillText: { color: "#5B6472", fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
+  pillTextActive: { color: "#2457FF" },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  save: { alignItems: "center", backgroundColor: "#0f7b5f", borderRadius: 8, flex: 1, justifyContent: "center", minHeight: 50 },
-  saveDisabled: { backgroundColor: "#91a39a" },
+  save: { alignItems: "center", backgroundColor: "#2457FF", borderRadius: 16, flex: 1, justifyContent: "center", minHeight: 50 },
+  saveDisabled: { backgroundColor: "#9FB2D6" },
   saveText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
-  cancel: { alignItems: "center", backgroundColor: "#dff5ec", borderRadius: 8, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
-  cancelText: { color: "#0f7b5f", fontSize: 13, fontWeight: "900" },
-  status: { color: "#52645b", fontSize: 13, lineHeight: 19, marginTop: 10 },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 8 },
-  listTitle: { color: "#15221d", fontSize: 18, fontWeight: "900", marginTop: 24 },
-  empty: { color: "#52645b", fontSize: 14, marginTop: 10 },
+  cancel: { alignItems: "center", backgroundColor: "#EAF0FF", borderRadius: 16, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
+  cancelText: { color: "#2457FF", fontSize: 13, fontWeight: "900" },
+  status: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 8 },
+  listTitle: { color: "#0B1220", fontSize: 18, fontWeight: "900", marginTop: 24 },
+  empty: { color: "#5B6472", fontSize: 14, marginTop: 10 },
   list: { gap: 10, marginTop: 12 },
-  item: { backgroundColor: "#ffffff", borderColor: "#e3ece7", borderRadius: 8, borderWidth: 1, padding: 14 },
+  item: { backgroundColor: "#ffffff", borderColor: "#E5EAF0", borderRadius: 16, borderWidth: 1, padding: 14 },
   itemMuted: { opacity: 0.72 },
   itemHeader: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "space-between" },
-  asset: { color: "#15221d", flex: 1, fontSize: 15, fontWeight: "900" },
+  asset: { color: "#0B1220", flex: 1, fontSize: 15, fontWeight: "900" },
   syncPill: {
-    backgroundColor: "#dff5ec",
-    borderRadius: 8,
-    color: "#0f7b5f",
+    backgroundColor: "#EAF0FF",
+    borderRadius: 16,
+    color: "#2457FF",
     fontSize: 10,
     fontWeight: "900",
     overflow: "hidden",
@@ -349,13 +388,25 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     textTransform: "uppercase"
   },
-  syncPillError: { backgroundColor: "#fff0e4", color: "#7a431e" },
-  meta: { color: "#627469", fontSize: 12, marginTop: 4 },
-  amount: { color: "#0f7b5f", fontSize: 13, fontWeight: "900", marginTop: 8 },
+  syncPillError: { backgroundColor: "#FDECEC", color: "#A86500" },
+  meta: { color: "#5B6472", fontSize: 12, marginTop: 4 },
+  amount: { color: "#2457FF", fontSize: 13, fontWeight: "900", marginTop: 8 },
+  privacyPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E9F8F1",
+    borderRadius: 16,
+    color: "#0FA36B",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 8,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
   itemActions: { flexDirection: "row", gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: "#dff5ec", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  smallButtonText: { color: "#0f7b5f", fontSize: 12, fontWeight: "900" },
-  deleteButton: { backgroundColor: "#fff0e4", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  deleteButtonText: { color: "#7a431e", fontSize: 12, fontWeight: "900" },
+  smallButton: { backgroundColor: "#EAF0FF", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButtonText: { color: "#2457FF", fontSize: 12, fontWeight: "900" },
+  deleteButton: { backgroundColor: "#FDECEC", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
+  deleteButtonText: { color: "#A86500", fontSize: 12, fontWeight: "900" },
   pressed: { opacity: 0.78 }
 });

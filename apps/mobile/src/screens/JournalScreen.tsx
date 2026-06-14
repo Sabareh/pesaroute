@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { AmountDisplayMode, JournalEntry, JournalEntryDraft } from "../types";
 
@@ -84,8 +85,8 @@ export function JournalScreen({
 
   return (
     <View>
-      <Text style={styles.title}>Journal</Text>
-      <Text style={styles.copy}>Create and edit private entries offline. Logged-in accounts sync when the API is reachable.</Text>
+      <Text style={styles.title}>Private Journal</Text>
+      <Text style={styles.copy}>Write the decision before money moves. Entries are private by default and can stay local-only.</Text>
 
       <View style={styles.syncCard}>
         <Text style={styles.syncTitle}>{isAuthenticated ? "Cloud sync" : "Anonymous local-only mode"}</Text>
@@ -108,11 +109,11 @@ export function JournalScreen({
       </View>
 
       <View style={styles.form}>
-        <TextInput onChangeText={setGoal} placeholder="Goal" placeholderTextColor="#7b8a83" style={styles.input} value={goal} />
+        <TextInput onChangeText={setGoal} placeholder="Goal" placeholderTextColor="#7D8794" style={styles.input} value={goal} />
         <TextInput
           onChangeText={setDecision}
           placeholder="Decision"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={styles.input}
           value={decision}
         />
@@ -120,7 +121,7 @@ export function JournalScreen({
           editable={amountDisplayMode !== "hidden"}
           onChangeText={setAmountText}
           placeholder="Amount e.g. KES 10k-20k"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={[styles.input, amountDisplayMode === "hidden" && styles.inputDisabled]}
           value={amountDisplayMode === "hidden" ? "" : amountText}
         />
@@ -140,7 +141,7 @@ export function JournalScreen({
           multiline
           onChangeText={setReason}
           placeholder="Reason and risks considered"
-          placeholderTextColor="#7b8a83"
+          placeholderTextColor="#7D8794"
           style={[styles.input, styles.multi]}
           textAlignVertical="top"
           value={reason}
@@ -170,14 +171,18 @@ export function JournalScreen({
         <View style={styles.entries}>
           {entries.map((entry) => (
             <View key={entry.localId} style={[styles.entry, entry.pendingDelete && styles.entryMuted]}>
-              <View style={styles.entryHeader}>
+              <Text style={styles.entryDecision}>{entry.decision}</Text>
+              <View style={styles.entryMetaGrid}>
                 <Text style={styles.entryGoal}>{entry.goal}</Text>
+                <Text style={styles.privateBadge}>
+                  <Ionicons name="lock-closed" size={11} /> Private
+                </Text>
+                <Text style={styles.entryMeta}>Amount mode: {entry.amountDisplayMode}</Text>
+                <Text style={styles.entryMeta}>Review date: Not set</Text>
+                <Text style={styles.entryMeta}>Amount: {entry.amountDisplayMode === "hidden" ? "Hidden" : entry.amountText}</Text>
                 <Text style={[styles.syncPill, entry.syncStatus === "failed" && styles.syncPillError]}>{statusLabel(entry)}</Text>
               </View>
-              <Text style={styles.entryDecision}>{entry.decision}</Text>
-              <Text style={styles.entryMeta}>
-                {entry.amountDisplayMode}: {entry.amountDisplayMode === "hidden" ? "Hidden" : entry.amountText} - {formatDate(entry.createdAt)}
-              </Text>
+              <Text style={styles.entryMeta}>Created {formatDate(entry.createdAt)}</Text>
               {entry.reason ? <Text style={styles.entryReason}>{entry.reason}</Text> : null}
               {entry.syncError ? <Text style={styles.error}>{entry.syncError}</Text> : null}
               <View style={styles.itemActions}>
@@ -197,22 +202,22 @@ export function JournalScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  title: { color: "#0B1220", fontSize: 30, fontWeight: "900" },
+  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 10 },
   syncCard: {
     backgroundColor: "#fff8ef",
-    borderColor: "#ead7bd",
-    borderRadius: 8,
+    borderColor: "#F7D79A",
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 16,
     padding: 14
   },
-  syncTitle: { color: "#7a431e", fontSize: 14, fontWeight: "900" },
-  syncCopy: { color: "#7a5b3f", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  syncTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
+  syncCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 4 },
   syncButton: {
     alignItems: "center",
-    backgroundColor: "#15221d",
-    borderRadius: 8,
+    backgroundColor: "#0B1220",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
@@ -220,8 +225,8 @@ const styles = StyleSheet.create({
   syncButtonText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
   promptButton: {
     alignItems: "center",
-    backgroundColor: "#0f7b5f",
-    borderRadius: 8,
+    backgroundColor: "#2457FF",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
@@ -230,47 +235,57 @@ const styles = StyleSheet.create({
   form: { gap: 10, marginTop: 20 },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
-    color: "#15221d",
+    color: "#0B1220",
     fontSize: 15,
     minHeight: 50,
     paddingHorizontal: 14
   },
-  inputDisabled: { backgroundColor: "#eef3ef" },
+  inputDisabled: { backgroundColor: "#F1F4F9" },
   multi: { minHeight: 100, paddingTop: 14, textAlignVertical: "top" },
   modeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   mode: {
     backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 8
   },
-  modeActive: { backgroundColor: "#dff5ec", borderColor: "#0f7b5f" },
-  modeText: { color: "#52645b", fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
-  modeTextActive: { color: "#0f7b5f" },
+  modeActive: { backgroundColor: "#EAF0FF", borderColor: "#2457FF" },
+  modeText: { color: "#5B6472", fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
+  modeTextActive: { color: "#2457FF" },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  save: { alignItems: "center", backgroundColor: "#0f7b5f", borderRadius: 8, flex: 1, justifyContent: "center", minHeight: 50 },
-  saveDisabled: { backgroundColor: "#91a39a" },
+  save: { alignItems: "center", backgroundColor: "#2457FF", borderRadius: 16, flex: 1, justifyContent: "center", minHeight: 50 },
+  saveDisabled: { backgroundColor: "#9FB2D6" },
   saveText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
-  cancel: { alignItems: "center", backgroundColor: "#dff5ec", borderRadius: 8, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
-  cancelText: { color: "#0f7b5f", fontSize: 13, fontWeight: "900" },
-  status: { color: "#52645b", fontSize: 13, lineHeight: 19, marginTop: 10 },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 8 },
-  listTitle: { color: "#15221d", fontSize: 18, fontWeight: "900", marginTop: 24 },
-  empty: { color: "#52645b", fontSize: 14, marginTop: 10 },
+  cancel: { alignItems: "center", backgroundColor: "#EAF0FF", borderRadius: 16, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
+  cancelText: { color: "#2457FF", fontSize: 13, fontWeight: "900" },
+  status: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 8 },
+  listTitle: { color: "#0B1220", fontSize: 18, fontWeight: "900", marginTop: 24 },
+  empty: { color: "#5B6472", fontSize: 14, marginTop: 10 },
   entries: { gap: 10, marginTop: 12 },
-  entry: { backgroundColor: "#ffffff", borderColor: "#e3ece7", borderRadius: 8, borderWidth: 1, padding: 14 },
+  entry: { backgroundColor: "#ffffff", borderColor: "#E5EAF0", borderRadius: 16, borderWidth: 1, padding: 14 },
   entryMuted: { opacity: 0.72 },
-  entryHeader: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "space-between" },
-  entryGoal: { color: "#0f7b5f", flex: 1, fontSize: 13, fontWeight: "900" },
+  entryGoal: { color: "#2457FF", flex: 1, fontSize: 13, fontWeight: "900" },
+  privateBadge: {
+    backgroundColor: "#E9F8F1",
+    borderRadius: 16,
+    color: "#0FA36B",
+    fontSize: 11,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  entryMetaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   syncPill: {
-    backgroundColor: "#dff5ec",
-    borderRadius: 8,
-    color: "#0f7b5f",
+    backgroundColor: "#EAF0FF",
+    borderRadius: 16,
+    color: "#2457FF",
     fontSize: 10,
     fontWeight: "900",
     overflow: "hidden",
@@ -278,14 +293,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     textTransform: "uppercase"
   },
-  syncPillError: { backgroundColor: "#fff0e4", color: "#7a431e" },
-  entryDecision: { color: "#15221d", fontSize: 15, fontWeight: "900", lineHeight: 22, marginTop: 4 },
-  entryMeta: { color: "#627469", fontSize: 12, fontWeight: "800", marginTop: 6 },
-  entryReason: { color: "#52645b", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  syncPillError: { backgroundColor: "#FDECEC", color: "#A86500" },
+  entryDecision: { color: "#0B1220", fontSize: 15, fontWeight: "900", lineHeight: 22, marginTop: 4 },
+  entryMeta: { color: "#5B6472", fontSize: 12, fontWeight: "800", marginTop: 6 },
+  entryReason: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 6 },
   itemActions: { flexDirection: "row", gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: "#dff5ec", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  smallButtonText: { color: "#0f7b5f", fontSize: 12, fontWeight: "900" },
-  deleteButton: { backgroundColor: "#fff0e4", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
-  deleteButtonText: { color: "#7a431e", fontSize: 12, fontWeight: "900" },
+  smallButton: { backgroundColor: "#EAF0FF", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButtonText: { color: "#2457FF", fontSize: 12, fontWeight: "900" },
+  deleteButton: { backgroundColor: "#FDECEC", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
+  deleteButtonText: { color: "#A86500", fontSize: 12, fontWeight: "900" },
   pressed: { opacity: 0.78 }
 });

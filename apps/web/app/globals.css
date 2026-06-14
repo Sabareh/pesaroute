@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #15221d;
-  background: #fbfdf9;
+  color: #0b1220;
+  background: #f7f8fb;
 }
 
 * {
@@ -13,9 +13,20 @@
 
 body {
   margin: 0;
-  background: #fbfdf9;
-  color: #15221d;
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f7f8fb;
+  color: #0b1220;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    Inter,
+    Geist,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
 a {
@@ -29,5 +40,5 @@ input {
 }
 
 ::selection {
-  background: #dff5ec;
+  background: #eaf0ff;
 }

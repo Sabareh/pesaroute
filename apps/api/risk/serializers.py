@@ -12,7 +12,6 @@ class ScamCheckSerializer(serializers.ModelSerializer):
         model = ScamCheck
         fields = [
             "id",
-            "prompt_text",
             "risk_score",
             "risk_level",
             "flags",

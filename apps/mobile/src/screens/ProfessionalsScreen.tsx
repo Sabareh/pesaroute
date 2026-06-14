@@ -1,9 +1,71 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import type { DataGrantScope, PesaRouteApiClient } from "../api/client";
+import type {
+  ConsultationRequestApiRequest,
+  ConsultationRequestApiResponse,
+  DataGrantScope,
+  PesaRouteApiClient,
+  ProfessionalApiResponse
+} from "../api/client";
+import { ProfessionalCard, maliPrime, maliPrimeText } from "../components/maliprime";
 import type { AuthCredentials } from "../types";
 
 const durations = [7, 14, 30];
+
+const categories: Array<{ label: string; value: ConsultationRequestApiRequest["category"] }> = [
+  { label: "MMF", value: "mmf" },
+  { label: "Treasury", value: "treasury" },
+  { label: "SACCO", value: "sacco" },
+  { label: "Chama", value: "chama" },
+  { label: "Global", value: "global_investing" },
+  { label: "Land literacy", value: "land_literacy" },
+  { label: "Tax", value: "tax" },
+  { label: "Diaspora", value: "diaspora" },
+  { label: "First investment", value: "general_first_investment" }
+];
+
+const specialtyFilters = ["All", "Investment adviser", "Tax", "SACCO/chama", "Land lawyer", "Diaspora", "Global investing"];
+const sampleProfessionals: ProfessionalApiResponse[] = [
+  {
+    id: 1,
+    name: "Amina Wanjiku",
+    display_name: "Amina Wanjiku",
+    firm: "Pesa Advisory LLP",
+    specialty: "Treasury bills/bonds",
+    license_category: "Investment adviser",
+    license_number: "Sample verified",
+    verification_status: "verified",
+    languages: ["en", "sw"],
+    consultation_fee_range: "KES 1k-5k",
+    diaspora_support: true,
+    chama_support: true,
+    bio: "Helps first-time investors compare regulated fixed-income routes.",
+    disclosures: "Sample profile for MVP testing.",
+    is_active: true
+  }
+];
+
+type ViewMode = "browse" | "request" | "mine";
+
+function parseAmountToken(token: string): number | null {
+  const trimmed = token.trim().toLowerCase();
+  const multiplier = trimmed.endsWith("k") ? 1000 : 1;
+  const value = Number(trimmed.replace(/[^\d.]/g, ""));
+  return Number.isFinite(value) && value > 0 ? value * multiplier : null;
+}
+
+function parseAmountRange(text: string): { min?: string; max?: string } {
+  const parts = text.split(/\s*(?:-|to)\s*/i).map(parseAmountToken);
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return { min: parts[0].toFixed(2), max: parts[1].toFixed(2) };
+  }
+  return {};
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-KE");
+}
 
 export function ProfessionalsScreen({
   apiClient,
@@ -14,9 +76,20 @@ export function ProfessionalsScreen({
   auth: AuthCredentials | null;
   onRequestAuth: () => void;
 }) {
-  const [professionalId, setProfessionalId] = useState("1");
-  const [topic, setTopic] = useState("Review my PesaRoute plan");
-  const [notes, setNotes] = useState("");
+  const [mode, setMode] = useState<ViewMode>("browse");
+  const [professionals, setProfessionals] = useState<ProfessionalApiResponse[]>(sampleProfessionals);
+  const [requests, setRequests] = useState<ConsultationRequestApiResponse[]>([]);
+  const [selectedProfessional, setSelectedProfessional] = useState<ProfessionalApiResponse | null>(sampleProfessionals[0]);
+  const [specialtyFilter, setSpecialtyFilter] = useState("All");
+  const [languageFilter, setLanguageFilter] = useState<"all" | "en" | "sw">("all");
+  const [diasporaOnly, setDiasporaOnly] = useState(false);
+  const [chamaOnly, setChamaOnly] = useState(false);
+  const [category, setCategory] = useState<ConsultationRequestApiRequest["category"]>("general_first_investment");
+  const [amountRange, setAmountRange] = useState("KES 5k-20k");
+  const [timeline, setTimeline] = useState<ConsultationRequestApiRequest["timeline"]>("flexible");
+  const [riskPreference, setRiskPreference] = useState<ConsultationRequestApiRequest["risk_preference"]>("not_sure");
+  const [preferredLanguage, setPreferredLanguage] = useState<"en" | "sw">("en");
+  const [question, setQuestion] = useState("");
   const [shareContact, setShareContact] = useState(false);
   const [sharePortfolioSummary, setSharePortfolioSummary] = useState(true);
   const [shareExactValues, setShareExactValues] = useState(false);
@@ -26,14 +99,72 @@ export function ProfessionalsScreen({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const filteredProfessionals = useMemo(
+    () =>
+      professionals.filter((professional) => {
+        const normalizedFilter = specialtyFilter.toLowerCase().replace("/chama", "").replace(" lawyer", "");
+        const specialtyText = `${professional.specialty} ${professional.license_category}`.toLowerCase();
+        const specialtyMatch = specialtyFilter === "All" || specialtyText.includes(normalizedFilter);
+        const languageMatch = languageFilter === "all" || professional.languages.includes(languageFilter);
+        const diasporaMatch = !diasporaOnly || professional.diaspora_support;
+        const chamaMatch = !chamaOnly || professional.chama_support;
+        return specialtyMatch && languageMatch && diasporaMatch && chamaMatch;
+      }),
+    [chamaOnly, diasporaOnly, languageFilter, professionals, specialtyFilter]
+  );
+
+  async function loadProfessionals() {
+    try {
+      const apiProfessionals = await apiClient.listProfessionals();
+      if (apiProfessionals.length > 0) {
+        setProfessionals(apiProfessionals);
+        setSelectedProfessional((current) => current ?? apiProfessionals[0]);
+      }
+    } catch {
+      setProfessionals(sampleProfessionals);
+    }
+  }
+
+  async function loadMyRequests() {
+    if (!auth) return;
+    try {
+      setRequests(await apiClient.myConsultationRequests(auth));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not load requests.");
+    }
+  }
+
+  useEffect(() => {
+    void loadProfessionals();
+  }, []);
+
+  useEffect(() => {
+    if (auth) void loadMyRequests();
+  }, [auth?.token]);
+
+  function startRequest(professional: ProfessionalApiResponse) {
+    setSelectedProfessional(professional);
+    setMode("request");
+    setStatus(null);
+    setError(null);
+  }
+
   async function requestReview() {
     if (!auth) {
       onRequestAuth();
       return;
     }
-    const granteeId = Number(professionalId);
-    if (!Number.isInteger(granteeId) || granteeId <= 0) {
-      setError("Enter a professional ID from the backend seed data.");
+    if (!selectedProfessional) {
+      setError("Choose a verified professional first.");
+      return;
+    }
+    if (question.trim().length < 5) {
+      setError("Add a short question for the professional.");
+      return;
+    }
+    const parsed = parseAmountRange(amountRange);
+    if (!parsed.min || !parsed.max) {
+      setError("Use a range like KES 5k-20k.");
       return;
     }
     const scopes: DataGrantScope[] = ["consultation_context"];
@@ -47,10 +178,10 @@ export function ProfessionalsScreen({
     setStatus(null);
     try {
       const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-      await apiClient.createDataGrant(
+      const grant = await apiClient.createDataGrant(
         {
           grantee_type: "professional",
-          grantee_id: granteeId,
+          grantee_id: selectedProfessional.id,
           scopes,
           expires_at: expiresAt
         },
@@ -58,13 +189,25 @@ export function ProfessionalsScreen({
       );
       await apiClient.createConsultationRequest(
         {
-          professional: granteeId,
-          topic: topic.trim() || "Review my PesaRoute plan",
-          notes: notes.trim()
+          selected_professional: selectedProfessional.id,
+          data_grant: grant.id,
+          category,
+          amount_display_mode: "range",
+          amount_range_min: parsed.min,
+          amount_range_max: parsed.max,
+          user_question: question.trim(),
+          timeline,
+          risk_preference: riskPreference,
+          preferred_language: preferredLanguage,
+          topic: categories.find((item) => item.value === category)?.label,
+          notes: question.trim()
         },
         auth
       );
-      setStatus("Review request saved. The professional can only see the scopes you selected.");
+      setStatus("Review request submitted. Private details remain hidden unless selected above.");
+      setQuestion("");
+      setMode("mine");
+      await loadMyRequests();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not create review request.");
     } finally {
@@ -74,69 +217,256 @@ export function ProfessionalsScreen({
 
   return (
     <View>
-      <Text style={styles.title}>Professional Review</Text>
-      <Text style={styles.copy}>You control what professionals see. Access expires automatically. You can revoke access anytime.</Text>
+      <Text style={maliPrimeText.title}>Professional Review</Text>
+      <Text style={maliPrimeText.subtitle}>
+        Request review without exposing private details by default. PesaRoute does not collect payment or promise advice.
+      </Text>
 
-      {!auth ? (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Login required for sharing</Text>
-          <Text style={styles.panelCopy}>Anonymous mode can still learn and simulate, but sharing needs an account.</Text>
-          <Pressable accessibilityRole="button" onPress={onRequestAuth} style={styles.primaryButton}>
-            <Text style={styles.primaryText}>Log in or create account</Text>
+      <View style={styles.modeRow}>
+        {[
+          { label: "Professionals", value: "browse" as const },
+          { label: "Request", value: "request" as const },
+          { label: "My Requests", value: "mine" as const }
+        ].map((item) => (
+          <Pressable
+            accessibilityRole="button"
+            key={item.value}
+            onPress={() => setMode(item.value)}
+            style={[styles.modeButton, mode === item.value && styles.modeButtonActive]}
+          >
+            <Text style={[styles.modeText, mode === item.value && styles.modeTextActive]}>{item.label}</Text>
           </Pressable>
-        </View>
-      ) : (
+        ))}
+      </View>
+
+      {mode === "browse" ? (
         <View>
-          <View style={styles.form}>
-            <TextInput
-              keyboardType="numeric"
-              onChangeText={setProfessionalId}
-              placeholder="Professional ID"
-              placeholderTextColor="#7b8a83"
-              style={styles.input}
-              value={professionalId}
-            />
-            <TextInput onChangeText={setTopic} placeholder="Topic" placeholderTextColor="#7b8a83" style={styles.input} value={topic} />
-            <TextInput
-              multiline
-              onChangeText={setNotes}
-              placeholder="Context you want reviewed"
-              placeholderTextColor="#7b8a83"
-              style={[styles.input, styles.multi]}
-              textAlignVertical="top"
-              value={notes}
-            />
-          </View>
-
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Choose what to share</Text>
-            <ConsentSwitch label="Share name/contact" value={shareContact} onValueChange={setShareContact} />
-            <ConsentSwitch label="Share portfolio summary" value={sharePortfolioSummary} onValueChange={setSharePortfolioSummary} />
-            <ConsentSwitch label="Share exact values" value={shareExactValues} onValueChange={setShareExactValues} />
-            <ConsentSwitch label="Share selected journal notes" value={shareJournal} onValueChange={setShareJournal} />
-          </View>
-
-          <Text style={styles.groupTitle}>Access duration</Text>
+          <Text style={styles.groupTitle}>Filter</Text>
           <View style={styles.pillRow}>
-            {durations.map((days) => (
+            {specialtyFilters.map((filter) => (
               <Pressable
                 accessibilityRole="button"
-                key={days}
-                onPress={() => setDurationDays(days)}
-                style={[styles.pill, durationDays === days && styles.pillActive]}
+                key={filter}
+                onPress={() => setSpecialtyFilter(filter)}
+                style={[styles.pill, specialtyFilter === filter && styles.pillActive]}
               >
-                <Text style={[styles.pillText, durationDays === days && styles.pillTextActive]}>{days} days</Text>
+                <Text style={[styles.pillText, specialtyFilter === filter && styles.pillTextActive]}>{filter}</Text>
               </Pressable>
             ))}
           </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {status ? <Text style={styles.status}>{status}</Text> : null}
-          <Pressable accessibilityRole="button" disabled={loading} onPress={requestReview} style={[styles.primaryButton, loading && styles.disabled]}>
-            <Text style={styles.primaryText}>{loading ? "Saving..." : "Request review with selected access"}</Text>
-          </Pressable>
+          <View style={styles.pillRow}>
+            {[
+              { label: "Any language", value: "all" as const },
+              { label: "English", value: "en" as const },
+              { label: "Swahili", value: "sw" as const }
+            ].map((item) => (
+              <Pressable
+                accessibilityRole="button"
+                key={item.value}
+                onPress={() => setLanguageFilter(item.value)}
+                style={[styles.pill, languageFilter === item.value && styles.pillActive]}
+              >
+                <Text style={[styles.pillText, languageFilter === item.value && styles.pillTextActive]}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.filterRow}>
+            <ConsentSwitch label="Diaspora support" value={diasporaOnly} onValueChange={setDiasporaOnly} />
+            <ConsentSwitch label="Chama support" value={chamaOnly} onValueChange={setChamaOnly} />
+          </View>
+          <View style={styles.list}>
+            {filteredProfessionals.map((professional) => (
+              <ProfessionalCard
+                body={`${professional.bio || "Learn first. Compare clearly. Get guidance when needed."} Languages: ${
+                  professional.languages.join(", ") || "en"
+                }. Fee: ${professional.consultation_fee_range || "Not set"}.`}
+                firm={professional.firm || "Independent"}
+                key={professional.id}
+                name={professional.name || professional.display_name}
+                onPress={() => startRequest(professional)}
+                specialty={professional.specialty || "General first investment"}
+              />
+            ))}
+          </View>
         </View>
-      )}
+      ) : null}
+
+      {mode === "request" ? (
+        !auth ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Login required for review requests</Text>
+            <Text style={styles.cardCopy}>Anonymous mode can still learn and simulate, but sharing needs an account.</Text>
+            <Pressable accessibilityRole="button" onPress={onRequestAuth} style={styles.primaryButton}>
+              <Text style={styles.primaryText}>Log in or create account</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>
+                Professional: {selectedProfessional?.name || selectedProfessional?.display_name || "Choose from list"}
+              </Text>
+              <Text style={styles.cardCopy}>Exact values are not shared by default. Use ranges unless you choose otherwise.</Text>
+            </View>
+
+            <Text style={styles.groupTitle}>Category</Text>
+            <View style={styles.pillRow}>
+              {categories.map((item) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={item.value}
+                  onPress={() => setCategory(item.value)}
+                  style={[styles.pill, category === item.value && styles.pillActive]}
+                >
+                  <Text style={[styles.pillText, category === item.value && styles.pillTextActive]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.form}>
+              <TextInput
+                onChangeText={setAmountRange}
+                placeholder="Amount range e.g. KES 5k-20k"
+                placeholderTextColor="#7D8794"
+                style={styles.input}
+                value={amountRange}
+              />
+              <TextInput
+                multiline
+                onChangeText={setQuestion}
+                placeholder="Question for review"
+                placeholderTextColor="#7D8794"
+                style={[styles.input, styles.multi]}
+                textAlignVertical="top"
+                value={question}
+              />
+            </View>
+
+            <Text style={styles.groupTitle}>Timeline</Text>
+            <View style={styles.pillRow}>
+              {[
+                { label: "This week", value: "this_week" as const },
+                { label: "This month", value: "this_month" as const },
+                { label: "Flexible", value: "flexible" as const }
+              ].map((item) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={item.value}
+                  onPress={() => setTimeline(item.value)}
+                  style={[styles.pill, timeline === item.value && styles.pillActive]}
+                >
+                  <Text style={[styles.pillText, timeline === item.value && styles.pillTextActive]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.groupTitle}>Risk preference</Text>
+            <View style={styles.pillRow}>
+              {["low", "moderate", "high", "not_sure"].map((item) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={item}
+                  onPress={() => setRiskPreference(item as ConsultationRequestApiRequest["risk_preference"])}
+                  style={[styles.pill, riskPreference === item && styles.pillActive]}
+                >
+                  <Text style={[styles.pillText, riskPreference === item && styles.pillTextActive]}>{item.replace("_", " ")}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.groupTitle}>Preferred language</Text>
+            <View style={styles.pillRow}>
+              {[
+                { label: "English", value: "en" as const },
+                { label: "Swahili", value: "sw" as const }
+              ].map((item) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={item.value}
+                  onPress={() => setPreferredLanguage(item.value)}
+                  style={[styles.pill, preferredLanguage === item.value && styles.pillActive]}
+                >
+                  <Text style={[styles.pillText, preferredLanguage === item.value && styles.pillTextActive]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>You choose what this professional can see.</Text>
+              <Text style={styles.cardCopy}>
+                Access expires automatically. You can revoke access anytime. Exact amounts are optional.
+              </Text>
+              <ConsentSwitch label="Share name/contact" value={shareContact} onValueChange={setShareContact} />
+              <ConsentSwitch label="Share portfolio summary" value={sharePortfolioSummary} onValueChange={setSharePortfolioSummary} />
+              <ConsentSwitch label="Share exact values" value={shareExactValues} onValueChange={setShareExactValues} />
+              <ConsentSwitch label="Share selected journal notes" value={shareJournal} onValueChange={setShareJournal} />
+            </View>
+
+            <Text style={styles.groupTitle}>Access duration</Text>
+            <View style={styles.pillRow}>
+              {durations.map((days) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={days}
+                  onPress={() => setDurationDays(days)}
+                  style={[styles.pill, durationDays === days && styles.pillActive]}
+                >
+                  <Text style={[styles.pillText, durationDays === days && styles.pillTextActive]}>{days} days</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {status ? <Text style={styles.status}>{status}</Text> : null}
+            <Pressable accessibilityRole="button" disabled={loading} onPress={requestReview} style={[styles.primaryButton, loading && styles.disabled]}>
+              <Text style={styles.primaryText}>{loading ? "Submitting..." : "Submit review request"}</Text>
+            </Pressable>
+          </View>
+        )
+      ) : null}
+
+      {mode === "mine" ? (
+        <View>
+          {!auth ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Login required</Text>
+              <Text style={styles.cardCopy}>Create an account to submit and track review requests.</Text>
+              <Pressable accessibilityRole="button" onPress={onRequestAuth} style={styles.primaryButton}>
+                <Text style={styles.primaryText}>Log in or create account</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View>
+              <Pressable accessibilityRole="button" onPress={loadMyRequests} style={styles.secondaryButton}>
+                <Text style={styles.secondaryText}>Refresh requests</Text>
+              </Pressable>
+              {requests.length === 0 ? <Text style={styles.empty}>No review requests yet.</Text> : null}
+              <View style={styles.list}>
+                {requests.map((request) => (
+                  <View key={request.id} style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>{categories.find((item) => item.value === request.category)?.label ?? request.category}</Text>
+                      <Text style={styles.badge}>{request.status}</Text>
+                    </View>
+                    <Text style={styles.meta}>{request.amount_display_mode}: {request.amount_range_min && request.amount_range_max ? `KES ${request.amount_range_min}-${request.amount_range_max}` : "Hidden"}</Text>
+                    <Text style={styles.cardCopy}>{request.user_question}</Text>
+                    <Text style={styles.meta}>Submitted {formatDate(request.created_at)}</Text>
+                    {request.responses?.length ? (
+                      <View style={styles.responseBox}>
+                        <Text style={styles.responseTitle}>Professional response</Text>
+                        <Text style={styles.cardCopy}>{request.responses[0].response_text}</Text>
+                        {request.responses[0].next_steps ? <Text style={styles.meta}>{request.responses[0].next_steps}</Text> : null}
+                      </View>
+                    ) : (
+                      <Text style={styles.meta}>Response placeholder: awaiting professional reply.</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -156,7 +486,7 @@ function ConsentSwitch({
       <Switch
         onValueChange={onValueChange}
         thumbColor={value ? "#ffffff" : "#f5f5f5"}
-        trackColor={{ false: "#b8c7bf", true: "#0f7b5f" }}
+        trackColor={{ false: "#C8D1DE", true: maliPrime.colors.primary }}
         value={value}
       />
     </View>
@@ -164,64 +494,102 @@ function ConsentSwitch({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
-  panel: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
+  modeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
+  modeButton: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.pill,
     borderWidth: 1,
-    marginTop: 18,
-    padding: 16
+    paddingHorizontal: 12,
+    paddingVertical: 10
   },
-  panelTitle: { color: "#15221d", fontSize: 16, fontWeight: "900" },
-  panelCopy: { color: "#627469", fontSize: 14, lineHeight: 21, marginTop: 6 },
-  form: { gap: 10, marginTop: 18 },
-  input: {
-    backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+  modeButtonActive: { backgroundColor: maliPrime.colors.primary, borderColor: maliPrime.colors.primary },
+  modeText: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "900" },
+  modeTextActive: { color: maliPrime.colors.surface },
+  groupTitle: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "900", marginTop: 16 },
+  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  pill: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.pill,
     borderWidth: 1,
-    color: "#15221d",
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  pillActive: { backgroundColor: "#EAF0FF", borderColor: maliPrime.colors.primary },
+  pillText: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "900", textTransform: "capitalize" },
+  pillTextActive: { color: maliPrime.colors.primary },
+  filterRow: { gap: 0, marginTop: 8 },
+  list: { gap: 12, marginTop: 14 },
+  card: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
+    borderWidth: 1,
+    marginTop: 14,
+    padding: 16,
+    ...maliPrime.shadow
+  },
+  cardHeader: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "space-between" },
+  cardTitle: { color: maliPrime.colors.textPrimary, flex: 1, fontSize: 16, fontWeight: "900" },
+  badge: {
+    backgroundColor: "#E9F8F1",
+    borderRadius: maliPrime.radius.pill,
+    color: maliPrime.colors.emerald,
+    fontSize: 11,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    textTransform: "uppercase"
+  },
+  meta: { color: maliPrime.colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 5 },
+  cardCopy: { color: maliPrime.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 8 },
+  form: { gap: 10, marginTop: 16 },
+  input: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
+    borderWidth: 1,
+    color: maliPrime.colors.textPrimary,
     fontSize: 15,
     minHeight: 50,
     paddingHorizontal: 14
   },
-  multi: { minHeight: 96, paddingTop: 14 },
+  multi: { minHeight: 104, paddingTop: 14 },
   switchRow: {
     alignItems: "center",
-    borderTopColor: "#e3ece7",
+    borderTopColor: maliPrime.colors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 12,
     paddingTop: 12
   },
-  switchLabel: { color: "#15221d", flex: 1, fontSize: 14, fontWeight: "800", paddingRight: 12 },
-  groupTitle: { color: "#15221d", fontSize: 14, fontWeight: "900", marginTop: 16 },
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
-  pill: {
-    backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10
-  },
-  pillActive: { backgroundColor: "#dff5ec", borderColor: "#0f7b5f" },
-  pillText: { color: "#52645b", fontSize: 13, fontWeight: "900" },
-  pillTextActive: { color: "#0f7b5f" },
+  switchLabel: { color: maliPrime.colors.textPrimary, flex: 1, fontSize: 14, fontWeight: "800", paddingRight: 12 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0f7b5f",
-    borderRadius: 8,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 16,
     minHeight: 50,
     paddingHorizontal: 14
   },
-  primaryText: { color: "#ffffff", fontSize: 14, fontWeight: "900", textAlign: "center" },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 10 },
-  status: { color: "#0f7b5f", fontSize: 13, fontWeight: "900", lineHeight: 19, marginTop: 10 },
-  disabled: { backgroundColor: "#91a39a" }
+  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "900", textAlign: "center" },
+  secondaryButton: {
+    alignItems: "center",
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.md,
+    justifyContent: "center",
+    marginTop: 14,
+    minHeight: 46
+  },
+  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
+  error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19, marginTop: 10 },
+  status: { color: maliPrime.colors.emerald, fontSize: 13, fontWeight: "900", lineHeight: 19, marginTop: 10 },
+  empty: { color: maliPrime.colors.textSecondary, fontSize: 14, marginTop: 12 },
+  responseBox: { backgroundColor: maliPrime.colors.surfaceAlt, borderRadius: maliPrime.radius.md, marginTop: 12, padding: 12 },
+  responseTitle: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
+  disabled: { backgroundColor: "#9FB2D6" }
 });

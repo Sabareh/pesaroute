@@ -70,6 +70,7 @@ class ProductPassport(TimestampedModel):
     )
     name = models.CharField(max_length=180)
     slug = models.SlugField(max_length=200, unique=True)
+    description = models.TextField(blank=True)
     regulator_category = models.CharField(max_length=180, blank=True)
     minimum_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     liquidity_level = models.CharField(max_length=32, choices=LiquidityLevel.choices)
@@ -87,9 +88,15 @@ class ProductPassport(TimestampedModel):
     class Meta:
         ordering = ["category__name", "name"]
         indexes = [
+            models.Index(fields=["category"]),
             models.Index(fields=["category", "status"]),
+            models.Index(fields=["status"]),
             models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["risk_level"]),
+            models.Index(fields=["liquidity_level"]),
+            models.Index(fields=["provider"]),
             models.Index(fields=["created_at"]),
+            models.Index(fields=["updated_at"]),
         ]
 
     def __str__(self) -> str:

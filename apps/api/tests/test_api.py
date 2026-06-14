@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 from accounts.models import UserProfile
 from audit.models import AuditEvent
 from journal.models import JournalEntry
-from marketplace.models import ConsultationRequest, Professional
+from marketplace.models import ConsultationRequest, ConsultationResponse, Professional
 from portfolio.models import PortfolioItem
 from privacy.models import DataAccessLog, DataGrant
 from privacy.services import can_professional_access
@@ -38,7 +38,19 @@ def professional_user(db):
 @pytest.fixture
 def professional(db, professional_user):
     return Professional.objects.create(
-        user=professional_user, display_name="Advisor One", status=Professional.Status.VERIFIED
+        user=professional_user,
+        name="Advisor One",
+        display_name="Advisor One",
+        firm="Pesa Advisory LLP",
+        specialty="Treasury bills/bonds",
+        license_category="Investment adviser",
+        status=Professional.Status.VERIFIED,
+        verification_status=Professional.VerificationStatus.VERIFIED,
+        languages=["en", "sw"],
+        consultation_fee_range="KES 1k-5k",
+        diaspora_support=True,
+        chama_support=True,
+        bio="Helps first-time investors compare regulated routes.",
     )
 
 
@@ -159,6 +171,202 @@ def test_tbill_simulator(api_client):
     payload = response.json()
     assert payload["estimated_discount_interest"] == "3000.00"
     assert payload["estimated_purchase_price"] == "97000.00"
+
+
+@pytest.mark.django_db
+def test_professionals_list_only_verified_active(api_client, professional):
+    Professional.objects.create(
+        name="Pending Advisor",
+        display_name="Pending Advisor",
+        specialty="Tax",
+        verification_status=Professional.VerificationStatus.PENDING,
+        status=Professional.Status.PENDING,
+    )
+    inactive = Professional.objects.create(
+        name="Inactive Advisor",
+        display_name="Inactive Advisor",
+        specialty="SACCO",
+        verification_status=Professional.VerificationStatus.VERIFIED,
+        status=Professional.Status.VERIFIED,
+        is_active=False,
+    )
+
+    response = api_client.get("/api/marketplace/professionals/")
+    assert response.status_code == 200
+    names = [item["name"] for item in response.json()["results"]]
+    assert professional.name in names
+    assert "Pending Advisor" not in names
+    assert inactive.name not in names
+
+
+@pytest.mark.django_db
+def test_consumer_can_create_and_list_own_consultation_requests(api_client, user, professional):
+    authenticate_with_token(api_client, user)
+    response = api_client.post(
+        "/api/marketplace/consultation-requests/",
+        {
+            "selected_professional": professional.id,
+            "category": "treasury",
+            "amount_display_mode": "range",
+            "amount_range_min": "10000.00",
+            "amount_range_max": "50000.00",
+            "user_question": "Should I use money needed in two months?",
+            "timeline": "this_month",
+            "risk_preference": "low",
+            "preferred_language": "sw",
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["status"] == ConsultationRequest.Status.REQUESTED
+    assert payload["selected_professional"] == professional.id
+    assert "Should I use money" in payload["user_question"]
+
+    list_response = api_client.get("/api/marketplace/my-consultation-requests/")
+    assert list_response.status_code == 200
+    assert list_response.json()["results"][0]["id"] == payload["id"]
+
+
+@pytest.mark.django_db
+def test_consumer_cannot_list_other_users_consultation_requests(api_client, user, other_user, professional):
+    ConsultationRequest.objects.create(
+        user=other_user,
+        selected_professional=professional,
+        professional=professional,
+        category=ConsultationRequest.Category.MMF,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.RANGE,
+        amount_range_min="10000.00",
+        amount_range_max="50000.00",
+        user_question="Private question",
+        topic="Private request",
+    )
+    authenticate_with_token(api_client, user)
+    response = api_client.get("/api/marketplace/my-consultation-requests/")
+    assert response.status_code == 200
+    assert response.json()["results"] == []
+
+
+@pytest.mark.django_db
+def test_professional_sees_eligible_limited_leads(api_client, user, professional, professional_user, other_user):
+    selected_for_professional = ConsultationRequest.objects.create(
+        user=user,
+        selected_professional=professional,
+        professional=professional,
+        category=ConsultationRequest.Category.SACCO,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.RANGE,
+        amount_range_min="10000.00",
+        amount_range_max="20000.00",
+        user_question="Can my SACCO fit my emergency fund?",
+        topic="SACCO review",
+    )
+    open_lead = ConsultationRequest.objects.create(
+        user=user,
+        category=ConsultationRequest.Category.GLOBAL_INVESTING,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.HIDDEN,
+        user_question="What should I learn before global ETFs?",
+        topic="Global route",
+    )
+    other_professional = Professional.objects.create(
+        user=other_user,
+        name="Other Pro",
+        display_name="Other Pro",
+        verification_status=Professional.VerificationStatus.VERIFIED,
+        status=Professional.Status.VERIFIED,
+    )
+    ConsultationRequest.objects.create(
+        user=user,
+        selected_professional=other_professional,
+        professional=other_professional,
+        category=ConsultationRequest.Category.TAX,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.HIDDEN,
+        user_question="Private selected request",
+        topic="Tax review",
+    )
+
+    authenticate_with_token(api_client, professional_user)
+    response = api_client.get("/api/marketplace/professional/leads/")
+    assert response.status_code == 200
+    payload = response.json()["results"]
+    ids = {item["id"] for item in payload}
+    assert selected_for_professional.id in ids
+    assert open_lead.id in ids
+    assert all("user" not in item for item in payload)
+    assert all("notes" not in item for item in payload)
+
+
+@pytest.mark.django_db
+def test_professional_can_respond_to_eligible_lead(api_client, user, professional, professional_user):
+    lead = ConsultationRequest.objects.create(
+        user=user,
+        category=ConsultationRequest.Category.GENERAL_FIRST_INVESTMENT,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.RANGE,
+        amount_range_min="1000.00",
+        amount_range_max="5000.00",
+        user_question="How should I start learning?",
+        topic="First investment",
+    )
+
+    authenticate_with_token(api_client, professional_user)
+    response = api_client.post(
+        f"/api/marketplace/professional/leads/{lead.id}/respond/",
+        {
+            "response_text": "I can review your route and explain the tradeoffs.",
+            "next_steps": "Share only the summary you are comfortable sharing.",
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    lead.refresh_from_db()
+    assert lead.status == ConsultationRequest.Status.RESPONDED
+    assert lead.selected_professional == professional
+    assert ConsultationResponse.objects.filter(consultation_request=lead, professional=professional).exists()
+
+
+@pytest.mark.django_db
+def test_professional_cannot_respond_to_another_professionals_selected_lead(
+    api_client, user, professional, professional_user, other_user
+):
+    other_professional = Professional.objects.create(
+        user=other_user,
+        name="Selected Pro",
+        display_name="Selected Pro",
+        verification_status=Professional.VerificationStatus.VERIFIED,
+        status=Professional.Status.VERIFIED,
+    )
+    lead = ConsultationRequest.objects.create(
+        user=user,
+        selected_professional=other_professional,
+        professional=other_professional,
+        category=ConsultationRequest.Category.TAX,
+        amount_display_mode=ConsultationRequest.AmountDisplayMode.HIDDEN,
+        user_question="Need tax literacy.",
+        topic="Tax",
+    )
+    authenticate_with_token(api_client, professional_user)
+    response = api_client.post(
+        f"/api/marketplace/professional/leads/{lead.id}/respond/",
+        {"response_text": "I should not see this."},
+        format="json",
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_admin_can_verify_professional(api_client, db):
+    admin = get_user_model().objects.create_superuser(username="admin2", password="test-pass-123")
+    pending = Professional.objects.create(
+        name="Pending Pro",
+        display_name="Pending Pro",
+        verification_status=Professional.VerificationStatus.PENDING,
+        status=Professional.Status.PENDING,
+    )
+    authenticate_with_token(api_client, admin)
+    response = api_client.post(f"/api/marketplace/professionals/{pending.id}/verify/")
+    assert response.status_code == 200
+    pending.refresh_from_db()
+    assert pending.verification_status == Professional.VerificationStatus.VERIFIED
+    assert pending.status == Professional.Status.VERIFIED
 
 
 @pytest.mark.django_db

@@ -1,0 +1,258 @@
+PHASE 2.5 PROMPT 3 — Redesign web, portals, and run UI QA
+
+Redesign the PesaRoute web app, professional portal, provider portal, and public pages using MaliPrime.
+
+Design direction:
+
+* premium modern fintech
+* Apple-style system sans-serif typography
+* light mode first
+* clean white surfaces
+* subtle shadows
+* subtle gradient accents
+* no glassmorphism
+* no AI visuals
+* no robot/neural/futuristic art
+* no crypto/trading/casino aesthetic
+* professional and trustworthy
+
+Font rule:
+Use system sans-serif stack.
+Do not download or bundle Apple SF fonts.
+
+Recommended CSS font stack:
+font-family:
+-apple-system,
+BlinkMacSystemFont,
+"SF Pro Display",
+"SF Pro Text",
+"Inter",
+"Geist",
+"Segoe UI",
+Roboto,
+Helvetica,
+Arial,
+sans-serif;
+
+Web landing page sections:
+
+1. Hero
+   Headline:
+   “Understand your investment route before you move your money.”
+
+   Subheadline:
+   “PesaRoute helps Kenyans learn, compare, simulate, journal, and get verified professional guidance before investing.”
+
+   CTAs:
+
+   * Start with my amount
+   * Explore product passports
+
+2. Trust bar:
+
+   * No M-Pesa PIN
+   * No bank passwords
+   * No execution
+   * Privacy-first
+   * Professionals verified
+
+3. Problem section:
+   Explain that Kenyans have many money apps, influencers, and investment options, but still lack decision clarity.
+
+4. Feature section:
+
+   * Route engine
+   * Product passports
+   * Simulators
+   * Scam checker
+   * Private journal
+   * Professional review
+
+5. Product categories:
+
+   * MMFs
+   * Treasury bills
+   * SACCOs
+   * Chamas
+   * NSE stocks
+   * US stocks/ETFs
+   * Land
+   * Bitcoin/crypto risk
+
+6. Professional marketplace:
+   “When you need human guidance, request review from verified professionals.”
+
+7. Privacy section:
+   Make privacy a major selling point.
+
+8. Pricing placeholder:
+
+   * Free
+   * Premium KES 300/month
+   * Professional plan placeholder
+
+9. Footer:
+   Include disclaimers:
+
+   * educational information only
+   * not investment advice
+   * no custody
+   * no execution
+   * consult licensed professionals
+
+Visual style:
+
+* clean SaaS landing page
+* strong typography
+* minimal hero art
+* product screenshots/mockup cards are okay
+* no generic AI illustrations
+* no excessive blue-purple glow
+* no futuristic dashboards
+* no trading candlestick imagery
+
+Product passport pages:
+Use clean structured cards.
+
+Show:
+
+* product/category name
+* risk level
+* liquidity
+* minimum amount
+* regulator category
+* beginner mistakes
+* documents needed
+* external route explanation
+* disclosures
+* “educational information only” label
+
+Professional portal:
+Redesign as a serious B2B SaaS dashboard.
+
+Screens:
+
+* dashboard
+* leads inbox
+* lead detail
+* profile/edit profile
+* verification status
+* settings
+
+Professional lead card should show:
+
+* category
+* amount range, not exact unless shared
+* user goal
+* timeline
+* preferred language
+* data sharing status
+* response CTA
+
+Important:
+Show:
+“Limited view until user grants access.”
+
+Do not expose exact values unless backend response allows it.
+
+Provider portal:
+Redesign as a clean provider dashboard.
+
+Screens:
+
+* provider dashboard
+* product passport editor
+* product list
+* analytics placeholder
+* sponsored education placeholder
+
+Product passport editor sections:
+
+* Basics
+* Risk and liquidity
+* Fees and minimums
+* Documents needed
+* Disclosures
+* External route
+* Sponsorship label
+
+Add warning:
+“Sponsored content must be clearly labelled.”
+
+UI states:
+Add polished empty, loading, and error states across web/mobile:
+
+* no journal entries
+* no portfolio items
+* no saved simulations
+* no consultation requests
+* no professionals found
+* no product passports found
+
+Microcopy examples:
+
+* “Plan privately. Share only when ready.”
+* “Use ranges if you do not want to enter exact amounts.”
+* “This is an educational simulation, not investment advice.”
+* “Before uweke pesa, understand the route.”
+* “No M-Pesa PIN. No bank passwords. No execution.”
+
+Accessibility QA:
+Check:
+
+* readable contrast
+* large enough buttons
+* keyboard/focus states on web
+* input labels
+* error messages
+* mobile layout on small Android screens
+* responsive web layout
+* hidden/range amount modes do not expose exact values
+
+Performance QA:
+Check:
+
+* no blur-heavy long lists
+* no huge images
+* no heavy animation libraries
+* no unnecessary chart libraries
+* lazy-load heavy components if any
+* web build does not have obvious bundle bloat
+* public pages remain SEO-friendly
+
+Run:
+
+* web typecheck/lint/build if available
+* mobile typecheck/lint if available
+* backend tests to ensure UI did not break API assumptions
+
+Create:
+
+* docs/ui-qa-maliprime.md
+
+The QA document should include:
+
+* what was checked
+* what was fixed
+* remaining UI debt
+* accessibility notes
+* performance notes
+* screenshot checklist placeholders
+
+Do not:
+
+* add payments
+* add M-Pesa
+* add AI
+* add bank integrations
+* add broker integrations
+* change backend business logic
+* add real provider paid rankings
+* add execution links that imply recommendations
+
+At the end:
+
+* provide pass/fail summary
+* commands run
+* files changed
+* whether UI is ready for private beta

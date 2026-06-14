@@ -1,11 +1,12 @@
 import type { AmountRangeId, GoalId, RouteProfile } from "../types";
 
 export const amountRanges: Array<{ id: AmountRangeId; label: string; midpoint: number }> = [
-  { id: "1k-5k", label: "I have KES 1k–5k", midpoint: 3000 },
-  { id: "5k-20k", label: "KES 5k–20k", midpoint: 12500 },
-  { id: "20k-100k", label: "KES 20k–100k", midpoint: 60000 },
-  { id: "100k-500k", label: "KES 100k–500k", midpoint: 300000 },
-  { id: "500k-plus", label: "KES 500k+", midpoint: 500000 }
+  { id: "1k-5k", label: "I have KES 1k-5k", midpoint: 3000 },
+  { id: "5k-20k", label: "KES 5k-20k", midpoint: 12500 },
+  { id: "20k-100k", label: "KES 20k-100k", midpoint: 60000 },
+  { id: "100k-500k", label: "KES 100k-500k", midpoint: 300000 },
+  { id: "500k-plus", label: "KES 500k+", midpoint: 500000 },
+  { id: "prefer-not-to-say", label: "Prefer not to say", midpoint: 0 }
 ];
 
 export const goalChips: Array<{ id: GoalId; label: string }> = [

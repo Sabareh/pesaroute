@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import type { PesaRouteApiClient, ScamCheckApiResponse } from "../api/client";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+import type { BillingEntitlementSnapshot, PesaRouteApiClient, ScamCheckApiResponse } from "../api/client";
+import { PremiumCard, PrimaryButton, TrustBadge, maliPrime, maliPrimeText } from "../components/maliprime";
 import { runScamCheck, type ScamCheckResult } from "../utils/scamChecker";
 
 function fromApiResponse(response: ScamCheckApiResponse): ScamCheckResult {
@@ -12,7 +13,15 @@ function fromApiResponse(response: ScamCheckApiResponse): ScamCheckResult {
   };
 }
 
-export function ScamCheckerScreen({ apiClient }: { apiClient: PesaRouteApiClient }) {
+export function ScamCheckerScreen({
+  apiClient,
+  entitlements,
+  onOpenPricing
+}: {
+  apiClient: PesaRouteApiClient;
+  entitlements: BillingEntitlementSnapshot | null;
+  onOpenPricing: () => void;
+}) {
   const [text, setText] = useState("");
   const [hasRun, setHasRun] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,9 +50,18 @@ export function ScamCheckerScreen({ apiClient }: { apiClient: PesaRouteApiClient
   }
 
   return (
-    <View>
-      <Text style={styles.title}>Scam Checker</Text>
-      <Text style={styles.copy}>Submit to the backend when available. If the API is offline, the local red-flag checker runs.</Text>
+    <View style={styles.screen}>
+      <Text style={maliPrimeText.title}>Before uweke pesa, check red flags.</Text>
+      <Text style={maliPrimeText.subtitle}>Paste a WhatsApp message, flyer text, or investment pitch.</Text>
+      {!entitlements?.features.unlimited_scam_checks ? (
+        <PremiumCard tone="warning">
+          <Text style={styles.lockTitle}>Free scam-check access</Text>
+          <Text style={styles.lockCopy}>Premium is prepared for unlimited scam checks. Core local red-flag checking remains available.</Text>
+          <View style={styles.cardAction}>
+            <PrimaryButton onPress={onOpenPricing}>View Premium</PrimaryButton>
+          </View>
+        </PremiumCard>
+      ) : null}
       <TextInput
         multiline
         onChangeText={(value) => {
@@ -53,15 +71,13 @@ export function ScamCheckerScreen({ apiClient }: { apiClient: PesaRouteApiClient
           setError(null);
         }}
         placeholder="Paste the offer text here"
-        placeholderTextColor="#7b8a83"
+        placeholderTextColor="#7D8794"
         style={styles.textArea}
         textAlignVertical="top"
         value={text}
       />
 
-      <Pressable accessibilityRole="button" onPress={runCheck} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-        <Text style={styles.buttonText}>{loading ? "Checking..." : "Run check"}</Text>
-      </Pressable>
+      <PrimaryButton onPress={runCheck}>{loading ? "Checking..." : "Run check"}</PrimaryButton>
       {hasRun ? (
         <Text style={[styles.source, source === "api" && styles.sourceApi]}>
           Result from {source === "api" ? "backend API" : "local fallback"}.
@@ -70,9 +86,16 @@ export function ScamCheckerScreen({ apiClient }: { apiClient: PesaRouteApiClient
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {hasRun ? (
-        <View style={styles.resultCard}>
-          <Text style={styles.resultTitle}>Risk level: {result.riskLevel.toUpperCase()}</Text>
+        <PremiumCard>
+          <TrustBadge tone={result.riskLevel === "low" ? "emerald" : result.riskLevel === "medium" ? "amber" : "danger"}>
+            Risk level: {result.riskLevel.toUpperCase()}
+          </TrustBadge>
           <Text style={styles.score}>Score {result.riskScore}/100</Text>
+          {result.riskScore >= 60 ? (
+            <Text style={styles.resultAdvice}>This has high-risk indicators. Verify before sending money.</Text>
+          ) : (
+            <Text style={styles.resultAdvice}>No listed high-risk phrase was found, but still verify the provider and terms.</Text>
+          )}
           {visibleFlags.length > 0 ? (
             <View style={styles.flags}>
               {visibleFlags.map((flag) => (
@@ -85,68 +108,55 @@ export function ScamCheckerScreen({ apiClient }: { apiClient: PesaRouteApiClient
           ) : (
             <Text style={styles.empty}>No listed red-flag phrase found. Still verify the provider and terms.</Text>
           )}
-        </View>
+        </PremiumCard>
       ) : null}
 
-      <View style={styles.questions}>
+      <PremiumCard tone="alt">
         <Text style={styles.questionsTitle}>Questions to ask before sending money</Text>
         {result.questionsToAsk.map((question) => (
           <Text key={question} style={styles.question}>
             - {question}
           </Text>
         ))}
-      </View>
+      </PremiumCard>
+
+      <PremiumCard>
+        <Text style={styles.questionsTitle}>Safer next step</Text>
+        <Text style={styles.question}>Do not send money under pressure. Verify provider registration, fees, withdrawal rules, and who legally holds your funds.</Text>
+      </PremiumCard>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  screen: { gap: 14 },
+  lockTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
+  lockCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 5 },
+  cardAction: { marginTop: 12 },
   textArea: {
-    backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
     borderWidth: 1,
-    color: "#15221d",
+    color: maliPrime.colors.textPrimary,
     fontSize: 15,
-    marginTop: 20,
     minHeight: 140,
     padding: 14
   },
-  button: {
-    alignItems: "center",
-    backgroundColor: "#15221d",
-    borderRadius: 8,
-    justifyContent: "center",
-    marginTop: 12,
-    minHeight: 50
-  },
-  buttonText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
-  source: { color: "#627469", fontSize: 12, fontWeight: "900", marginTop: 10, textTransform: "uppercase" },
-  sourceApi: { color: "#0f7b5f" },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 6 },
-  resultCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 14,
-    padding: 16
-  },
-  resultTitle: { color: "#15221d", fontSize: 17, fontWeight: "900" },
-  score: { color: "#c86f3c", fontSize: 13, fontWeight: "900", marginTop: 4 },
+  source: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "900", textTransform: "uppercase" },
+  sourceApi: { color: maliPrime.colors.primary },
+  error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19 },
+  score: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "900", marginTop: 8 },
+  resultAdvice: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "900", lineHeight: 21, marginTop: 10 },
   flags: { gap: 10, marginTop: 14 },
   flag: {
-    backgroundColor: "#fff2dc",
-    borderRadius: 8,
+    backgroundColor: "#FFF7E8",
+    borderRadius: maliPrime.radius.md,
     padding: 12
   },
-  flagPhrase: { color: "#7a431e", fontSize: 13, fontWeight: "900" },
-  flagReason: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 4 },
-  empty: { color: "#52645b", fontSize: 14, lineHeight: 21, marginTop: 12 },
-  questions: { backgroundColor: "#edf8f3", borderRadius: 8, marginTop: 14, padding: 14 },
-  questionsTitle: { color: "#0f7b5f", fontSize: 14, fontWeight: "900" },
-  question: { color: "#52645b", fontSize: 13, lineHeight: 20, marginTop: 6 },
-  pressed: { opacity: 0.78 }
+  flagPhrase: { color: "#A86500", fontSize: 13, fontWeight: "900" },
+  flagReason: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  empty: { color: maliPrime.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 12 },
+  questionsTitle: { color: maliPrime.colors.primary, fontSize: 14, fontWeight: "900" },
+  question: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 20, marginTop: 6 }
 });

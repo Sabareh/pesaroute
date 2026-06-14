@@ -9,6 +9,8 @@ from risk.services import check_scam_red_flags
 
 
 class ScamCheckView(APIView):
+    throttle_scope = "scam_check"
+
     def post(self, request):
         serializer = ScamCheckRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

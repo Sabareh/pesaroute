@@ -96,7 +96,7 @@ export function PrivacyOnboardingScreen() {
         <Switch
           onValueChange={setPrivacyModeEnabled}
           thumbColor={privacyModeEnabled ? "#ffffff" : "#f5f5f5"}
-          trackColor={{ false: "#b8c7bf", true: "#0f7b5f" }}
+          trackColor={{ false: "#C8D1DE", true: "#2457FF" }}
           value={privacyModeEnabled}
         />
       </View>
@@ -119,27 +119,27 @@ export function PrivacyOnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  eyebrow: { color: "#c86f3c", fontSize: 13, fontWeight: "900", textTransform: "uppercase" },
-  title: { color: "#15221d", fontSize: 32, fontWeight: "900", lineHeight: 40, marginTop: 10 },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 12 },
-  groupTitle: { color: "#15221d", fontSize: 15, fontWeight: "900", marginTop: 20 },
+  eyebrow: { color: "#F59E0B", fontSize: 13, fontWeight: "900", textTransform: "uppercase" },
+  title: { color: "#0B1220", fontSize: 32, fontWeight: "900", lineHeight: 40, marginTop: 10 },
+  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 12 },
+  groupTitle: { color: "#0B1220", fontSize: 15, fontWeight: "900", marginTop: 20 },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   pill: {
     backgroundColor: "#ffffff",
-    borderColor: "#dbe6df",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10
   },
-  pillActive: { backgroundColor: "#dff5ec", borderColor: "#0f7b5f" },
-  pillText: { color: "#52645b", fontSize: 13, fontWeight: "900" },
-  pillTextActive: { color: "#0f7b5f" },
+  pillActive: { backgroundColor: "#EAF0FF", borderColor: "#2457FF" },
+  pillText: { color: "#5B6472", fontSize: 13, fontWeight: "900" },
+  pillTextActive: { color: "#2457FF" },
   switchRow: {
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     gap: 14,
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
     padding: 14
   },
   switchText: { flex: 1 },
-  switchTitle: { color: "#15221d", fontSize: 15, fontWeight: "900" },
-  switchCopy: { color: "#52645b", fontSize: 13, lineHeight: 19, marginTop: 4 },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  switchTitle: { color: "#0B1220", fontSize: 15, fontWeight: "900" },
+  switchCopy: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 10 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0f7b5f",
-    borderRadius: 8,
+    backgroundColor: "#2457FF",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 20,
     minHeight: 52
@@ -162,12 +162,12 @@ const styles = StyleSheet.create({
   primaryText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#dff5ec",
-    borderRadius: 8,
+    backgroundColor: "#EAF0FF",
+    borderRadius: 16,
     justifyContent: "center",
     marginTop: 10,
     minHeight: 48
   },
-  secondaryText: { color: "#0f7b5f", fontSize: 13, fontWeight: "900" },
-  disabled: { backgroundColor: "#91a39a" }
+  secondaryText: { color: "#2457FF", fontSize: 13, fontWeight: "900" },
+  disabled: { backgroundColor: "#9FB2D6" }
 });

@@ -25,6 +25,7 @@ class ProductPassportSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
+            "description",
             "category",
             "provider",
             "regulator_category",

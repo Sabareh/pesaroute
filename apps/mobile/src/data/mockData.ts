@@ -78,6 +78,7 @@ export const mockProductPassports = [
       website: "",
       status: "active"
     },
+    description: `Educational passport for ${passport.category}.`,
     regulator_category: passport.category,
     minimum_amount: passport.minimum,
     liquidity_level: passport.liquidity,

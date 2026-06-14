@@ -1,4 +1,10 @@
-export type AmountRangeId = "1k-5k" | "5k-20k" | "20k-100k" | "100k-500k" | "500k-plus";
+export type AmountRangeId =
+  | "1k-5k"
+  | "5k-20k"
+  | "20k-100k"
+  | "100k-500k"
+  | "500k-plus"
+  | "prefer-not-to-say";
 
 export type GoalId =
   | "emergency-fund"
@@ -105,6 +111,7 @@ export type ProductPassport = {
     website: string;
     status: string;
   } | null;
+  description: string;
   regulator_category: string;
   minimum_amount: string | null;
   liquidity_level: string;
@@ -118,6 +125,8 @@ export type ProductPassport = {
   disclosures: string;
   is_sponsored: boolean;
   status: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type CatalogState = {

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "accounts",
     "audit",
+    "billing",
     "catalog",
     "planning",
     "risk",
@@ -121,6 +122,13 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": os.getenv("THROTTLE_AUTH_RATE", "10/min"),
+        "scam_check": os.getenv("THROTTLE_SCAM_CHECK_RATE", "30/min"),
+        "simulators": os.getenv("THROTTLE_SIMULATORS_RATE", "60/min"),
+        "consultation_create": os.getenv("THROTTLE_CONSULTATION_CREATE_RATE", "10/min"),
+    },
     "PAGE_SIZE": 20,
 }
 
@@ -132,6 +140,18 @@ CORS_ALLOWED_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+if not DEBUG and "*" in CORS_ALLOWED_ORIGINS:
+    raise RuntimeError("CORS_ALLOWED_ORIGINS cannot include '*' when DJANGO_DEBUG=false")
+
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "false").lower() == "true"
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", str(not DEBUG)).lower() == "true"
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", str(not DEBUG)).lower() == "true"
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", str(not DEBUG)).lower() == "true"
+SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "false").lower() == "true"
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_BROKER_URL = REDIS_URL

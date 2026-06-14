@@ -1,23 +1,88 @@
+from django.db.models import Q
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from audit.models import AuditEvent
 from audit.utils import record_audit_event
 from journal.models import JournalEntry
-from marketplace.models import ConsultationRequest
-from marketplace.serializers import ConsultationRequestSerializer
+from marketplace.models import ConsultationRequest, ConsultationResponse, Professional
+from marketplace.serializers import (
+    ConsultationLeadSerializer,
+    ConsultationRequestSerializer,
+    ConsultationResponseCreateSerializer,
+    ConsultationResponseSerializer,
+    ProfessionalSerializer,
+)
 from portfolio.models import PortfolioItem
 from portfolio.services import build_portfolio_summary
 from privacy.models import DataGrant
 from privacy.services import can_professional_access, get_active_grant, log_data_access
 
 
+class ProfessionalListView(generics.ListAPIView):
+    serializer_class = ProfessionalSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = Professional.objects.filter(is_active=True).filter(
+            Q(verification_status=Professional.VerificationStatus.VERIFIED) | Q(status=Professional.Status.VERIFIED)
+        )
+        specialty = self.request.query_params.get("specialty")
+        language = self.request.query_params.get("language")
+        diaspora = self.request.query_params.get("diaspora_support")
+        chama = self.request.query_params.get("chama_support")
+        if specialty:
+            queryset = queryset.filter(specialty__icontains=specialty)
+        if language:
+            queryset = [professional for professional in queryset if language in professional.languages]
+        if diaspora in {"true", "1"}:
+            queryset = (
+                queryset.filter(diaspora_support=True)
+                if hasattr(queryset, "filter")
+                else [professional for professional in queryset if professional.diaspora_support]
+            )
+        if chama in {"true", "1"}:
+            queryset = (
+                queryset.filter(chama_support=True)
+                if hasattr(queryset, "filter")
+                else [professional for professional in queryset if professional.chama_support]
+            )
+        return (
+            queryset.order_by("name", "id")
+            if hasattr(queryset, "order_by")
+            else sorted(queryset, key=lambda item: item.name)
+        )
+
+
+class ProfessionalDetailView(generics.RetrieveAPIView):
+    serializer_class = ProfessionalSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Professional.objects.filter(is_active=True).filter(
+            Q(verification_status=Professional.VerificationStatus.VERIFIED) | Q(status=Professional.Status.VERIFIED)
+        )
+
+
+class ProfessionalVerifyView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        professional = generics.get_object_or_404(Professional, pk=pk)
+        professional.verification_status = Professional.VerificationStatus.VERIFIED
+        professional.status = Professional.Status.VERIFIED
+        professional.is_active = True
+        professional.save(update_fields=["verification_status", "status", "is_active", "updated_at"])
+        return Response(ProfessionalSerializer(professional).data)
+
+
 class ConsultationRequestCreateView(generics.CreateAPIView):
     serializer_class = ConsultationRequestSerializer
     permission_classes = [IsAuthenticated]
     queryset = ConsultationRequest.objects.all()
+    throttle_scope = "consultation_create"
 
     def perform_create(self, serializer):
         request_obj = serializer.save(user=self.request.user)
@@ -27,6 +92,73 @@ class ConsultationRequestCreateView(generics.CreateAPIView):
             resource_type="ConsultationRequest",
             resource_id=request_obj.id,
         )
+
+
+class MyConsultationRequestListView(generics.ListAPIView):
+    serializer_class = ConsultationRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ConsultationRequest.objects.filter(user=self.request.user).prefetch_related("responses")
+
+
+class ProfessionalLeadListView(generics.ListAPIView):
+    serializer_class = ConsultationLeadSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_professional(self):
+        return getattr(self.request.user, "professional_profile", None)
+
+    def get_queryset(self):
+        professional = self.get_professional()
+        if not professional:
+            return ConsultationRequest.objects.none()
+        return ConsultationRequest.objects.filter(
+            Q(selected_professional__isnull=True) | Q(selected_professional=professional),
+            status__in=[
+                ConsultationRequest.Status.REQUESTED,
+                ConsultationRequest.Status.REVIEWING,
+                ConsultationRequest.Status.RESPONDED,
+            ],
+        ).order_by("-created_at")
+
+
+class ProfessionalLeadRespondView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_professional(self, request):
+        return getattr(request.user, "professional_profile", None)
+
+    def post(self, request, pk):
+        professional = self.get_professional(request)
+        if not professional:
+            return Response({"detail": "Professional profile required."}, status=403)
+        lead = generics.get_object_or_404(
+            ConsultationRequest.objects.filter(
+                Q(selected_professional__isnull=True) | Q(selected_professional=professional),
+                pk=pk,
+            )
+        )
+        serializer = ConsultationResponseCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = ConsultationResponse.objects.create(
+            consultation_request=lead,
+            professional=professional,
+            response_text=serializer.validated_data["response_text"],
+            next_steps=serializer.validated_data.get("next_steps", ""),
+        )
+        lead.selected_professional = professional
+        lead.professional = professional
+        lead.status = ConsultationRequest.Status.RESPONDED
+        lead.save(update_fields=["selected_professional", "professional", "status"])
+        record_audit_event(
+            actor=request.user,
+            event_type=AuditEvent.EventType.CONSULTATION_RESPONSE_CREATED,
+            resource_type="ConsultationResponse",
+            resource_id=response.id,
+            metadata={"consultation_request_id": lead.id},
+        )
+        return Response(ConsultationResponseSerializer(response).data, status=201)
 
 
 class ConsultationContextView(APIView):
@@ -40,7 +172,10 @@ class ConsultationContextView(APIView):
         if not professional:
             return Response({"detail": "Professional profile required."}, status=403)
 
-        consultation = generics.get_object_or_404(ConsultationRequest, pk=pk, professional=professional)
+        consultation = generics.get_object_or_404(
+            ConsultationRequest.objects.filter(Q(professional=professional) | Q(selected_professional=professional)),
+            pk=pk,
+        )
         context_grant = get_active_grant(consultation.user, professional, DataGrant.Scope.CONSULTATION_CONTEXT)
         if not context_grant:
             return Response({"detail": "No active data grant for consultation context."}, status=403)
@@ -51,8 +186,12 @@ class ConsultationContextView(APIView):
         payload = {
             "consultation": {
                 "id": consultation.id,
+                "category": consultation.category,
                 "topic": consultation.topic,
-                "notes": consultation.notes,
+                "user_question": consultation.user_question,
+                "timeline": consultation.timeline,
+                "risk_preference": consultation.risk_preference,
+                "preferred_language": consultation.preferred_language,
                 "status": consultation.status,
                 "created_at": consultation.created_at,
             },

@@ -166,7 +166,7 @@ Authenticated placeholders:
 - Professional sharing is modeled as explicit, time-limited, and revocable future consent.
 - Sensitive actions create audit events.
 - CORS is configured through `CORS_ALLOWED_ORIGINS`; keep it narrow outside local development.
-- Rate limiting is still a placeholder and should be added before public launch.
+- Scoped rate limiting is configured for auth, scam checks, simulators, and consultation request creation; tune the rates before public launch.
 
 ## Generated Asset
 

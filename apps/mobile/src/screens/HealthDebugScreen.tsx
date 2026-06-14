@@ -82,25 +82,25 @@ export function HealthDebugScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#15221d", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#52645b", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  title: { color: "#0B1220", fontSize: 30, fontWeight: "900" },
+  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 10 },
   card: {
     backgroundColor: "#ffffff",
-    borderColor: "#e3ece7",
-    borderRadius: 8,
+    borderColor: "#E5EAF0",
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 14,
     padding: 16
   },
-  label: { color: "#15221d", fontSize: 15, fontWeight: "900" },
-  value: { color: "#0f7b5f", fontSize: 14, fontWeight: "900", lineHeight: 20, marginTop: 6 },
-  meta: { color: "#627469", fontSize: 13, lineHeight: 19, marginTop: 6 },
-  success: { color: "#0f7b5f", fontSize: 13, fontWeight: "900", marginTop: 10 },
-  error: { color: "#7a431e", fontSize: 13, lineHeight: 19, marginTop: 8 },
+  label: { color: "#0B1220", fontSize: 15, fontWeight: "900" },
+  value: { color: "#2457FF", fontSize: 14, fontWeight: "900", lineHeight: 20, marginTop: 6 },
+  meta: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  success: { color: "#2457FF", fontSize: 13, fontWeight: "900", marginTop: 10 },
+  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 8 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#15221d",
-    borderRadius: 8,
+    backgroundColor: "#0B1220",
+    borderRadius: 16,
     flex: 1,
     justifyContent: "center",
     marginTop: 12,
@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
   primaryText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#dff5ec",
-    borderRadius: 8,
+    backgroundColor: "#EAF0FF",
+    borderRadius: 16,
     flex: 1,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 46,
     paddingHorizontal: 12
   },
-  secondaryText: { color: "#0f7b5f", fontSize: 13, fontWeight: "900" }
+  secondaryText: { color: "#2457FF", fontSize: 13, fontWeight: "900" }
 });

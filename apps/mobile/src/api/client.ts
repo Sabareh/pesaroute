@@ -86,18 +86,128 @@ export type DataGrantApiRequest = {
 };
 
 export type ConsultationRequestApiRequest = {
+  selected_professional?: number;
   professional?: number;
-  topic: string;
+  data_grant?: number;
+  category:
+    | "mmf"
+    | "treasury"
+    | "sacco"
+    | "chama"
+    | "global_investing"
+    | "land_literacy"
+    | "tax"
+    | "diaspora"
+    | "general_first_investment";
+  amount_display_mode: AmountDisplayMode;
+  amount_range_min?: string;
+  amount_range_max?: string;
+  user_question: string;
+  timeline: "this_week" | "this_month" | "flexible";
+  risk_preference: "low" | "moderate" | "high" | "not_sure";
+  preferred_language: "en" | "sw";
+  topic?: string;
   notes?: string;
+};
+
+export type ProfessionalApiResponse = {
+  id: number;
+  name: string;
+  display_name: string;
+  firm: string;
+  specialty: string;
+  license_category: string;
+  license_number: string;
+  verification_status: "pending" | "verified" | "rejected";
+  languages: string[];
+  consultation_fee_range: string;
+  diaspora_support: boolean;
+  chama_support: boolean;
+  bio: string;
+  disclosures: string;
+  is_active: boolean;
+};
+
+export type ConsultationResponseApiResponse = {
+  id: number;
+  professional: number;
+  professional_name: string;
+  response_text: string;
+  next_steps: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ConsultationRequestApiResponse = {
   id: number;
-  professional: number | null;
-  topic: string;
-  notes: string;
+  selected_professional: number | null;
+  selected_professional_detail?: ProfessionalApiResponse | null;
+  data_grant: number | null;
+  category: ConsultationRequestApiRequest["category"];
+  amount_display_mode: AmountDisplayMode;
+  amount_range_min: string | null;
+  amount_range_max: string | null;
+  user_question: string;
+  timeline: ConsultationRequestApiRequest["timeline"];
+  risk_preference: ConsultationRequestApiRequest["risk_preference"];
+  preferred_language: "en" | "sw";
+  topic?: string;
+  notes?: string;
   status: string;
   created_at: string;
+  responses?: ConsultationResponseApiResponse[];
+};
+
+export type ProductPassportQuery = {
+  category?: string;
+  risk_level?: string;
+  liquidity_level?: string;
+  regulator_category?: string;
+  minimum_amount_lte?: string;
+  is_sponsored?: boolean;
+  status?: string;
+  search?: string;
+  ordering?: "updated_at" | "-updated_at" | "category" | "-category" | "risk_level" | "-risk_level";
+};
+
+export type BillingPlanApiResponse = {
+  id: number;
+  code: "free" | "premium_monthly" | "premium_yearly" | "professional_basic" | "professional_pro";
+  name: string;
+  audience: "consumer" | "professional";
+  price_kes: number;
+  billing_period: "none" | "monthly" | "yearly";
+  included_entitlements: string[];
+  is_active: boolean;
+};
+
+export type OneOffPackApiResponse = {
+  code:
+    | "global_investing_pack"
+    | "treasury_bills_pack"
+    | "sacco_chama_pack"
+    | "land_due_diligence_literacy_pack"
+    | "diaspora_pack";
+  name: string;
+  price_kes: number;
+  payment_provider: "manual_placeholder";
+};
+
+export type BillingEntitlementSnapshot = {
+  is_authenticated: boolean;
+  entitlements: string[];
+  features: {
+    unlimited_simulations: boolean;
+    unlimited_scam_checks: boolean;
+    portfolio_mirror: boolean;
+    advanced_route_engine: boolean;
+    professional_request_priority: boolean;
+    professional_dashboard: boolean;
+  };
+  packs: Record<string, boolean>;
+  dev_mode: boolean;
+  payment_provider: "manual_placeholder";
 };
 
 type Paginated<T> = {
@@ -109,7 +219,7 @@ type Paginated<T> = {
 
 export type ScamCheckApiResponse = {
   id: number;
-  prompt_text: string;
+  prompt_text?: string;
   risk_score: number;
   risk_level: "low" | "medium" | "high" | "severe";
   flags: Array<{ phrase: string; reason: string; weight: number }>;
@@ -214,6 +324,16 @@ function toBase64(value: string): string {
   return output;
 }
 
+function withQuery(path: string, query?: Record<string, string | boolean | undefined>) {
+  if (!query) {
+    return path;
+  }
+  const params = Object.entries(query)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  return params.length > 0 ? `${path}?${params.join("&")}` : path;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -315,8 +435,41 @@ export class PesaRouteApiClient {
     return collected;
   }
 
-  async productPassports() {
-    const response = await this.request<Paginated<ProductPassport>>("/api/catalog/product-passports/");
+  async productPassports(query?: ProductPassportQuery) {
+    const response = await this.request<Paginated<ProductPassport>>(
+      withQuery("/api/catalog/product-passports/", query)
+    );
+    return response.results;
+  }
+
+  async billingPlans() {
+    const response = await this.request<Paginated<BillingPlanApiResponse>>("/api/billing/plans/");
+    return response.results;
+  }
+
+  billingEntitlements(auth?: AuthCredentials | null) {
+    return this.request<BillingEntitlementSnapshot>("/api/billing/entitlements/", { auth });
+  }
+
+  billingPacks() {
+    return this.request<OneOffPackApiResponse[]>("/api/billing/packs/");
+  }
+
+  devMockPurchase(
+    body:
+      | { kind: "subscription"; plan_code: BillingPlanApiResponse["code"]; days?: number }
+      | { kind: "pack"; pack_code: OneOffPackApiResponse["code"] },
+    auth: AuthCredentials
+  ) {
+    return this.request<{ detail: string; entitlements: BillingEntitlementSnapshot }>("/api/billing/dev/mock-purchase/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  async listProfessionals() {
+    const response = await this.request<Paginated<ProfessionalApiResponse>>("/api/marketplace/professionals/");
     return response.results;
   }
 
@@ -397,5 +550,9 @@ export class PesaRouteApiClient {
       body,
       auth
     });
+  }
+
+  async myConsultationRequests(auth: AuthCredentials) {
+    return this.listAll<ConsultationRequestApiResponse>("/api/marketplace/my-consultation-requests/", auth);
   }
 }

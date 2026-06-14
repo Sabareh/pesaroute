@@ -26,6 +26,21 @@ Used by Home and API Debug:
 
 If catalog requests fail, the app falls back to cached in-memory data, then bundled mock catalog data.
 
+Product passport discovery supports these query parameters:
+
+- `category`: category slug or exact category name
+- `risk_level`: `low`, `moderate`, `high`, or `very_high`
+- `liquidity_level`: `high`, `medium`, `low`, or `locked`
+- `regulator_category`: exact regulator category match, case-insensitive
+- `minimum_amount_lte`: maximum minimum amount
+- `is_sponsored`: `true` or `false`
+- `status`: public clients should use `published`; non-published statuses are not exposed publicly
+- `search`: searches product name, provider name, description, beginner mistakes, and execution route
+- `ordering`: `updated_at`, `-updated_at`, `category`, `-category`, `risk_level`, or `-risk_level`
+
+Published catalog responses set cache-friendly `Cache-Control` headers. Redis or CDN caching should be added before
+the public catalog becomes large or frequently requested.
+
 ## Authentication
 
 The API uses Django users with DRF token authentication.
@@ -106,7 +121,38 @@ Professional context access:
 
 This endpoint is for the authenticated professional assigned to the consultation request. It returns only fields allowed by an active, unrevoked, unexpired data grant. `consultation_context` is required before any context is returned. Exact portfolio values are withheld unless `portfolio_exact_values` is granted.
 
+Professional review MVP:
+
+- `GET /api/marketplace/professionals/`
+- `GET /api/marketplace/professionals/{id}/`
+- `POST /api/marketplace/consultation-requests/`
+- `GET /api/marketplace/my-consultation-requests/`
+- `GET /api/marketplace/professional/leads/`
+- `POST /api/marketplace/professional/leads/{id}/respond/`
+
+Consumers only see their own requests. Professionals see open leads plus leads selected for their own professional profile. Lead responses do not expose contact info, journal notes, or exact values unless the user has granted those scopes separately.
+
 If no credentials are set, entries remain local-only. If a backend write fails, the app keeps the local item and shows an error state.
+
+## Billing Skeleton
+
+Billing is development-only in this milestone. No M-Pesa, card, payout, booking-fee, provider billing, or ad/sponsored
+listing integration is connected.
+
+- `GET /api/billing/plans/`
+- `GET /api/billing/packs/`
+- `GET /api/billing/entitlements/`
+- `POST /api/billing/dev/mock-purchase/`
+
+`POST /api/billing/dev/mock-purchase/` requires authentication and only works while `DJANGO_DEBUG=true`. It grants fake
+subscription or guide-pack state for local testing and creates placeholder invoice records with no money collected.
+
+Real payment integrations should later plug in by writing verified provider events into:
+
+- `Subscription` for recurring consumer or professional plans
+- `OneOffPurchase` for guide packs
+- `Invoice` for payment lifecycle and provider references
+- entitlement recalculation through `billing.services.entitlement_snapshot`
 
 ## Out of Scope
 

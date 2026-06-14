@@ -1,51 +1,190 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
+import { ArrowLeft, Filter, Search, ShieldCheck } from "lucide-react";
+import {
+  AppShell,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageShell,
+  PremiumCard,
+  PrivacyPromiseCard,
+  ProductPassportCard,
+  SectionHeader,
+  TrustBadge
+} from "../components/maliprime";
+import { type PublicPassport, publicPassports } from "./catalog";
 
-const passports = [
-  "Generic MMF",
-  "Generic Treasury Bill via DhowCSD",
-  "Generic SACCO Deposits",
-  "Generic NSE Shares",
-  "Generic US ETF route",
-  "Generic Land Due Diligence Checklist",
-  "Generic Bitcoin Self-Custody Risk Card"
-];
+export const metadata: Metadata = {
+  title: "Kenyan Investment Product Passports | PesaRoute",
+  description:
+    "Search educational Kenyan investment product passports for MMFs, Treasury bills, SACCOs, global routes, and land due diligence."
+};
 
-export default function ProductPassportsPage() {
+type PassportSearchParams = {
+  category?: string;
+  liquidity?: string;
+  q?: string;
+  risk?: string;
+};
+
+const categories = ["Money Market Funds", "Treasury Bills", "SACCOs", "US Stocks and ETFs", "Land"];
+const riskLevels = ["Low", "Moderate", "High"];
+const liquidityLevels = ["High", "Medium", "Low"];
+
+export default async function ProductPassportsPage({
+  searchParams
+}: {
+  searchParams?: Promise<PassportSearchParams>;
+}) {
+  const filters = (await searchParams) ?? {};
+  const query = filters.q?.trim().toLowerCase() ?? "";
+  const filteredPassports = publicPassports.filter((passport) => matchesFilters(passport, filters, query));
+
   return (
-    <main className="min-h-screen bg-[#fbfdf9] px-5 py-8 text-ink sm:px-8">
-      <div className="mx-auto max-w-5xl">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-leaf">
+    <AppShell>
+      <PageShell>
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-primary">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           PesaRoute
         </Link>
-        <header className="mt-10 max-w-3xl">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-clay">Product passports</p>
-          <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Public passport placeholders</h1>
-          <p className="mt-5 text-lg leading-8 text-ink/70">
-            These pages will expose educational category summaries, documents to check, fees, liquidity, risk level, tax notes,
-            common beginner mistakes, and external execution routes.
-          </p>
+
+        <header className="mt-10">
+          <SectionHeader
+            eyebrow="Product passports"
+            title="Search and compare Kenyan investment route basics."
+            body="Educational passports show category, risk, liquidity, minimum amount, regulator context, beginner mistakes, documents, route notes, and disclosures before a user acts elsewhere."
+          />
         </header>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
-          {passports.map((passport) => {
-            const slug = passport.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-            return (
-              <Link
-                href={`/product-passports/${slug}`}
-                key={passport}
-                className="flex items-center justify-between rounded-lg border border-ink/10 bg-white p-5 shadow-sm transition hover:border-leaf"
-              >
-                <span className="flex items-center gap-3 font-bold">
-                  <FileText className="h-5 w-5 text-leaf" aria-hidden />
-                  {passport}
-                </span>
-                <ArrowRight className="h-5 w-5 text-ink/50" aria-hidden />
+
+        <section className="mt-8 grid gap-3 md:grid-cols-2">
+          <PrivacyPromiseCard
+            icon={ShieldCheck}
+            text="Educational information only. PesaRoute does not execute investments, hold money, or promise returns."
+          />
+          <PrivacyPromiseCard
+            icon={ShieldCheck}
+            text="Verify details with the provider, regulator, and a licensed professional where needed."
+          />
+        </section>
+
+        <section className="mt-8 rounded-[24px] border border-border bg-surface p-5 shadow-card">
+          <div className="flex items-center gap-2 text-sm font-black text-primary">
+            <Search className="h-5 w-5" aria-hidden />
+            Discovery controls
+          </div>
+          <form className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+            <label className="sr-only" htmlFor="passport-search">
+              Search passports
+            </label>
+            <input
+              id="passport-search"
+              name="q"
+              className="min-h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              defaultValue={filters.q ?? ""}
+              placeholder="Search product name, provider, beginner mistakes, or execution route"
+              type="search"
+            />
+            <input name="category" type="hidden" value={filters.category ?? ""} />
+            <input name="risk" type="hidden" value={filters.risk ?? ""} />
+            <input name="liquidity" type="hidden" value={filters.liquidity ?? ""} />
+            <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surfaceAlt px-4 text-sm font-bold text-textPrimary">
+              <Filter className="h-4 w-4" aria-hidden />
+              Search
+            </button>
+          </form>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href={buildFilterHref({ ...filters, category: undefined })}>
+              <TrustBadge tone={!filters.category ? "primary" : "muted"}>All</TrustBadge>
+            </Link>
+            {categories.map((category) => (
+              <Link href={buildFilterHref({ ...filters, category })} key={category}>
+                <TrustBadge tone={filters.category === category ? "primary" : "muted"}>{category}</TrustBadge>
               </Link>
-            );
-          })}
-        </div>
-      </div>
-    </main>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {riskLevels.map((risk) => (
+              <Link href={buildFilterHref({ ...filters, risk })} key={risk}>
+                <TrustBadge tone={risk === "High" ? "danger" : risk === "Moderate" ? "amber" : "emerald"}>{risk} risk</TrustBadge>
+              </Link>
+            ))}
+            {liquidityLevels.map((liquidity) => (
+              <Link href={buildFilterHref({ ...filters, liquidity })} key={liquidity}>
+                <TrustBadge tone={liquidity === "Low" ? "amber" : "primary"}>{liquidity} liquidity</TrustBadge>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-10 grid gap-4 md:grid-cols-2">
+          {filteredPassports.map((passport) => (
+            <ProductPassportCard
+              body={passport.description}
+              category={passport.category}
+              href={`/product-passports/${passport.slug}`}
+              key={passport.slug}
+              liquidity={passport.liquidityLevel}
+              name={passport.name}
+              risk={passport.riskLevel}
+            />
+          ))}
+        </section>
+
+        <section className="mt-10 grid gap-4 md:grid-cols-3">
+          <PremiumCard>
+            <h2 className="text-lg font-black">Compare with</h2>
+            <p className="mt-2 text-sm leading-6 text-textSecondary">
+              Placeholder for side-by-side comparison. It will stay educational and avoid implying rankings.
+            </p>
+          </PremiumCard>
+          {filteredPassports.length === 0 ? (
+            <EmptyState title="No matching passports" body="Try a broader category, risk level, or liquidity level." />
+          ) : (
+            <PremiumCard>
+              <h2 className="text-lg font-black">{filteredPassports.length} passports shown</h2>
+              <p className="mt-2 text-sm leading-6 text-textSecondary">
+                Results are ordered for educational scanning. They are not rankings or recommendations.
+              </p>
+            </PremiumCard>
+          )}
+          <div className="space-y-3">
+            <LoadingState label="Loading public catalog..." />
+            <ErrorState message="Catalog unavailable. Showing cached educational passports when possible." />
+          </div>
+        </section>
+      </PageShell>
+    </AppShell>
   );
+}
+
+function matchesFilters(passport: PublicPassport, filters: PassportSearchParams, query: string) {
+  const matchesCategory = !filters.category || passport.category === filters.category;
+  const matchesRisk = !filters.risk || passport.riskLevel === filters.risk;
+  const matchesLiquidity = !filters.liquidity || passport.liquidityLevel === filters.liquidity;
+  const searchable = [
+    passport.name,
+    passport.provider,
+    passport.description,
+    passport.externalRoute,
+    ...passport.beginnerMistakes
+  ]
+    .join(" ")
+    .toLowerCase();
+  const matchesQuery = !query || searchable.includes(query);
+
+  return matchesCategory && matchesRisk && matchesLiquidity && matchesQuery;
+}
+
+function buildFilterHref(filters: PassportSearchParams) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
+
+  const query = params.toString();
+  return query ? `/product-passports?${query}` : "/product-passports";
 }

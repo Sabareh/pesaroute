@@ -1,0 +1,294 @@
+PHASE 2.5 PROMPT 2 — Redesign mobile app with MaliPrime
+
+Redesign the PesaRoute mobile app using the MaliPrime design system.
+
+Context:
+The mobile app is the main consumer experience. It must feel like a serious, premium, modern financial planning app for Kenyan users.
+
+Design direction:
+
+* light mode first
+* clean Apple-style system typography
+* solid white cards
+* soft shadows
+* subtle borders
+* minimal accent gradients
+* no glassmorphism
+* no AI visuals
+* no futuristic crypto aesthetic
+* no casino/trading energy
+* modern, calm, professional fintech feel
+
+Typography:
+
+* Use native system font on iOS.
+* Use Roboto or Inter fallback on Android.
+* Do not bundle Apple SF fonts.
+* Use clear hierarchy:
+
+  * hero title: large, bold, confident
+  * screen title: clean and readable
+  * body text: 15–16px equivalent
+  * captions: readable, not tiny
+* Avoid thin low-contrast text.
+
+Screens to redesign:
+
+1. Home
+2. Amount range selection
+3. Goal selection
+4. Route result
+5. Simulators index
+6. MMF simulator
+7. Treasury bill simulator
+8. SACCO simulator
+9. Global investing route simulator
+10. Scam checker
+11. Journal list
+12. Create/edit journal entry
+13. Portfolio mirror
+14. Create/edit portfolio item
+15. Portfolio summary
+16. Professionals directory
+17. Professional profile
+18. Review request flow
+19. Data sharing consent screen
+20. Privacy settings
+21. Profile/account screen
+
+Home screen:
+Use a clean, premium layout.
+
+Hero title:
+“Before you invest, understand the route.”
+
+Subtitle:
+“Learn, compare, simulate, and get verified guidance before risking your money.”
+
+Trust chips:
+
+* No M-Pesa PIN
+* No bank passwords
+* No execution
+* Privacy-first
+
+Primary CTA:
+“Start with my amount”
+
+Secondary CTA:
+“Check investment red flags”
+
+Avoid:
+
+* robot/AI icons
+* neural visuals
+* large abstract glowing AI images
+* crypto charts
+* candlestick graphics
+* overly futuristic art
+
+Amount range screen:
+Use large tappable premium cards:
+
+* KES 1k–5k
+* KES 5k–20k
+* KES 20k–100k
+* KES 100k–500k
+* KES 500k+
+* Prefer not to say
+
+Selected state:
+
+* blue border
+* soft blue background
+* check icon
+* no heavy glow
+
+Goal selection:
+Use clean two-column cards or chips:
+
+* Emergency fund
+* First investment
+* SACCO/chama
+* Treasury bills
+* Global stocks / ETFs
+* Land
+* Scam check
+* Speak to professional
+
+Route result screen:
+Show a clean learning path timeline:
+
+1. Build your money foundation
+2. Compare safe options
+3. Understand risks and liquidity
+4. Save your decision
+5. Request professional review if needed
+
+Sections:
+
+* Your learning path
+* Products to understand
+* What to avoid
+* Risk and liquidity notes
+* Next steps
+
+Important wording:
+Use “learning path” and “products to understand.”
+Do not use “recommended investment.”
+
+Simulator screens:
+Each simulator should look like a premium calculator, not a trading app.
+
+Each result should show:
+
+* estimated educational outcome
+* risk level
+* liquidity level
+* what can go wrong
+* beginner mistakes
+* next learning step
+* disclaimer:
+  “This is an educational simulation, not investment advice.”
+
+Scam checker:
+Header:
+“Before uweke pesa, check red flags.”
+
+Input helper:
+“Paste a WhatsApp message, flyer text, or investment pitch.”
+
+Result should show:
+
+* risk level
+* red flags
+* questions to ask
+* safer next step
+
+Use serious but calm visual language.
+Do not make warnings look like gambling alerts.
+Use:
+“This has high-risk indicators. Verify before sending money.”
+
+Journal:
+Make it feel private and calm.
+
+Journal cards should show:
+
+* decision title
+* goal
+* amount mode: exact / rounded / range / hidden
+* review date
+* private badge
+* optional lock icon
+
+Default visibility:
+Private
+
+Portfolio mirror:
+Show:
+
+* asset mix
+* liquidity score
+* risk concentration
+* maturity reminders
+* privacy mode
+* exact/range/hidden display modes
+
+If amount_display_mode is range or hidden:
+
+* do not show fake exact totals
+* show range or hidden state clearly
+
+Professionals:
+Make professionals look like verified experts, not influencers.
+
+Professional card fields:
+
+* name
+* specialty
+* verification badge
+* languages
+* fee range
+* diaspora/chama support if applicable
+* disclosure preview
+
+Filters:
+
+* Investment adviser
+* Tax
+* SACCO/chama
+* Land lawyer
+* Diaspora
+* Global investing
+
+Data sharing consent:
+This is one of the most important screens.
+
+Title:
+“You choose what this professional can see.”
+
+Options:
+
+* Share contact info
+* Share portfolio summary
+* Share exact values, default OFF
+* Share selected journal notes, default OFF
+* Access duration: 7 days / 14 days / 30 days
+
+Copy:
+“Access expires automatically.”
+“You can revoke access anytime.”
+“Exact amounts are optional.”
+
+Privacy settings:
+Make this screen excellent.
+
+Sections:
+
+* Privacy Mode
+* Data Sharing
+* Account Security
+* Active Sharing
+* Delete/Export placeholders
+
+Trust promises:
+
+* We do not ask for M-Pesa PIN.
+* We do not ask for bank passwords.
+* We do not ask for broker credentials.
+* You can use ranges instead of exact amounts.
+* You control what professionals see.
+* We do not hold or execute investments.
+
+Mobile UX requirements:
+
+* large touch targets
+* no crowded screens
+* clear bottom navigation
+* readable text
+* smooth scrolling
+* no layout overflow on small Android screens
+* keyboard should not block form inputs
+* simple loading/error/empty states
+* offline fallback should still feel clean
+
+Do not:
+
+* add payments
+* add M-Pesa
+* add AI
+* add bank integrations
+* add broker integrations
+* add heavy animation libraries
+* add heavy chart libraries
+* change backend logic unless fixing a UI integration bug
+
+At the end:
+
+* run mobile typecheck/lint if available
+* run mobile tests if available
+* check for small Android layout issues
+* update docs/ui-redesign-summary.md
+* summarize changed screens
+* list remaining mobile design debt

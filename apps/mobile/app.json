@@ -14,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0f7b5f"
+        "backgroundColor": "#0B1B33"
       },
       "package": "com.pesaroute.mobile"
     },

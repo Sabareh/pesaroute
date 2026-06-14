@@ -1,0 +1,259 @@
+PHASE 2.5 PROMPT 1 — Replace MaliGlass with MaliPrime design system
+
+We are doing a UI/UX overhaul for PesaRoute.
+
+The previous direction used glassmorphism / MaliGlass. We are replacing it completely with a premium modern fintech design language called MaliPrime.
+
+Product context:
+PesaRoute is a Kenya-first investment decision platform. It helps users learn, simulate, compare investment routes, keep a private investment journal, mirror their portfolio manually, and request review from verified professionals.
+
+PesaRoute does NOT:
+
+* hold money
+* execute investments
+* ask for M-Pesa PIN
+* ask for bank passwords
+* ask for broker credentials
+* promise returns
+* give unlicensed investment advice
+
+New design direction:
+
+* premium modern fintech
+* Apple-style system typography
+* light mode first
+* solid cards, not glass
+* subtle shadows
+* subtle gradients only as accents
+* clean professional layout
+* minimal illustrations
+* no heavy blur
+* no glassmorphism
+* no neon trading aesthetic
+* no crypto/casino look
+* no AI/robot/neural-network visuals
+* no generic “AI startup” imagery
+* no overly futuristic dashboards
+
+Design inspiration:
+
+* Apple Wallet simplicity
+* Stripe polish
+* Linear clarity
+* Wise/Revolut trust
+* modern wealth dashboard
+* premium banking app
+
+Do not copy any specific brand, logo, or proprietary style.
+
+Typography direction:
+Use modern system sans-serif fonts.
+
+Web font stack:
+font-family:
+-apple-system,
+BlinkMacSystemFont,
+"SF Pro Display",
+"SF Pro Text",
+"Inter",
+"Geist",
+"Segoe UI",
+Roboto,
+Helvetica,
+Arial,
+sans-serif;
+
+Important:
+
+* Do not download, bundle, or redistribute Apple SF font files.
+* Use system font stacks only.
+* On iOS, use the native system font.
+* On Android, use Roboto by default or Inter if already configured safely.
+* If adding custom fonts, use open-source fonts like Inter or Geist only.
+* Do not add heavy font packages unnecessarily.
+
+Visual identity:
+
+* default background: warm off-white / soft grey
+* surfaces: clean white
+* surface alt: very light blue-grey
+* text: deep navy / charcoal
+* secondary text: muted slate
+* primary accent: cobalt blue
+* wealth accent: emerald green
+* warning: amber
+* danger: red
+* border: light grey
+* gradients only for hero cards, primary CTAs, and small premium highlights
+
+Suggested palette:
+
+* background: #F7F8FB
+* surface: #FFFFFF
+* surfaceAlt: #F1F4F9
+* textPrimary: #0B1220
+* textSecondary: #5B6472
+* border: #E5EAF0
+* primary: #2457FF
+* primaryDark: #0B1B33
+* emerald: #0FA36B
+* amber: #F59E0B
+* danger: #E5484D
+* purpleAccent: #6D5DFB
+
+Card style:
+
+* solid white cards
+* subtle borders
+* soft shadows
+* 16–24px radius
+* no blur-based glass
+* no translucent glass panels
+* no excessive gradient surfaces
+
+Example card:
+background: white
+border: 1px solid #E5EAF0
+border-radius: 20px
+box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06)
+
+Design principles:
+
+1. Calm over flashy.
+2. Trust over hype.
+3. Professional over futuristic.
+4. Education over trading.
+5. Privacy over data hunger.
+6. Kenyan context, global polish.
+7. Mobile-first readability.
+8. No fake precision in investment data.
+9. No design that makes investing feel like gambling.
+
+Tasks:
+
+1. Inspect the current mobile app, web app, styling setup, and component structure.
+2. Replace all references to MaliGlass with MaliPrime.
+3. Update docs/design-system.md with the new MaliPrime design system:
+
+   * principles
+   * color palette
+   * typography
+   * spacing scale
+   * radius scale
+   * shadow/elevation system
+   * component rules
+   * accessibility rules
+   * mobile-first rules
+   * iconography rules
+   * illustration rules
+4. Remove glassmorphism as a core design principle.
+5. Define iconography rules:
+
+   * use simple line icons
+   * financial, education, security, and planning icons are okay
+   * avoid AI robot icons
+   * avoid neural network graphics
+   * avoid crypto-style glowing visuals
+   * avoid casino/trading energy
+6. Define illustration rules:
+
+   * use minimal professional illustrations only when useful
+   * avoid generated-looking 3D blobs
+   * avoid “AI brain” visuals
+   * avoid futuristic cyber visuals
+   * prefer simple geometric accents, product screenshots, clean empty states, and meaningful icons
+7. Create or update base components.
+
+Web components:
+
+* AppShell
+* PageShell
+* PremiumCard
+* HeroCard
+* PrimaryButton
+* SecondaryButton
+* AmountRangeSelector
+* GoalChip
+* RiskBadge
+* LiquidityBadge
+* PrivacyPromiseCard
+* SimulatorCard
+* ProductPassportCard
+* ProfessionalCard
+* EmptyState
+* LoadingState
+* ErrorState
+* SectionHeader
+* TrustBadge
+
+Mobile components:
+
+* Screen
+* PremiumCard
+* HeroCard
+* PrimaryButton
+* SecondaryButton
+* AmountRangeButton
+* GoalChip
+* RiskBadge
+* LiquidityBadge
+* PrivacyPromiseCard
+* SimulatorCard
+* ProductPassportCard
+* ProfessionalCard
+* EmptyState
+* LoadingState
+* ErrorState
+* TrustBadge
+
+Copy tone:
+Use:
+
+* “Before you invest, understand the route.”
+* “Plan privately. Share only when ready.”
+* “Use ranges if you do not want to enter exact amounts.”
+* “This is an educational simulation, not investment advice.”
+* “No M-Pesa PIN. No bank passwords. No execution.”
+* “Learn first. Compare clearly. Get guidance when needed.”
+
+Avoid:
+
+* “AI-powered wealth”
+* “beat the market”
+* “guaranteed returns”
+* “recommended investment”
+* “best fund”
+* “buy now”
+* “trade now”
+* “win”
+* “predict and profit”
+
+Do not:
+
+* change backend business logic
+* change database models unless absolutely necessary
+* add payments
+* add M-Pesa
+* add AI
+* add bank account linking
+* add broker integrations
+* add heavy animation libraries
+* add heavy chart libraries
+
+Performance:
+
+* keep UI lightweight
+* avoid blur-heavy effects
+* avoid huge images
+* lazy-load charts if any
+* avoid unnecessary re-renders
+* keep mobile screens fast
+
+At the end:
+
+* run mobile typecheck/lint if available
+* run web typecheck/lint/build if available
+* update docs/design-system.md
+* create docs/ui-redesign-summary.md
+* summarize changed files
+* summarize remaining design debt

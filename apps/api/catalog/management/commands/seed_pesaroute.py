@@ -25,6 +25,9 @@ PASSPORTS = [
         "name": "Generic MMF",
         "category": "Money Market Funds",
         "minimum_amount": Decimal("1000.00"),
+        "description": (
+            "A generic money market fund route for learning about liquidity, yield quotes, and provider checks."
+        ),
         "liquidity_level": ProductPassport.LiquidityLevel.HIGH,
         "risk_level": ProductPassport.RiskLevel.LOW,
         "withdrawal_timeline": "Often one to three business days, depending on provider processes.",
@@ -35,6 +38,9 @@ PASSPORTS = [
         "name": "Generic Treasury Bill via DhowCSD",
         "category": "Treasury Bills",
         "minimum_amount": Decimal("100000.00"),
+        "description": (
+            "A generic Treasury bill route for learning DhowCSD, auctions, maturities, and settlement steps."
+        ),
         "liquidity_level": ProductPassport.LiquidityLevel.MEDIUM,
         "risk_level": ProductPassport.RiskLevel.LOW,
         "withdrawal_timeline": "Held to maturity unless sold through an available secondary route.",
@@ -45,6 +51,9 @@ PASSPORTS = [
         "name": "Generic SACCO Deposits",
         "category": "SACCOs",
         "minimum_amount": Decimal("500.00"),
+        "description": (
+            "A generic SACCO deposits route for learning membership, share capital, dividends, and liquidity limits."
+        ),
         "liquidity_level": ProductPassport.LiquidityLevel.LOW,
         "risk_level": ProductPassport.RiskLevel.MODERATE,
         "withdrawal_timeline": "Withdrawals may require notice or member exit processes.",
@@ -55,6 +64,9 @@ PASSPORTS = [
         "name": "Generic NSE Shares",
         "category": "NSE Stocks",
         "minimum_amount": Decimal("1000.00"),
+        "description": (
+            "A generic NSE shares route for learning broker checks, market volatility, fees, and settlement."
+        ),
         "liquidity_level": ProductPassport.LiquidityLevel.MEDIUM,
         "risk_level": ProductPassport.RiskLevel.HIGH,
         "withdrawal_timeline": "Settlement timelines depend on broker and market rules.",
@@ -65,6 +77,7 @@ PASSPORTS = [
         "name": "Generic US ETF route",
         "category": "US Stocks and ETFs",
         "minimum_amount": Decimal("5000.00"),
+        "description": "A generic global ETF route for learning FX, offshore broker custody, tax, and transfer costs.",
         "liquidity_level": ProductPassport.LiquidityLevel.MEDIUM,
         "risk_level": ProductPassport.RiskLevel.HIGH,
         "withdrawal_timeline": "Depends on offshore broker, FX provider, and bank settlement.",
@@ -75,6 +88,9 @@ PASSPORTS = [
         "name": "Generic Land Due Diligence Checklist",
         "category": "Land",
         "minimum_amount": None,
+        "description": (
+            "A land due diligence literacy checklist for learning searches, valuation, surveys, and legal review."
+        ),
         "liquidity_level": ProductPassport.LiquidityLevel.LOW,
         "risk_level": ProductPassport.RiskLevel.HIGH,
         "withdrawal_timeline": "Illiquid; selling can take months or longer.",
@@ -85,6 +101,7 @@ PASSPORTS = [
         "name": "Generic Bitcoin Self-Custody Risk Card",
         "category": "Bitcoin and Crypto Risk",
         "minimum_amount": None,
+        "description": "A crypto risk card for learning self-custody, exchange, volatility, and regulatory risks.",
         "liquidity_level": ProductPassport.LiquidityLevel.MEDIUM,
         "risk_level": ProductPassport.RiskLevel.VERY_HIGH,
         "withdrawal_timeline": "Depends on exchange, wallet custody, and network conditions.",
@@ -122,6 +139,7 @@ class Command(BaseCommand):
                     "name": data["name"],
                     "category": categories[data["category"]],
                     "provider": provider,
+                    "description": data["description"],
                     "regulator_category": data["category"],
                     "minimum_amount": data["minimum_amount"],
                     "liquidity_level": data["liquidity_level"],
