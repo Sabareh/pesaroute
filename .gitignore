@@ -16,3 +16,28 @@ coverage/
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# Android and Gradle
+.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.aab
+*.apk
+output-metadata.json
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# Keystore and Google service files
+*.jks
+*.keystore
+google-services.json
+
+# Android profiling
+*.hprof
