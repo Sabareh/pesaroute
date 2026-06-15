@@ -1,0 +1,509 @@
+PHASE 2.7 PROMPT 2 — Seed Kenyan investment data and learning content from curated public sources
+
+Now populate PesaRoute with an initial curated public knowledge base for Kenyan investment products.
+
+Important:
+Do not scrape aggressively.
+Do not claim data is complete.
+Do not redistribute restricted market data.
+Do not give investment advice.
+Do not rank providers by “best.”
+All content should be educational and source-linked.
+
+Goal:
+Create useful initial content so the app is not empty:
+
+* product categories
+* regulator profiles
+* generic product passports
+* public provider/entity placeholders
+* learning tracks and lessons
+* glossary
+* route cards
+* checklists
+* scam red flags
+* source references
+
+Use official/public source categories:
+
+* CMA licensee pages for fund managers, approved collective investment schemes, investment advisers, stockbrokers, REITs and other capital markets players
+* CBK Treasury Bills, Treasury Bonds, DhowCSD and auction result pages
+* NSE listed companies and official data services pages
+* SASRA regulated SACCO lists
+* RBA registered fund managers/service providers and pension education references
+* IRA licensed insurer/intermediary pages
+* Manual editorial content for general education
+
+Tasks:
+
+1. Create a management command:
+   python manage.py seed_kenya_investment_knowledge
+
+The command should:
+
+* be idempotent
+* support --dry-run
+* support --reset-safe-demo-data if necessary
+* create sources
+* create regulators
+* create product categories
+* create generic product passports
+* create starter learning tracks
+* create lessons/quizzes/flashcards
+* create glossary/resources
+* create route cards
+* create scam checker reference flags
+* create source references
+* not overwrite manually edited published content unless explicitly requested
+
+2. Seed regulators:
+
+Capital Markets Authority:
+
+* abbreviation: CMA
+* scope: capital markets, fund managers, CIS/unit trusts, investment advisers, stockbrokers, REITs, online forex/derivatives categories where relevant
+* use official source URLs stored in DataSource/SourceReference
+
+Central Bank of Kenya:
+
+* abbreviation: CBK
+* scope: Treasury bills, Treasury bonds, DhowCSD, monetary policy education, government securities
+
+Nairobi Securities Exchange:
+
+* abbreviation: NSE
+* scope: listed companies, securities exchange, official market data services
+* add caution that market data products may have usage policies/fees
+
+Central Depository and Settlement Corporation:
+
+* abbreviation: CDSC
+* scope: CDS accounts, custody/settlement for listed securities
+
+SASRA:
+
+* scope: regulated SACCOs
+
+Retirement Benefits Authority:
+
+* abbreviation: RBA
+* scope: pension/retirement benefits schemes and service providers
+
+Insurance Regulatory Authority:
+
+* abbreviation: IRA
+* scope: insurance and insurance-linked providers
+
+Kenya Revenue Authority:
+
+* abbreviation: KRA
+* scope: tax education references only, not tax advice
+
+3. Seed product categories:
+
+Money Market Funds:
+
+* beginner summary
+* risk: low to medium
+* liquidity: high
+* typical use: emergency fund, short-term savings, cash parking
+* beginner mistakes:
+
+  * chasing highest yield only
+  * ignoring fees
+  * ignoring withdrawal timelines
+  * assuming returns are guaranteed
+  * not checking fund manager/regulatory status
+* simulator link: MMF simulator
+
+Treasury Bills:
+
+* risk: low
+* liquidity: medium
+* typical use: short-term government securities
+* notes:
+
+  * explain 91, 182, 364-day tenors
+  * explain DhowCSD
+  * explain auction concept
+  * explain maturity
+* simulator link: T-bill simulator
+
+Treasury Bonds:
+
+* risk: low to medium
+* liquidity: lower than T-bills for beginners
+* notes:
+
+  * coupon
+  * yield
+  * maturity
+  * secondary market concept
+  * interest rate risk
+
+SACCOs:
+
+* risk: medium
+* liquidity: medium to low depending on rules
+* notes:
+
+  * deposits vs share capital
+  * dividends/rebates
+  * loan multipliers
+  * guarantor risk
+  * SASRA status
+
+Chamas:
+
+* risk: varies
+* liquidity: varies
+* notes:
+
+  * governance
+  * minutes
+  * contribution discipline
+  * land investment risk
+  * group decision policy
+
+NSE Stocks:
+
+* risk: medium to high
+* liquidity: market-dependent
+* notes:
+
+  * dividends
+  * capital gains/losses
+  * CDS account
+  * stockbroker
+  * diversification
+  * do not treat as short-term emergency money
+
+US Stocks and ETFs:
+
+* risk: medium to high
+* notes:
+
+  * currency risk
+  * platform risk
+  * ETF vs individual stock
+  * dividends/withholding tax basics
+  * long-term horizon
+
+REITs:
+
+* risk: medium
+* notes:
+
+  * listed/property exposure
+  * income distribution concept
+  * liquidity and market risk
+
+Land:
+
+* risk: medium to high
+* liquidity: low
+* notes:
+
+  * due diligence
+  * title search
+  * lawyer/surveyor
+  * pressure sales
+  * deposit caution
+
+Bitcoin and Crypto Risk:
+
+* risk: high
+* notes:
+
+  * volatility
+  * self-custody
+  * scams
+  * regulatory uncertainty
+  * not equivalent to MMF or Treasury bill
+
+Fixed Deposits:
+
+* risk: low to medium
+* liquidity: low/medium
+* notes:
+
+  * bank lock-in
+  * early withdrawal
+  * interest rate
+  * compare with MMF/T-bills
+
+Pension Products:
+
+* risk: depends
+* liquidity: long-term
+* notes:
+
+  * retirement planning
+  * RBA regulated context
+  * long horizon
+
+4. Seed generic product passports:
+   For each category create a generic passport, not provider-specific unless sourced:
+
+* “Generic Money Market Fund”
+* “Treasury Bill via DhowCSD”
+* “Treasury Bond via DhowCSD”
+* “SACCO Deposits”
+* “SACCO Share Capital”
+* “Chama Investment Pool”
+* “NSE Shares”
+* “US ETF Route”
+* “REIT Exposure”
+* “Land Due Diligence Checklist”
+* “Bitcoin Self-Custody Risk Card”
+* “Fixed Deposit”
+* “Pension/Retirement Product”
+
+Each passport should include:
+
+* what it is
+* good for
+* not ideal for
+* risk level
+* liquidity
+* typical minimum amount if known, otherwise “varies”
+* documents needed
+* beginner mistakes
+* questions to ask
+* external route explanation
+* source references
+* educational disclaimer
+
+5. Seed learning tracks with content:
+
+Money Foundations:
+Lessons:
+
+* Why financial access is not the same as financial health
+* Emergency fund basics
+* Risk vs return
+* Liquidity explained
+* Why “guaranteed high returns” are dangerous
+  Quiz and flashcards included.
+
+First Salary Money Plan:
+Lessons:
+
+* First salary mistakes
+* Budget buckets
+* Emergency fund before risky investing
+* Black tax planning basics
+* First KES 10,000 route exercise
+  Journal prompt included.
+
+Money Market Funds:
+Lessons:
+
+* What is an MMF?
+* Why highest yield is not always best
+* Fees, withdrawal time, and regulation
+* MMF simulator practice
+* Journal prompt: Why am I choosing an MMF?
+
+Treasury Bills and Bonds:
+Lessons:
+
+* What is a T-bill?
+* 91, 182, and 364-day tenors
+* What is a bond coupon?
+* What is DhowCSD?
+* T-bill simulator practice
+* Quiz included.
+
+SACCO Smart Member:
+Lessons:
+
+* Deposits vs share capital
+* Loan multiplier
+* Guarantor risk
+* Checking SACCO status
+* SACCO simulator practice
+
+Chama Investment Basics:
+Lessons:
+
+* Chama governance
+* Contribution discipline
+* Investment policy
+* Land due diligence for chamas
+* Voting and minutes
+
+NSE Stocks for Beginners:
+Lessons:
+
+* What is a share?
+* Dividends and capital gains
+* CDS account basics
+* Why diversification matters
+* Why stocks are not emergency funds
+
+Global Stocks and ETFs:
+Lessons:
+
+* What is an ETF?
+* Individual stocks vs ETFs
+* USD/KES currency risk
+* Platform/custody risk
+* Global route simulator practice
+
+Land Due Diligence Basics:
+Lessons:
+
+* Land is not liquid
+* Before deposit checklist
+* Title, survey, lawyer basics
+* Pressure tactics
+* Journal prompt
+
+Scam Defense:
+Lessons:
+
+* Guaranteed returns
+* Recruitment schemes
+* Fake forex/crypto bots
+* Pressure to send deposit
+* Scam checker practice
+
+Diaspora Investing in Kenya:
+Lessons:
+
+* Why diaspora investors need verification
+* MMF/T-bill/SACCO/land comparison
+* Professional review
+* Document vault concept
+
+Farmer Seasonal Money Plan:
+Lessons:
+
+* Seasonal income
+* Keeping money liquid
+* SACCO/chama education
+* Input costs and school fees planning
+
+Jua Kali Daily Income Plan:
+Lessons:
+
+* Daily income buckets
+* Business reinvestment
+* Emergency buffer
+* Avoiding expensive debt
+
+6. Seed glossary terms:
+
+* liquidity
+* risk
+* return
+* diversification
+* fund manager
+* custodian
+* trustee
+* unit trust
+* MMF
+* Treasury bill
+* Treasury bond
+* coupon
+* yield
+* maturity
+* DhowCSD
+* CDS account
+* CDSC
+* NSE
+* SACCO share capital
+* SACCO deposits
+* dividend
+* interest rebate
+* guarantor
+* chama
+* REIT
+* ETF
+* currency risk
+* withholding tax
+* capital gain
+* scam red flag
+* due diligence
+* regulator
+
+7. Seed route cards:
+
+* KES 1k–5k first investment route
+* KES 5k–20k beginner route
+* KES 20k–100k emergency fund route
+* KES 100k–500k T-bill/MMF comparison route
+* Global investing from Kenya route
+* SACCO/chama route
+* Land due diligence route
+* Diaspora route
+
+Route cards should say:
+
+* “learn first”
+* “compare”
+* “understand risks”
+* “speak to licensed professional if needed”
+
+Do not say:
+
+* “invest here”
+* “this is best”
+* “guaranteed”
+* “recommended allocation”
+
+8. Seed scam red flags:
+
+* guaranteed high returns
+* monthly returns above normal market claims
+* recruitment/referral requirement
+* pressure to send money quickly
+* no clear regulator
+* no named custodian/trustee
+* unclear withdrawal terms
+* refusal to share documents
+* fake screenshots/testimonials
+* land doubling claims
+* forex/crypto bot cannot lose
+* celebrity/influencer-only proof
+* WhatsApp-only investment scheme
+
+9. Mobile/web:
+
+* Ensure learning screens display seeded content.
+* Product passports should display “Source” and “Last verified.”
+* Learning lessons should show “Educational content” label.
+* Resources should show source references where available.
+* If no source exists, show “Editorial educational content.”
+
+10. Tests:
+
+* seeding command is idempotent
+* product categories are created
+* generic passports are created
+* learning tracks are created
+* lessons are created
+* glossary terms are created
+* source references are attached
+* public APIs return seeded content
+* admin-only fields are not exposed publicly
+
+11. Docs:
+    Create docs/seed-data.md explaining:
+
+* seed content design
+* public source reference strategy
+* disclaimers
+* how to run seed command
+* how to add new curated content manually
+* how to avoid overwriting manual edits
+
+At the end:
+
+* run migrations if needed
+* run seed command
+* run backend tests
+* run mobile/web checks if display changed
+* summarize seeded content count by category
+* summarize next steps for live pipelines

@@ -7,11 +7,23 @@ DISCLAIMER = (
 
 RED_FLAGS = {
     "guaranteed return": "Legitimate investments do not promise risk-free returns.",
+    "guaranteed high returns": "Legitimate investments do not promise risk-free high returns.",
     "20% monthly": "Very high fixed monthly returns are a common fraud signal.",
+    "monthly returns": "Fixed monthly-return claims should be checked carefully against normal market conditions.",
     "recruit people": "Recruitment-driven returns can indicate a pyramid scheme.",
+    "referral": "Referral or recruitment requirements can indicate pyramid-style risk.",
     "limited slots": "Artificial scarcity can pressure rushed decisions.",
     "send deposit now": "Urgent deposit requests should be independently verified.",
+    "no regulator": "Missing regulator or licensing information is a serious warning sign.",
+    "custodian": "For pooled investments, unclear custody or trustee details should be verified.",
+    "withdrawal terms": "Unclear withdrawal terms can hide lock-in, delay, or loss risk.",
+    "documents later": "Refusal or delay in sharing documents is a warning sign.",
+    "testimonials": "Screenshots and testimonials are not proof of a regulated investment.",
+    "land will double": "Land value doubling claims require independent legal, survey, and valuation checks.",
     "forex bot cannot lose": "No trading bot can honestly claim it cannot lose.",
+    "crypto bot cannot lose": "No crypto bot can honestly claim it cannot lose.",
+    "celebrity": "Celebrity or influencer proof is not a substitute for licensing and documents.",
+    "whatsapp only": "WhatsApp-only investment schemes should be independently verified before sending money.",
     "double your money": "Doubling-money promises are a major scam warning.",
 }
 

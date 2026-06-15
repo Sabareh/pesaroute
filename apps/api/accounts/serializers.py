@@ -1,9 +1,11 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from accounts.models import UserProfile
+from beta.services import beta_only_mode_enabled, consume_beta_invite
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -51,6 +53,7 @@ class RegisterSerializer(serializers.Serializer):
     user_type = serializers.ChoiceField(choices=UserProfile.UserType.choices, default=UserProfile.UserType.OTHER)
     approximate_investment_range = serializers.CharField(required=False, allow_blank=True, max_length=80)
     privacy_mode_enabled = serializers.BooleanField(default=True)
+    invite_code = serializers.CharField(required=False, allow_blank=True, max_length=80, write_only=True)
 
     def validate_username(self, value):
         if get_user_model().objects.filter(username=value).exists():
@@ -61,7 +64,14 @@ class RegisterSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+    def validate(self, attrs):
+        if beta_only_mode_enabled() and not attrs.get("invite_code"):
+            raise serializers.ValidationError({"invite_code": "Invite code is required for private beta."})
+        return attrs
+
+    @transaction.atomic
     def create(self, validated_data):
+        invite_code = validated_data.pop("invite_code", "")
         profile_data = {
             "role": validated_data.pop("role"),
             "preferred_language": validated_data.pop("preferred_language"),
@@ -70,6 +80,8 @@ class RegisterSerializer(serializers.Serializer):
             "privacy_mode_enabled": validated_data.pop("privacy_mode_enabled"),
         }
         user = get_user_model().objects.create_user(**validated_data)
+        if invite_code:
+            consume_beta_invite(invite_code, email=user.email)
         profile, _created = UserProfile.objects.update_or_create(user=user, defaults=profile_data)
         user.profile = profile
         Token.objects.get_or_create(user=user)

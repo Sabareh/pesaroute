@@ -2,8 +2,12 @@ from django.urls import path
 
 from marketplace.views import (
     ConsultationContextView,
+    ConsultationOfferAcceptView,
+    ConsultationPaidStatusView,
+    ConsultationPaymentStartView,
     ConsultationRequestCreateView,
     MyConsultationRequestListView,
+    ProfessionalConsultationListView,
     ProfessionalDetailView,
     ProfessionalLeadListView,
     ProfessionalLeadRespondView,
@@ -26,6 +30,24 @@ urlpatterns = [
         "professional/leads/<int:pk>/respond/",
         ProfessionalLeadRespondView.as_view(),
         name="marketplace-professional-lead-respond",
+    ),
+    path(
+        "consultation-offers/<int:pk>/accept/", ConsultationOfferAcceptView.as_view(), name="marketplace-offer-accept"
+    ),
+    path(
+        "consultation-requests/<int:pk>/start-payment/",
+        ConsultationPaymentStartView.as_view(),
+        name="marketplace-consultation-start-payment",
+    ),
+    path(
+        "consultation-requests/<int:pk>/paid-status/",
+        ConsultationPaidStatusView.as_view(),
+        name="marketplace-consultation-paid-status",
+    ),
+    path(
+        "professional/consultations/",
+        ProfessionalConsultationListView.as_view(),
+        name="marketplace-professional-consultations",
     ),
     path(
         "consultation-requests/<int:pk>/context/",

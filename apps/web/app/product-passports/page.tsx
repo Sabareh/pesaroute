@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, Filter, Search, ShieldCheck } from "lucide-react";
 import {
   AppShell,
+  AppleLikeNav,
+  EditorialImage,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -43,17 +45,24 @@ export default async function ProductPassportsPage({
 
   return (
     <AppShell>
+      <AppleLikeNav />
       <PageShell>
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-primary">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-textSecondary transition hover:text-textPrimary">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           PesaRoute
         </Link>
 
-        <header className="mt-10">
+        <header className="mt-10 grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
           <SectionHeader
             eyebrow="Product passports"
             title="Search and compare Kenyan investment route basics."
             body="Educational passports show category, risk, liquidity, minimum amount, regulator context, beginner mistakes, documents, route notes, and disclosures before a user acts elsewhere."
+          />
+          <EditorialImage
+            alt="A phone and planning notebook representing educational investment product passport discovery."
+            caption="Product passports explain how to verify a route before acting outside PesaRoute."
+            imgClassName="aspect-[16/9]"
+            src="/images/route-planning-phone.jpg"
           />
         </header>
 
@@ -68,9 +77,9 @@ export default async function ProductPassportsPage({
           />
         </section>
 
-        <section className="mt-8 rounded-[24px] border border-border bg-surface p-5 shadow-card">
-          <div className="flex items-center gap-2 text-sm font-black text-primary">
-            <Search className="h-5 w-5" aria-hidden />
+        <section className="mt-8 rounded-lg border border-border bg-surface p-5 shadow-card">
+          <div className="flex items-center gap-2 text-sm font-semibold text-textPrimary">
+            <Search className="h-4 w-4 text-textTertiary" aria-hidden />
             Discovery controls
           </div>
           <form className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
@@ -80,7 +89,7 @@ export default async function ProductPassportsPage({
             <input
               id="passport-search"
               name="q"
-              className="min-h-12 rounded-2xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              className="min-h-12 rounded-lg border border-border bg-background px-4 text-sm outline-none focus:border-borderStrong"
               defaultValue={filters.q ?? ""}
               placeholder="Search product name, provider, beginner mistakes, or execution route"
               type="search"
@@ -88,7 +97,7 @@ export default async function ProductPassportsPage({
             <input name="category" type="hidden" value={filters.category ?? ""} />
             <input name="risk" type="hidden" value={filters.risk ?? ""} />
             <input name="liquidity" type="hidden" value={filters.liquidity ?? ""} />
-            <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-border bg-surfaceAlt px-4 text-sm font-bold text-textPrimary">
+            <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-surfaceAlt px-4 text-sm font-semibold text-textPrimary transition hover:border-borderStrong">
               <Filter className="h-4 w-4" aria-hidden />
               Search
             </button>
@@ -106,12 +115,12 @@ export default async function ProductPassportsPage({
           <div className="mt-3 flex flex-wrap gap-2">
             {riskLevels.map((risk) => (
               <Link href={buildFilterHref({ ...filters, risk })} key={risk}>
-                <TrustBadge tone={risk === "High" ? "danger" : risk === "Moderate" ? "amber" : "emerald"}>{risk} risk</TrustBadge>
+                <TrustBadge tone={risk === "High" ? "danger" : "muted"}>{risk} risk</TrustBadge>
               </Link>
             ))}
             {liquidityLevels.map((liquidity) => (
               <Link href={buildFilterHref({ ...filters, liquidity })} key={liquidity}>
-                <TrustBadge tone={liquidity === "Low" ? "amber" : "primary"}>{liquidity} liquidity</TrustBadge>
+                <TrustBadge tone={liquidity === "High" ? "emerald" : "muted"}>{liquidity} liquidity</TrustBadge>
               </Link>
             ))}
           </div>
@@ -133,7 +142,7 @@ export default async function ProductPassportsPage({
 
         <section className="mt-10 grid gap-4 md:grid-cols-3">
           <PremiumCard>
-            <h2 className="text-lg font-black">Compare with</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.01em]">Compare with</h2>
             <p className="mt-2 text-sm leading-6 text-textSecondary">
               Placeholder for side-by-side comparison. It will stay educational and avoid implying rankings.
             </p>
@@ -142,7 +151,7 @@ export default async function ProductPassportsPage({
             <EmptyState title="No matching passports" body="Try a broader category, risk level, or liquidity level." />
           ) : (
             <PremiumCard>
-              <h2 className="text-lg font-black">{filteredPassports.length} passports shown</h2>
+              <h2 className="text-lg font-semibold tracking-[-0.01em]">{filteredPassports.length} passports shown</h2>
               <p className="mt-2 text-sm leading-6 text-textSecondary">
                 Results are ordered for educational scanning. They are not rankings or recommendations.
               </p>

@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "pesaroute",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -14,12 +15,21 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B1B33"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F6F5F0"
       },
       "package": "com.pesaroute.mobile"
     },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F6F5F0"
+    },
     "extra": {
-      "apiBaseUrl": "http://localhost:8000"
+      "apiBaseUrl": "http://localhost:8000",
+      "eas": {
+        "projectId": "b80124b9-2892-4959-8123-aaf53acd014f"
+      }
     },
     "plugins": [
       "expo-secure-store"

@@ -1,0 +1,501 @@
+PHASE 2.7 PROMPT 1 — Build Kenya Investment Knowledge Base data architecture
+
+We have already implemented the PesaRoute learning engine prompts. The app now needs a real Kenyan investment knowledge base and data foundation.
+
+Product context:
+PesaRoute is a Kenya-first investment decision platform. It helps users learn, simulate, compare investment routes, keep a private investment journal, manually mirror their portfolio, and request review from verified professionals.
+
+PesaRoute does NOT:
+
+* hold user investment money
+* execute investments
+* act as a broker
+* act as a fund manager
+* ask for M-Pesa PIN
+* ask for bank passwords
+* ask for broker credentials
+* promise returns
+* give unlicensed investment advice
+
+Goal:
+Create a structured Kenya Investment Knowledge Base that powers:
+
+* learning tracks
+* product passports
+* route engine
+* simulators
+* scam checker
+* provider/professional marketplace
+* future scheduled data pipelines
+
+Important:
+Do not implement aggressive web scraping yet.
+Do not add AI.
+Do not add M-Pesa.
+Do not add payments.
+Do not add investment execution.
+Do not add account linking.
+Do not scrape NSE market prices unless terms/permissions are explicitly handled.
+Build a safe, auditable data architecture first.
+
+Public/official source categories to support:
+
+1. CMA
+
+   * licensees
+   * fund managers
+   * approved collective investment schemes
+   * investment advisers
+   * stockbrokers
+   * REIT managers
+   * other capital market intermediaries
+
+2. CBK
+
+   * Treasury bills
+   * Treasury bonds
+   * DhowCSD education/reference pages
+   * auction results
+   * auction schedules
+
+3. NSE
+
+   * listed companies
+   * listed securities categories
+   * official market data service references
+   * do not redistribute restricted market data without permission
+
+4. SASRA
+
+   * licensed deposit-taking SACCOs
+   * authorised non-withdrawable deposit-taking SACCOs
+   * restricted/no-longer-authorised SACCO status where available
+
+5. RBA
+
+   * registered fund managers
+   * registered custodians
+   * retirement benefits service providers
+   * pension education content references
+
+6. IRA
+
+   * licensed insurers
+   * licensed insurance brokers
+   * licensed intermediaries
+   * retirement/insurance-adjacent product education references
+
+7. Manual curated sources
+
+   * provider websites
+   * public PDFs
+   * official circulars
+   * educational pages
+   * internal editorial notes
+
+Backend tasks:
+
+1. Inspect existing catalog, learning, planning, risk, and provider models.
+
+2. Add a new data/knowledge module if appropriate:
+
+   * knowledge/
+   * data_sources/
+   * or equivalent app name consistent with repo style.
+
+3. Create models for source tracking:
+
+DataSource:
+
+* name
+* slug
+* source_type:
+
+  * regulator
+  * exchange
+  * government
+  * provider
+  * professional_body
+  * manual_editorial
+  * other
+* authority_level:
+
+  * official
+  * provider_self_reported
+  * editorial
+  * third_party
+* homepage_url
+* data_url
+* terms_url optional
+* robots_notes optional
+* license_notes optional
+* update_frequency:
+
+  * daily
+  * weekly
+  * monthly
+  * quarterly
+  * annually
+  * ad_hoc
+  * manual
+* parser_strategy:
+
+  * manual
+  * csv_import
+  * html_table
+  * pdf
+  * api
+  * rss
+  * unknown
+* is_active
+* last_checked_at
+* last_success_at
+* last_failure_at
+* created_at
+* updated_at
+
+DataIngestionRun:
+
+* source
+* run_type:
+
+  * manual
+  * scheduled
+  * backfill
+  * test
+* status:
+
+  * pending
+  * running
+  * succeeded
+  * failed
+  * partial
+  * needs_review
+* started_at
+* finished_at
+* records_seen
+* records_created
+* records_updated
+* records_unchanged
+* records_failed
+* error_summary
+* raw_snapshot_location optional
+* created_by optional
+
+RawDataSnapshot:
+
+* source
+* ingestion_run
+* content_hash
+* content_type
+* fetched_url
+* storage_path optional
+* fetched_at
+* byte_size
+* metadata JSON
+
+SourceRecord:
+
+* source
+* source_record_key
+* source_record_type:
+
+  * provider
+  * product
+  * license
+  * auction_result
+  * listed_company
+  * sacco
+  * pension_service_provider
+  * insurance_entity
+  * learning_reference
+* raw_payload JSON
+* normalized_payload JSON
+* content_hash
+* first_seen_at
+* last_seen_at
+* status:
+
+  * new
+  * unchanged
+  * changed
+  * stale
+  * retired
+  * error
+* review_status:
+
+  * auto_approved
+  * needs_review
+  * approved
+  * rejected
+
+SourceReference:
+
+* source
+* title
+* url
+* retrieved_at
+* published_at optional
+* citation_label
+* notes
+* related_object_type
+* related_object_id
+
+DataQualityIssue:
+
+* ingestion_run
+* source_record optional
+* severity:
+
+  * info
+  * warning
+  * error
+  * critical
+* issue_type:
+
+  * missing_field
+  * invalid_format
+  * duplicate
+  * stale
+  * conflicting_source
+  * parse_failure
+  * permission_warning
+  * other
+* message
+* status:
+
+  * open
+  * resolved
+  * ignored
+* created_at
+* resolved_at optional
+
+4. Extend or update ProductPassport and Provider models to support:
+
+* source_references many-to-many or equivalent
+* last_verified_at
+* data_freshness:
+
+  * fresh
+  * acceptable
+  * stale
+  * unknown
+* verification_status:
+
+  * unverified
+  * source_verified
+  * manually_reviewed
+  * provider_claimed
+* regulator_category
+* regulator_license_number optional
+* regulator_status optional
+* public_source_url optional
+* editorial_notes internal only
+* published_status:
+
+  * draft
+  * published
+  * archived
+
+5. Add normalized domain models if they do not exist:
+
+Regulator:
+
+* name
+* abbreviation
+* country
+* website
+* description
+
+InvestmentProductCategory:
+
+* name
+* slug
+* description
+* risk_level_default
+* liquidity_level_default
+* beginner_summary
+* regulatory_notes
+* typical_minimum_amount
+* source_references
+
+InvestmentProvider:
+
+* name
+* slug
+* provider_type:
+
+  * fund_manager
+  * stockbroker
+  * investment_adviser
+  * sacco
+  * bank
+  * insurer
+  * pension_provider
+  * wealth_platform
+  * government_platform
+  * exchange
+  * other
+* regulator
+* license_number optional
+* license_status
+* website
+* phone optional
+* email optional
+* last_verified_at
+* source_references
+* published_status
+
+RegulatedEntityStatus:
+
+* provider
+* regulator
+* category
+* license_number optional
+* status
+* effective_date optional
+* expiry_date optional
+* source_reference
+* raw_notes
+
+GovernmentSecurityReference:
+
+* security_type:
+
+  * treasury_bill
+  * treasury_bond
+  * infrastructure_bond
+* tenor_days optional
+* issue_number optional
+* isin optional
+* auction_date optional
+* value_date optional
+* maturity_date optional
+* average_rate optional
+* accepted_yield optional
+* source_reference
+* status
+
+ListedCompany:
+
+* name
+* symbol
+* isin optional
+* sector optional
+* listing_segment optional
+* website optional
+* source_reference
+* last_verified_at
+* published_status
+
+SaccoEntity:
+
+* name
+* sacco_type:
+
+  * deposit_taking
+  * non_withdrawable_deposit_taking
+  * other
+* sasra_status
+* county optional
+* source_reference
+* last_verified_at
+* published_status
+
+6. Add API endpoints:
+   Admin/internal:
+
+* GET /api/admin/data-sources/
+* POST /api/admin/data-sources/
+* GET /api/admin/ingestion-runs/
+* GET /api/admin/data-quality-issues/
+* POST /api/admin/data-quality-issues/{id}/resolve/
+* GET /api/admin/source-records/
+
+Public/consumer:
+
+* GET /api/knowledge/regulators/
+* GET /api/knowledge/product-categories/
+* GET /api/knowledge/providers/
+* GET /api/knowledge/providers/{slug}/
+* GET /api/knowledge/listed-companies/
+* GET /api/knowledge/saccos/
+* GET /api/knowledge/government-securities/recent/
+* GET /api/knowledge/sources/{id}/
+
+7. Add admin screens or Django admin config for:
+
+* DataSource
+* DataIngestionRun
+* SourceRecord
+* DataQualityIssue
+* Provider
+* ProductPassport
+* LearningTrack/Lesson
+* GovernmentSecurityReference
+* ListedCompany
+* SaccoEntity
+
+8. Add indexes:
+
+* DataSource slug
+* SourceRecord source + source_record_key
+* SourceRecord review_status
+* Provider slug
+* Provider provider_type
+* Provider regulator
+* ProductPassport category/status
+* ListedCompany symbol
+* SaccoEntity name/status
+* GovernmentSecurityReference security_type + auction_date
+* DataIngestionRun source + started_at
+
+9. Add tests:
+
+* create data source
+* create ingestion run
+* create raw source record
+* source record deduplication by source_record_key
+* product passport can link to source reference
+* provider can link to regulator/source reference
+* public provider endpoint does not expose internal editorial notes
+* admin endpoints require admin permission
+* consumer endpoints are read-only
+
+10. Documentation:
+    Create docs/kenya-investment-knowledge-base.md explaining:
+
+* data architecture
+* source hierarchy
+* official vs provider vs editorial sources
+* freshness labels
+* review workflow
+* data quality workflow
+* what not to scrape
+* NSE data caution
+* regulatory disclaimers
+
+Important wording:
+The app should show:
+
+* “Last verified”
+* “Source”
+* “Educational information only”
+* “Verify with the provider/regulator before committing money”
+
+Avoid:
+
+* “best provider”
+* “guaranteed return”
+* “recommended investment”
+* “safe investment”
+* “approved by us”
+
+At the end:
+
+* run backend tests
+* run migrations
+* summarize models added
+* summarize APIs added
+* summarize admin tools added
+* summarize next steps

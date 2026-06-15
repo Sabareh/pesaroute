@@ -54,6 +54,13 @@ class SimulationRun(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="simulation_runs"
     )
+    learning_lesson = models.ForeignKey(
+        "learning.LearningLesson",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="simulation_runs",
+    )
     simulator_type = models.CharField(max_length=32, choices=SimulatorType.choices)
     inputs = models.JSONField(default=dict)
     outputs = models.JSONField(default=dict)
@@ -64,6 +71,7 @@ class SimulationRun(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["learning_lesson", "created_at"]),
             models.Index(fields=["simulator_type", "created_at"]),
             models.Index(fields=["created_at"]),
         ]

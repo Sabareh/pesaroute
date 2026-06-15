@@ -119,6 +119,40 @@ Authorization: Token <token>
 
 Supported PesaRoute roles are `consumer`, `professional`, `provider`, and `admin`. Public self-registration can create `consumer`, `professional`, or `provider` profiles; `admin` is reserved for staff/superuser accounts. Do not use PesaRoute auth fields for M-Pesa PINs, bank passwords, broker credentials, MMF credentials, or wallet secrets.
 
+## Billing Setup
+
+Phase 3 billing is architecture-only. It supports plans, entitlements, one-off guide-pack grants, and invoice/payment placeholders for development testing. It does not collect money and does not integrate M-Pesa, cards, payouts, or provider billing yet.
+
+Seed normalized billing plans:
+
+```bash
+cd apps/api
+python manage.py seed_billing
+```
+
+Development-only access grants:
+
+```bash
+python manage.py grant_premium_for_testing --username <username> --plan premium_monthly --days 30
+python manage.py grant_pack_for_testing --username <username> --pack global_investing_pack
+python manage.py expire_subscription_for_testing --username <username> --plan premium_monthly
+```
+
+Normalized subscription plans:
+
+- Consumer: `free`, `premium_monthly`, `premium_yearly`
+- Professional: `professional_basic`, `professional_pro`
+
+Normalized one-off packs:
+
+- `global_investing_pack`
+- `treasury_bills_pack`
+- `sacco_chama_pack`
+- `land_due_diligence_literacy_pack`
+- `diaspora_pack`
+
+Entitlements are checked server-side with `user_has_entitlement`, `require_entitlement`, and `professional_has_plan_feature`.
+
 ## MVP API
 
 Public:
@@ -157,6 +191,22 @@ Authenticated placeholders:
 - `GET /api/privacy/data-grants/`
 - `POST /api/privacy/data-grants/`
 - `GET /api/privacy/access-logs/`
+
+Billing placeholders:
+
+- `GET /api/billing/plans/`
+- `GET /api/billing/packs/`
+- `GET /api/billing/entitlements/`
+- `POST /api/billing/dev/mock-purchase/`
+
+Payment foundation:
+
+- `POST /api/payments/intents/`
+- `POST /api/payments/intents/{id}/initiate/`
+- `GET /api/payments/intents/{id}/`
+- `POST /api/payments/mpesa/callback/`
+
+M-Pesa/Daraja credentials are backend-only. For local development, keep `MPESA_MOCK_MODE=true`; see `docs/payments.md` for sandbox and production setup notes.
 
 ## Security Notes
 

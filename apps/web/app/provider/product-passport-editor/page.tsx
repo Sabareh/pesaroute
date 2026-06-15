@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, FileText, Megaphone, Save, ShieldAlert } from "lucide-react";
-import { AppShell, PageShell, PremiumCard, SecondaryButton, SectionHeader, TrustBadge } from "../../components/maliprime";
+import { ArrowLeft, FileText, Megaphone, Save } from "lucide-react";
+import { AppleLikeNav, AppShell, PageShell, PremiumCard, SecondaryButton, SectionHeader, TrustBadge } from "../../components/maliprime";
 
 const editorSections = [
   {
@@ -32,8 +32,9 @@ const editorSections = [
 export default function ProviderProductPassportEditorPage() {
   return (
     <AppShell>
+      <AppleLikeNav />
       <PageShell>
-        <Link href="/provider/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-primary">
+        <Link href="/provider/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-textSecondary transition hover:text-textPrimary">
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Provider dashboard
         </Link>
@@ -44,26 +45,23 @@ export default function ProviderProductPassportEditorPage() {
             title="Edit an educational product passport."
             body="The editor focuses on clear public information: what the product is, how users verify externally, what to avoid, and what disclosures must be visible."
           />
-          <TrustBadge tone="amber">
-            <ShieldAlert className="mr-2 h-4 w-4" aria-hidden />
-            Sponsored content must be clearly labelled.
-          </TrustBadge>
+          <TrustBadge tone="muted">Sponsored content must be clearly labelled.</TrustBadge>
         </div>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.82fr]">
           <div className="grid gap-4">
             {editorSections.map((section) => (
               <PremiumCard key={section.title}>
-                <div className="flex items-center gap-2 text-sm font-bold text-primary">
-                  <FileText className="h-5 w-5" aria-hidden />
+                <div className="flex items-center gap-2 text-sm font-semibold text-textPrimary">
+                  <FileText className="h-4 w-4 text-textTertiary" aria-hidden />
                   {section.title}
                 </div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {section.fields.map((field) => (
-                    <label className="grid gap-2 text-sm font-bold text-textPrimary" key={field}>
+                    <label className="grid gap-2 text-sm font-semibold text-textPrimary" key={field}>
                       {field}
                       <input
-                        className="min-h-12 rounded-2xl border border-border bg-surface px-3 text-sm font-normal outline-none focus:border-primary"
+                        className="min-h-12 rounded-lg border border-border bg-surface px-3 text-sm font-normal outline-none focus:border-borderStrong"
                         placeholder={field}
                       />
                     </label>
@@ -75,20 +73,20 @@ export default function ProviderProductPassportEditorPage() {
 
           <aside className="space-y-4">
             <PremiumCard>
-              <Megaphone className="h-6 w-6 text-amber" aria-hidden />
-              <h2 className="mt-4 text-xl font-black">Sponsorship label</h2>
+              <Megaphone className="h-5 w-5 text-textTertiary" aria-hidden />
+              <h2 className="mt-4 text-xl font-semibold tracking-[-0.01em]">Sponsorship label</h2>
               <p className="mt-2 text-sm leading-6 text-textSecondary">
                 If the passport is sponsored, the public page must label it plainly and avoid preferential ranking or
                 recommendation language.
               </p>
-              <label className="mt-4 flex items-center gap-3 text-sm font-bold">
+              <label className="mt-4 flex items-center gap-3 text-sm font-semibold">
                 <input className="h-5 w-5 accent-primary" type="checkbox" />
                 Mark this passport as sponsored
               </label>
             </PremiumCard>
 
             <PremiumCard>
-              <h2 className="text-xl font-black">Publishing checks</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.01em]">Publishing checks</h2>
               <ul className="mt-4 grid gap-3 text-sm leading-6 text-textSecondary">
                 <li>No guaranteed returns.</li>
                 <li>No execution CTA that looks like investment advice.</li>

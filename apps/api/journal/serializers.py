@@ -11,6 +11,9 @@ class JournalEntrySerializer(serializers.ModelSerializer):
         model = JournalEntry
         fields = [
             "id",
+            "learning_lesson",
+            "learning_course",
+            "learning_track",
             "goal",
             "decision",
             "amount_display_mode",

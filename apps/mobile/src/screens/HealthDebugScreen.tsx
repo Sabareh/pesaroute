@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ApiStatus, PesaRouteApiClient, UserApiResponse } from "../api/client";
+import { maliPrime } from "../components/maliprime";
 import type { CatalogState } from "../types";
 
 export function HealthDebugScreen({
@@ -82,41 +83,42 @@ export function HealthDebugScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#0B1220", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  title: { color: maliPrime.colors.textPrimary, fontSize: 30, fontWeight: "700", lineHeight: 36 },
+  copy: { color: maliPrime.colors.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 10 },
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E5EAF0",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
     borderWidth: 1,
     marginTop: 14,
-    padding: 16
+    padding: 16,
+    ...maliPrime.shadow
   },
-  label: { color: "#0B1220", fontSize: 15, fontWeight: "900" },
-  value: { color: "#2457FF", fontSize: 14, fontWeight: "900", lineHeight: 20, marginTop: 6 },
-  meta: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 6 },
-  success: { color: "#2457FF", fontSize: 13, fontWeight: "900", marginTop: 10 },
-  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 8 },
+  label: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "700" },
+  value: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "700", lineHeight: 20, marginTop: 6 },
+  meta: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
+  success: { color: maliPrime.colors.emerald, fontSize: 13, fontWeight: "700", marginTop: 10 },
+  error: { color: maliPrime.colors.warning, fontSize: 13, lineHeight: 19, marginTop: 8 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0B1220",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     flex: 1,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 46,
     paddingHorizontal: 12
   },
-  primaryText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "700" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#EAF0FF",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.md,
     flex: 1,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 46,
     paddingHorizontal: 12
   },
-  secondaryText: { color: "#2457FF", fontSize: 13, fontWeight: "900" }
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" }
 });

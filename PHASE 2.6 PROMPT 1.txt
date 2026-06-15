@@ -1,0 +1,298 @@
+PHASE 2.6 PROMPT 1 — Build the PesaRoute Learning Engine
+
+We are adding a DataCamp-inspired learning experience to PesaRoute, but adapted for investment literacy.
+
+Important:
+Do not copy DataCamp branding, assets, icons, UI, or exact product structure. Borrow only the learning patterns:
+
+* learning tracks
+* courses
+* lessons
+* practice
+* flashcards
+* XP
+* streaks
+* progress
+* resources
+* premium unlocks
+
+Product context:
+PesaRoute is a Kenya-first investment decision platform. It helps users learn, simulate, compare investment routes, keep a private investment journal, manually mirror their portfolio, and request review from verified professionals.
+
+PesaRoute does NOT:
+
+* hold user investment money
+* execute investments
+* act as a broker
+* act as a fund manager
+* ask for M-Pesa PIN
+* ask for bank passwords
+* ask for broker credentials
+* promise returns
+* give unlicensed investment advice
+
+Goal:
+Create a learning engine where users can move through investment literacy tracks and connect learning to simulators, journals, scam checks, and professional review.
+
+Learning loop:
+Learn → Practice → Simulate → Journal → Review
+
+Backend tasks:
+
+1. Add a learning module/app if not already present.
+2. Add models:
+
+LearningTrack:
+
+* title
+* slug
+* description
+* level: beginner | intermediate | advanced
+* target_user_type: student | first_jobber | chama_member | diaspora | farmer | jua_kali | general
+* estimated_minutes
+* is_premium
+* status
+* order
+
+LearningCourse:
+
+* track
+* title
+* slug
+* description
+* order
+* estimated_minutes
+* is_premium
+* status
+
+LearningLesson:
+
+* course
+* title
+* slug
+* lesson_type: article | quiz | flashcard | simulation | journal_prompt | checklist | professional_review_prompt
+* body
+* summary
+* order
+* xp_reward
+* is_premium
+* status
+
+QuizQuestion:
+
+* lesson
+* prompt
+* options
+* correct_answer
+* explanation
+* difficulty
+
+Flashcard:
+
+* lesson
+* front
+* back
+* example
+* tag
+
+LearningResource:
+
+* title
+* resource_type: guide | cheat_sheet | tutorial | glossary | market_brief | checklist
+* body
+* related_track
+* related_product_category
+* is_premium
+* status
+
+UserLessonProgress:
+
+* user
+* lesson
+* status: not_started | in_progress | completed
+* score
+* attempts
+* completed_at
+
+UserCourseProgress:
+
+* user
+* course
+* percent_complete
+* last_lesson
+* completed_at
+
+XPEvent:
+
+* user
+* source_type: lesson | quiz | flashcard | simulation | journal | scam_check | streak
+* source_id
+* xp_amount
+* created_at
+
+Badge:
+
+* name
+* slug
+* description
+* icon_key
+* criteria_key
+
+UserBadge:
+
+* user
+* badge
+* awarded_at
+
+UserStreak:
+
+* user
+* current_streak_days
+* longest_streak_days
+* last_activity_date
+* streak_freezes_available
+
+3. Add learning APIs:
+   Public:
+
+* GET /api/learning/tracks/
+* GET /api/learning/tracks/{slug}/
+* GET /api/learning/courses/{slug}/
+* GET /api/learning/resources/
+* GET /api/learning/resources/{id}/
+
+Authenticated:
+
+* GET /api/learning/my-progress/
+* POST /api/learning/lessons/{id}/start/
+* POST /api/learning/lessons/{id}/complete/
+* POST /api/learning/quiz/{id}/submit/
+* POST /api/learning/flashcards/{id}/review/
+* GET /api/learning/xp/
+* GET /api/learning/badges/
+* GET /api/learning/streak/
+
+4. Add seed learning tracks:
+
+* Money Foundations
+* First Salary Money Plan
+* Money Market Funds
+* Treasury Bills and Bonds
+* SACCO Smart Member
+* Chama Investment Basics
+* NSE Stocks for Beginners
+* Global Stocks and ETFs
+* Land Due Diligence Basics
+* Scam Defense
+* Diaspora Investing in Kenya
+* Farmer Seasonal Money Plan
+* Jua Kali Daily Income Plan
+
+5. Seed sample lessons:
+   Money Foundations:
+
+* What is an emergency fund?
+* Why liquidity matters
+* Risk vs return
+* How to avoid investment pressure
+
+MMFs:
+
+* What is a Money Market Fund?
+* Why highest yield is not always best
+* MMF simulator practice
+* Journal prompt: Why am I choosing an MMF?
+
+Treasury:
+
+* What is a Treasury Bill?
+* What is a Treasury Bond?
+* What is DhowCSD?
+* T-bill simulator practice
+
+SACCO:
+
+* Share capital vs deposits
+* Loan multiplier
+* Guarantor risk
+* SACCO simulator practice
+
+Scam Defense:
+
+* Guaranteed returns
+* Recruitment schemes
+* Pressure tactics
+* Paste a suspicious pitch into scam checker
+
+Global Investing:
+
+* ETFs vs individual stocks
+* USD/KES currency risk
+* Platform risk
+* Global route simulator practice
+
+Land:
+
+* Why land is not always liquid
+* Before deposit checklist
+* When to involve a lawyer
+* Journal prompt: What have I verified?
+
+6. XP rules:
+
+* Completing lesson: 10 XP
+* Passing quiz: 20 XP
+* Completing simulator from lesson: 25 XP
+* Creating journal entry from lesson: 20 XP
+* Completing scam check exercise: 20 XP
+* Completing a course: 100 XP
+* Completing a track: 500 XP
+
+7. Badge examples:
+
+* First Step Investor
+* Scam Defender
+* MMF Beginner
+* Treasury Starter
+* SACCO Smart Member
+* Chama Ready
+* Global Investing Learner
+* Land Due Diligence Aware
+* Private Planner
+
+8. Add tests:
+
+* list tracks
+* complete lesson
+* submit quiz
+* award XP
+* update streak
+* award badge
+* premium lessons require entitlement
+* anonymous user can view public tracks but cannot save progress
+
+Important boundaries:
+
+* Learning content must use educational language.
+* Do not say “we recommend you invest.”
+* Do not rank investments as “best.”
+* Do not promise returns.
+* Do not turn XP into financial rewards.
+* Do not create investment performance leaderboards.
+
+Do not:
+
+* add AI
+* add M-Pesa
+* add payments beyond existing entitlement checks
+* add investment execution
+* add account linking
+* add broker integrations
+* add bank integrations
+
+At the end:
+
+* run backend tests
+* seed learning data
+* update docs/learning-engine.md
+* summarize new models, APIs, and seed content

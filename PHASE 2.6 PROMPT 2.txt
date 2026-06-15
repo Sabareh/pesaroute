@@ -1,0 +1,292 @@
+PHASE 2.6 PROMPT 2 — Build the Mobile Learning Experience
+
+Build the PesaRoute mobile learning experience inspired by the learning flow from DataCamp, but redesigned for PesaRoute and MaliPrime Liquid.
+
+Do not copy DataCamp UI, branding, icons, or exact screens. Borrow the learning patterns:
+
+* Home dashboard
+* Continue learning card
+* Explore topics
+* Flashcards
+* Practice
+* Resources
+* My library
+* Progress/streaks/XP
+* Bottom sheet resources
+* Full-screen lesson/exercise experience
+
+Design direction:
+
+* MaliPrime Liquid
+* Apple-style system typography
+* modern professional fintech
+* clean dark mode optional, light mode default if existing app uses light
+* solid premium cards
+* subtle shadows
+* minimal gradients
+* no generic AI visuals
+* no robot/neural-network imagery
+* no casino/trading aesthetic
+
+Goal:
+Make the app feel like an investment literacy school plus private planning tool.
+
+Mobile navigation:
+Update bottom navigation to support the learning loop.
+
+Recommended tabs:
+
+1. Home
+2. Learn
+3. Simulate
+4. Journal
+5. Profile
+
+Alternative:
+
+1. Home
+2. Explore
+3. Progress
+4. Journal
+5. Profile
+
+Choose the option that best fits the current code structure and creates the least breakage.
+
+Home screen:
+Add:
+
+* XP/streak summary
+* Continue learning card
+* Daily money challenge
+* Quick actions:
+
+  * Flashcards
+  * Practice
+  * Scam check
+  * Simulate
+* Suggested track
+* Privacy promise card
+
+Example home copy:
+“Continue your Money Foundations path”
+“Learn first. Compare clearly. Plan privately.”
+“No M-Pesa PIN. No bank passwords. No execution.”
+
+Avoid:
+
+* discount-heavy UI as the main focus
+* casino-like streak pressure
+* investment return competitions
+* fake urgency
+
+Learn/Explore screen:
+Add:
+
+* Popular tracks
+* Beginner tracks
+* Product categories
+* Resources
+* Search
+* Filters:
+
+  * Beginner
+  * First salary
+  * SACCO/chama
+  * Global investing
+  * Land
+  * Scam defense
+  * Diaspora
+  * Swahili
+
+Track cards:
+Each track card should show:
+
+* title
+* description
+* level
+* estimated time
+* percent complete
+* premium badge if applicable
+* Start/Continue button
+
+Course detail screen:
+Show:
+
+* course title
+* progress
+* lessons list
+* lesson types:
+
+  * Learn
+  * Quiz
+  * Flashcards
+  * Simulation
+  * Journal
+  * Checklist
+  * Professional review prompt
+
+Lesson screen:
+Create a full-screen lesson experience.
+
+Lesson header:
+
+* back button
+* lesson title
+* XP reward
+* progress indicator
+
+Lesson body:
+
+* clean readable text
+* simple examples using KES
+* key terms highlighted
+* short sections
+* no huge paragraphs
+
+Bottom CTA:
+
+* Continue
+* Practice
+* Run simulator
+* Save to journal
+  depending on lesson type.
+
+Quiz/practice screen:
+
+* one question at a time
+* multiple choice
+* immediate feedback
+* explanation after answer
+* XP awarded after completion
+* retry option
+
+Flashcards:
+
+* card front/back
+* tap to reveal
+* buttons:
+
+  * Got it
+  * Review again
+* track progress
+
+Resources screen/bottom sheet:
+Use the DataCamp-like resource pattern, but adapted:
+
+* Guides
+* Cheat sheets
+* Tutorials
+* Glossary
+* Market briefs
+* Checklists
+* Professional Q&A
+
+My Library:
+Show saved/completed tracks:
+
+* Money Foundations
+* MMFs
+* Treasury Bills
+* SACCO Smart Member
+* Scam Defense
+* Global Investing
+  Each card:
+* progress bar
+* Practice button
+* Continue button
+
+Progress screen:
+Show:
+
+* current streak
+* longest streak
+* XP last 30 days
+* badges
+* completed lessons
+* completed simulations
+* completed journal reviews
+
+Important:
+Leaderboard is optional and should be learning-based only.
+Do not rank users by investment returns.
+Do not rank users by portfolio size.
+If leaderboard exists, rank by learning XP only.
+
+Simulate integration:
+From learning tracks, link directly to:
+
+* MMF simulator
+* Treasury bill simulator
+* SACCO simulator
+* Global investing route simulator
+* Land checklist
+* Scam checker
+
+When a user completes a simulator from a lesson:
+
+* award XP
+* offer “Save reflection to journal”
+* suggest next lesson
+
+Journal integration:
+After important lessons, show journal prompts:
+
+* “Why are you considering this option?”
+* “What risk did you learn?”
+* “What would make you avoid this investment?”
+* “When will you review this decision?”
+  Save as JournalEntry with link to the lesson.
+
+Professional review integration:
+After advanced tracks, show:
+“Need human guidance?”
+CTA:
+“Request professional review”
+
+Privacy:
+
+* no exact amounts required
+* ranges supported
+* journal private by default
+* show privacy promises on relevant screens
+
+Premium:
+Use existing entitlements:
+
+* free users can access starter lessons
+* premium unlocks advanced tracks, unlimited practice, advanced simulators, and paid packs
+* do not implement new payment logic here unless it already exists
+
+Accessibility:
+
+* large touch targets
+* readable text
+* strong contrast
+* screen works on small Android devices
+* keyboard does not block inputs
+
+Performance:
+
+* lazy-load lesson content
+* cache tracks/resources locally if offline support exists
+* avoid heavy animations
+* avoid heavy chart libraries
+* avoid huge images
+
+Do not:
+
+* add AI
+* add investment execution
+* add M-Pesa
+* add bank integrations
+* add broker integrations
+* add financial account linking
+* add real investment recommendations
+
+At the end:
+
+* run mobile typecheck/lint
+* run backend tests if APIs changed
+* update docs/mobile-learning-experience.md
+* summarize screens added/changed
+* summarize remaining mobile learning debt

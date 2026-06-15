@@ -14,6 +14,27 @@ class JournalEntry(models.Model):
         SHARED = "shared", "Shared"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="journal_entries")
+    learning_lesson = models.ForeignKey(
+        "learning.LearningLesson",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="journal_entries",
+    )
+    learning_course = models.ForeignKey(
+        "learning.LearningCourse",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="journal_entries",
+    )
+    learning_track = models.ForeignKey(
+        "learning.LearningTrack",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="journal_entries",
+    )
     goal = models.CharField(max_length=180, blank=True)
     decision = models.TextField()
     amount_display_mode = models.CharField(
@@ -33,7 +54,13 @@ class JournalEntry(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "created_at"]), models.Index(fields=["created_at"])]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["learning_lesson", "created_at"]),
+            models.Index(fields=["learning_course", "created_at"]),
+            models.Index(fields=["learning_track", "created_at"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.user_id}:{self.decision[:40]}"

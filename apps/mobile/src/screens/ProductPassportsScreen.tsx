@@ -11,6 +11,22 @@ function label(value: string) {
   return value.replace(/_/g, " ");
 }
 
+function formatVerifiedAt(value?: string | null) {
+  if (!value) return "Not verified yet";
+  return new Date(value).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function sourceSummary(passport: ProductPassport) {
+  const firstReference = passport.source_references?.[0];
+  if (firstReference) {
+    return firstReference.citation_label || firstReference.title;
+  }
+  if (passport.public_source_url) {
+    return passport.public_source_url;
+  }
+  return "Editorial educational content";
+}
+
 function filterLocal(
   passports: ProductPassport[],
   {
@@ -104,7 +120,20 @@ export function ProductPassportsScreen({
           <Fact label="Liquidity" value={label(selected.liquidity_level)} />
           <Fact label="Minimum" value={selected.minimum_amount ? `KES ${selected.minimum_amount}` : "Varies"} />
           <Fact label="Regulator" value={selected.regulator_category || "Verify"} />
+          <Fact label="Source" value={sourceSummary(selected)} />
+          <Fact label="Last verified" value={formatVerifiedAt(selected.last_verified_at)} />
         </View>
+
+        {selected.source_references?.length ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Source references</Text>
+            {selected.source_references.map((reference) => (
+              <Text key={reference.id} style={styles.bullet}>
+                - {reference.title}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         <Section title="What to verify" items={selected.documents_needed} fallback="Provider documents and regulator status." />
         <Section title="Common beginner mistakes" items={selected.beginner_mistakes} fallback="Skipping provider and fee checks." />
@@ -140,7 +169,7 @@ export function ProductPassportsScreen({
         <TextInput
           onChangeText={setQuery}
           placeholder="Search product, provider, mistakes, route"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           style={styles.input}
           value={query}
         />
@@ -266,9 +295,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     paddingVertical: 9
   },
-  pillActive: { backgroundColor: "#EAF0FF", borderColor: maliPrime.colors.primary },
-  pillText: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
-  pillTextActive: { color: maliPrime.colors.primary },
+  pillActive: { backgroundColor: maliPrime.colors.primary, borderColor: maliPrime.colors.primary },
+  pillText: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
+  pillTextActive: { color: maliPrime.colors.surface },
   primaryButton: {
     alignItems: "center",
     backgroundColor: maliPrime.colors.primary,
@@ -277,8 +306,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     minHeight: 48
   },
-  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "900" },
-  disabled: { backgroundColor: "#9FB2D6" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "700" },
+  disabled: { backgroundColor: maliPrime.colors.textTertiary },
   errorBox: { backgroundColor: "#FFF7E8", borderRadius: maliPrime.radius.md, marginTop: 14, padding: 14 },
   errorTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
   errorCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 4 },
@@ -295,9 +324,9 @@ const styles = StyleSheet.create({
   cardHeader: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "space-between" },
   cardTitle: { color: maliPrime.colors.textPrimary, flex: 1, fontSize: 16, fontWeight: "900" },
   badge: {
-    backgroundColor: "#EAF0FF",
+    backgroundColor: maliPrime.colors.surfaceAlt,
     borderRadius: maliPrime.radius.pill,
-    color: maliPrime.colors.primary,
+    color: maliPrime.colors.textSecondary,
     fontSize: 10,
     fontWeight: "900",
     overflow: "hidden",
@@ -321,13 +350,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignSelf: "flex-start",
-    backgroundColor: "#EAF0FF",
+    backgroundColor: maliPrime.colors.surfaceAlt,
     borderRadius: maliPrime.radius.md,
     marginBottom: 14,
     paddingHorizontal: 12,
     paddingVertical: 9
   },
-  backText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
+  backText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
   detailGrid: { gap: 10, marginTop: 16 },
   fact: {
     backgroundColor: maliPrime.colors.surface,
@@ -347,6 +376,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 46
   },
-  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
-  notice: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900", lineHeight: 19, marginTop: 10 }
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  notice: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700", lineHeight: 19, marginTop: 10 }
 });

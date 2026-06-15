@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { LearningHomeApiResponse, PesaRouteApiClient } from "../api/client";
 import {
   AmountRangeButton,
   ErrorState,
@@ -12,28 +13,54 @@ import {
   maliPrime,
   maliPrimeText
 } from "../components/maliprime";
-import type { AmountRangeId, CatalogState, GoalId } from "../types";
+import type { AmountRangeId, AuthCredentials, CatalogState, GoalId } from "../types";
 import { amountRanges, goalChips } from "../utils/routePlanner";
 
 export function HomeScreen({
+  apiClient,
+  auth,
   catalog,
   onChooseRoute,
+  onOpenLearn,
   onOpenScam,
   onRefreshCatalog,
   selectedGoalId
 }: {
+  apiClient: PesaRouteApiClient;
+  auth: AuthCredentials | null;
   catalog: CatalogState;
   onChooseRoute: (amountRangeId: AmountRangeId, goalId: GoalId) => void;
+  onOpenLearn: () => void;
   onOpenScam: () => void;
   onRefreshCatalog: () => Promise<void>;
   selectedGoalId: GoalId;
 }) {
   const [selectedAmountRangeId, setSelectedAmountRangeId] = useState<AmountRangeId>("5k-20k");
   const [selectedGoal, setSelectedGoal] = useState<GoalId>(selectedGoalId);
+  const [learningHome, setLearningHome] = useState<LearningHomeApiResponse | null>(null);
+  const catalogPreview = catalog.categories
+    .slice(0, 6)
+    .map((category) => category.name)
+    .join(" / ");
 
   function startRoute() {
     onChooseRoute(selectedAmountRangeId, selectedGoal);
   }
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .learningHome(auth)
+      .then((summary) => {
+        if (active) setLearningHome(summary);
+      })
+      .catch(() => {
+        if (active) setLearningHome(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiClient, auth?.token]);
 
   return (
     <View style={styles.screen}>
@@ -64,6 +91,29 @@ export function HomeScreen({
         </View>
       ) : null}
 
+      <PremiumCard>
+        <View style={styles.learningTopRow}>
+          <TrustBadge tone="muted">Daily learning</TrustBadge>
+          <TrustBadge tone="emerald">XP ready</TrustBadge>
+        </View>
+        <Text style={styles.promiseTitle}>Continue money foundations</Text>
+        <Text style={styles.promiseCopy}>
+          {learningHome?.continue_learning?.lesson.title ??
+            "Short lessons, flashcards, practice, and private reflection before you compare products."}
+        </Text>
+        <View style={styles.learningStats}>
+          <View style={styles.learningStat}>
+            <Text style={styles.learningValue}>{learningHome?.total_xp ?? 0} XP</Text>
+            <Text style={styles.learningLabel}>{learningHome?.streak ? "Account" : "Anonymous"}</Text>
+          </View>
+          <View style={styles.learningStat}>
+            <Text style={styles.learningValue}>{learningHome?.streak?.current_streak_days ?? 0}d</Text>
+            <Text style={styles.learningLabel}>Streak</Text>
+          </View>
+        </View>
+        <SecondaryButton onPress={onOpenLearn}>Open learning tab</SecondaryButton>
+      </PremiumCard>
+
       <Text style={styles.sectionTitle}>Start with my amount</Text>
       <View style={styles.amountGrid}>
         {amountRanges.map((range) => (
@@ -93,17 +143,17 @@ export function HomeScreen({
         <SecondaryButton onPress={onOpenScam}>Check investment red flags</SecondaryButton>
       </View>
 
-      <PremiumCard tone="success">
-        <Text style={styles.promiseTitle}>Catalog loaded</Text>
+      <PremiumCard>
+        <View style={styles.catalogTitleRow}>
+          <View style={styles.catalogDot} />
+          <Text style={styles.promiseTitle}>Catalog loaded</Text>
+        </View>
         <Text style={styles.promiseCopy}>
           {catalog.categories.length} categories and {catalog.passports.length} product passports from {catalog.source}.
         </Text>
-        <View style={styles.catalogChips}>
-          {catalog.categories.slice(0, 6).map((category) => (
-            <Text key={category.slug} style={styles.catalogChip}>
-              {category.name}
-            </Text>
-          ))}
+        <View style={styles.catalogPreview}>
+          <Text style={styles.catalogLabel}>Available categories</Text>
+          <Text style={styles.catalogLine}>{catalogPreview}</Text>
         </View>
       </PremiumCard>
 
@@ -125,19 +175,30 @@ const styles = StyleSheet.create({
   retryButton: { alignItems: "center", backgroundColor: maliPrime.colors.primaryDark, borderRadius: maliPrime.radius.md, paddingVertical: 12 },
   retryText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "900" },
   sectionTitle: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "900" },
+  learningTopRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  learningStats: { flexDirection: "row", gap: 10, marginBottom: 12, marginTop: 12 },
+  learningStat: {
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.md,
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  learningValue: { color: maliPrime.colors.textPrimary, fontSize: 16, fontWeight: "900" },
+  learningLabel: { color: maliPrime.colors.textSecondary, fontSize: 11, fontWeight: "800", marginTop: 3 },
   amountGrid: { gap: 10, marginTop: 12 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   ctaStack: { gap: 10 },
-  catalogChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
-  catalogChip: {
-    backgroundColor: maliPrime.colors.surface,
-    borderRadius: maliPrime.radius.md,
-    color: maliPrime.colors.primary,
-    fontSize: 12,
-    fontWeight: "900",
-    paddingHorizontal: 10,
-    paddingVertical: 7
+  catalogTitleRow: { alignItems: "center", flexDirection: "row", gap: 8 },
+  catalogDot: { backgroundColor: maliPrime.colors.emerald, borderRadius: 4, height: 8, width: 8 },
+  catalogPreview: {
+    borderTopColor: maliPrime.colors.border,
+    borderTopWidth: 1,
+    marginTop: 12,
+    paddingTop: 10
   },
-  promiseTitle: { color: maliPrime.colors.textPrimary, fontSize: 16, fontWeight: "900" },
+  catalogLabel: { color: maliPrime.colors.textTertiary, fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
+  catalogLine: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700", lineHeight: 20, marginTop: 4 },
+  promiseTitle: { color: maliPrime.colors.textPrimary, fontSize: 16, fontWeight: "700" },
   promiseCopy: { color: maliPrime.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 6 }
 });

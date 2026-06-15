@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #0b1220;
-  background: #f7f8fb;
+  color: #11110f;
+  background: #f6f5f0;
 }
 
 * {
@@ -13,8 +13,8 @@
 
 body {
   margin: 0;
-  background: #f7f8fb;
-  color: #0b1220;
+  background: #f6f5f0;
+  color: #11110f;
   font-family:
     -apple-system,
     BlinkMacSystemFont,
@@ -27,6 +27,8 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 a {
@@ -35,10 +37,17 @@ a {
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
 ::selection {
-  background: #eaf0ff;
+  background: rgba(47, 107, 79, 0.18);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(47, 107, 79, 0.24);
+  outline-offset: 3px;
 }

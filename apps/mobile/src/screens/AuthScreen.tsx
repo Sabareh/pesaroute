@@ -19,6 +19,7 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
   const [mode, setMode] = useState<AuthMode>("welcome");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -53,7 +54,8 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
         role: "consumer",
         preferred_language: "en",
         user_type: "other",
-        privacy_mode_enabled: true
+        privacy_mode_enabled: true,
+        invite_code: inviteCode.trim() || undefined
       });
       onDone?.();
     } catch {
@@ -113,25 +115,35 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
           autoCapitalize="none"
           onChangeText={setUsername}
           placeholder="Username"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           style={styles.input}
           value={username}
         />
         {isRegister ? (
-          <TextInput
-            autoCapitalize="none"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder="Email optional"
-            placeholderTextColor="#7D8794"
-            style={styles.input}
-            value={email}
-          />
+          <>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email optional"
+              placeholderTextColor={maliPrime.colors.textTertiary}
+              style={styles.input}
+              value={email}
+            />
+            <TextInput
+              autoCapitalize="characters"
+              onChangeText={setInviteCode}
+              placeholder="Beta invite code if required"
+              placeholderTextColor={maliPrime.colors.textTertiary}
+              style={styles.input}
+              value={inviteCode}
+            />
+          </>
         ) : null}
         <TextInput
           onChangeText={setPassword}
           placeholder="PesaRoute password"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           secureTextEntry
           style={styles.input}
           value={password}
@@ -190,7 +202,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 14
   },
-  primaryText: { color: maliPrime.colors.surface, fontSize: 15, fontWeight: "900" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 15, fontWeight: "700" },
   secondaryButton: {
     alignItems: "center",
     backgroundColor: maliPrime.colors.surfaceAlt,
@@ -200,6 +212,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12
   },
-  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900", textAlign: "center" },
-  disabled: { backgroundColor: "#9FB2D6" }
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700", textAlign: "center" },
+  disabled: { backgroundColor: maliPrime.colors.textTertiary }
 });

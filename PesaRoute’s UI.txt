@@ -1,0 +1,392 @@
+We need to update PesaRoute’s UI design direction again.
+
+The user wants the app and web app to be inspired by the Apple Developer design page:
+https://developer.apple.com/design/
+
+The desired design language is:
+- Apple Human Interface Guidelines-inspired
+- Liquid Glass / Liquid Surface inspired, but not generic glassmorphism
+- premium, clean, modern, professional
+- system typography like Apple
+- minimal AI visuals
+- no robot/neural-network imagery
+- no crypto/trading/casino aesthetic
+- no overly futuristic dashboard look
+- no dark neon glassmorphism
+
+Rename the design system to:
+
+MaliPrime Liquid
+
+Product context:
+PesaRoute is a Kenya-first investment decision platform. It helps users learn, simulate, compare investment routes, keep a private investment journal, manually mirror their portfolio, and request review from verified professionals.
+
+PesaRoute does NOT:
+- hold user investment money
+- execute investments
+- act as a broker
+- act as a fund manager
+- ask for M-Pesa PIN
+- ask for bank passwords
+- ask for broker credentials
+- promise returns
+- give unlicensed investment advice
+
+Design language:
+- Apple-like polish
+- system fonts
+- light mode first
+- soft grey backgrounds
+- white elevated panels
+- liquid-style pill controls
+- very subtle translucent surfaces only where useful
+- soft shadows
+- thin borders
+- gentle gradients
+- crisp typography
+- rounded, tactile controls
+- professional financial trust
+
+Important:
+Do not use heavy glassmorphism everywhere.
+Do not make cards transparent over busy backgrounds.
+Do not use neon cyber visuals.
+Do not add AI robot imagery.
+Do not add neural network graphics.
+Do not make the app look like crypto trading, sports betting, or a stock casino.
+
+Typography rules:
+Use Apple-style system font stacks.
+
+Web CSS font stack:
+font-family:
+  -apple-system,
+  BlinkMacSystemFont,
+  "SF Pro Display",
+  "SF Pro Text",
+  "Inter",
+  "Geist",
+  "Segoe UI",
+  Roboto,
+  Helvetica,
+  Arial,
+  sans-serif;
+
+Important font restriction:
+Do not download, bundle, or redistribute Apple SF Pro or New York font files.
+Use system fonts only.
+On iOS, use native system font.
+On Android, use Roboto or Inter fallback.
+For web, use -apple-system/BlinkMacSystemFont first.
+
+Design tokens:
+Create or update theme tokens for:
+
+Colors:
+- pageBackground: #F5F5F7
+- surface: #FFFFFF
+- surfaceElevated: #FFFFFF
+- surfaceSubtle: #F2F4F7
+- textPrimary: #1D1D1F
+- textSecondary: #6E6E73
+- textTertiary: #86868B
+- border: rgba(0,0,0,0.08)
+- borderStrong: rgba(0,0,0,0.14)
+- primary: #0071E3
+- primaryPressed: #005BBF
+- success: #34C759
+- warning: #FF9500
+- danger: #FF3B30
+- purple: #AF52DE
+- teal: #30B0C7
+
+Gradients:
+- use only as subtle background accents or hero highlights
+- avoid loud gradients
+- use Apple-like soft blue, green, purple, pink accents
+- keep most functional UI white and readable
+
+Radius:
+- small: 10
+- medium: 16
+- large: 22
+- pill: 999
+
+Shadows:
+- very subtle
+- no heavy dark shadows
+- cards should feel lifted, not floating in space
+
+Typography scale:
+- hero: 40–56 web, 32–38 mobile
+- screen title: 28–34 web, 24–30 mobile
+- section title: 18–22
+- body: 15–17
+- caption: 12–13
+- use bold weights sparingly
+- prefer clarity over decoration
+
+Components to create/update:
+Mobile:
+- Screen
+- LiquidHero
+- PremiumCard
+- LiquidPill
+- AmountRangeButton
+- GoalTile
+- TrustBadge
+- PrimaryButton
+- SecondaryButton
+- RiskBadge
+- LiquidityBadge
+- ProductPassportCard
+- SimulatorCard
+- ProfessionalCard
+- PrivacyPromiseCard
+- EmptyState
+- LoadingState
+- ErrorState
+
+Web:
+- PageShell
+- AppleLikeNav
+- LiquidHeroSection
+- PremiumCard
+- LiquidPill
+- TrustBadge
+- ProductPassportCard
+- ProfessionalCard
+- FeatureCard
+- PricingCard
+- PortalShell
+- DashboardCard
+- EmptyState
+- LoadingState
+- ErrorState
+
+Mobile home screen:
+Design it like a premium Apple-style app landing screen.
+
+Hero:
+“Before you invest, understand the route.”
+
+Subtitle:
+“Learn, compare, simulate, and get verified guidance before risking your money.”
+
+Trust badges:
+- No M-Pesa PIN
+- No bank passwords
+- No execution
+- Privacy-first
+
+Primary CTA:
+“Start with my amount”
+
+Secondary CTA:
+“Check investment red flags”
+
+Visual style:
+- soft grey background
+- white hero card
+- subtle liquid gradient accent shape in the hero
+- no busy illustration
+- no AI image
+- no stock chart imagery
+- no crypto imagery
+
+Amount range screen:
+Use clean white cards or pill rows:
+- KES 1k–5k
+- KES 5k–20k
+- KES 20k–100k
+- KES 100k–500k
+- KES 500k+
+- Prefer not to say
+
+Selected state:
+- blue border
+- subtle blue tint
+- check icon
+- no glow
+
+Goal selection:
+Use clean rounded tiles:
+- Emergency fund
+- First investment
+- SACCO/chama
+- Treasury bills
+- Global stocks / ETFs
+- Land
+- Scam check
+- Speak to professional
+
+Route result:
+Use a clean Apple-like timeline:
+1. Build your money foundation
+2. Compare safe options
+3. Understand risk and liquidity
+4. Save your decision
+5. Request professional review if needed
+
+Use:
+- “learning path”
+- “products to understand”
+- “what to avoid”
+- “next step”
+
+Avoid:
+- “recommended investment”
+- “best option”
+- “buy now”
+
+Simulator screens:
+Design as premium calculators:
+- white cards
+- simple input fields
+- calm result summaries
+- badges for risk and liquidity
+- educational disclaimer
+
+Scam checker:
+Design as a safety tool:
+Header:
+“Before uweke pesa, check red flags.”
+
+Result language:
+“This has high-risk indicators. Verify before sending money.”
+
+Do not make it look like a gambling alert.
+
+Journal and portfolio:
+Make them calm and private:
+- private lock badges
+- range/hidden amount modes visible
+- no fake exact totals
+- review reminders
+- soft cards
+- simple asset mix
+
+Professionals:
+Make professionals look like verified experts:
+- clean card
+- verified badge
+- specialty
+- language
+- fee range
+- disclosures
+- no influencer/social-media styling
+
+Data sharing screen:
+Must feel extremely safe.
+
+Title:
+“You choose what this professional can see.”
+
+Controls:
+- Share contact info
+- Share portfolio summary
+- Share exact values, default OFF
+- Share selected journal notes, default OFF
+- Access duration: 7 / 14 / 30 days
+
+Copy:
+“Access expires automatically.”
+“You can revoke access anytime.”
+“Exact amounts are optional.”
+
+Web landing page:
+Make it Apple Developer-inspired:
+- black or very dark slim nav at top
+- large hero section
+- soft grey background
+- big centered headline
+- subtle liquid abstract accent in background
+- product cards below
+- strong typography
+- minimal copy
+- no generic AI art
+- no dark neon sections
+
+Hero headline:
+“Understand your investment route before you move your money.”
+
+Subheadline:
+“PesaRoute helps Kenyans learn, compare, simulate, journal, and get verified professional guidance before investing.”
+
+CTAs:
+- Start with my amount
+- Explore product passports
+
+Trust bar:
+- No M-Pesa PIN
+- No bank passwords
+- No execution
+- Privacy-first
+- Professionals verified
+
+Product passport pages:
+Use clean Apple-style cards and tables:
+- risk
+- liquidity
+- minimum amount
+- regulator category
+- beginner mistakes
+- documents needed
+- external route
+- educational disclaimer
+
+Professional and provider portals:
+Use Apple-like SaaS dashboard style:
+- light background
+- white panels
+- clean sidebar
+- strong whitespace
+- precise tables
+- status pills
+- subtle shadows
+- no heavy gradients
+
+Accessibility:
+- high contrast text
+- large tap targets
+- readable body sizes
+- keyboard/focus states on web
+- no text over complex gradients
+- no low-contrast grey-on-grey
+
+Performance:
+- no heavy animation library
+- no heavy chart library
+- no blur-heavy long lists
+- no giant images
+- lazy-load non-critical visual sections
+- keep mobile app fast
+
+Do not:
+- change backend business logic
+- change database models unless absolutely required
+- add payments
+- add M-Pesa
+- add AI
+- add bank integrations
+- add broker integrations
+- add investment execution
+- add new product features beyond UI refinement
+
+Run:
+- mobile typecheck/lint if available
+- web typecheck/lint/build if available
+- backend tests to ensure UI did not break API assumptions
+
+Create/update:
+- docs/design-system.md
+- docs/ui-redesign-summary.md
+- docs/ui-qa-maliprime-liquid.md
+
+At the end, summarize:
+- changed files
+- design tokens added
+- screens updated
+- commands run
+- any failures
+- remaining design debt

@@ -1,5 +1,5 @@
-import { Clock, LockKeyhole, ShieldCheck } from "lucide-react";
-import { AppShell, PageShell, PremiumCard, SectionHeader, TrustBadge } from "../../components/maliprime";
+import { Clock, LockKeyhole } from "lucide-react";
+import { AppleLikeNav, AppShell, PageShell, PremiumCard, SectionHeader, TrustBadge } from "../../components/maliprime";
 
 const allowedScopes = ["consultation_context", "portfolio_summary"];
 
@@ -8,23 +8,21 @@ const canShow = (scope: string) => allowedScopes.includes(scope);
 export default function ProfessionalConsultationContextPage() {
   return (
     <AppShell>
+      <AppleLikeNav />
       <PageShell className="max-w-5xl">
         <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
           <SectionHeader eyebrow="Professional context" title="Consultation review" />
-          <TrustBadge tone="emerald">
-            <ShieldCheck className="mr-2 h-4 w-4" aria-hidden />
-            Scoped access only
-          </TrustBadge>
+          <TrustBadge tone="emerald">Scoped access only</TrustBadge>
         </div>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           {canShow("consultation_context") ? (
             <PremiumCard>
-              <div className="flex items-center gap-2 text-sm font-bold text-primary">
-                <LockKeyhole className="h-5 w-5" aria-hidden />
+              <div className="flex items-center gap-2 text-sm font-semibold text-textPrimary">
+                <LockKeyhole className="h-4 w-4 text-textTertiary" aria-hidden />
                 Granted consultation context
               </div>
-              <h2 className="mt-4 text-xl font-black">Review portfolio liquidity</h2>
+              <h2 className="mt-4 text-xl font-semibold tracking-[-0.01em]">Review portfolio liquidity</h2>
               <p className="mt-3 text-sm leading-6 text-textSecondary">
                 The API response includes only the topic and user-provided consultation notes when the user grants
                 `consultation_context`.
@@ -33,8 +31,8 @@ export default function ProfessionalConsultationContextPage() {
           ) : null}
 
           <PremiumCard>
-            <div className="flex items-center gap-2 text-sm font-bold text-primary">
-              <Clock className="h-5 w-5" aria-hidden />
+            <div className="flex items-center gap-2 text-sm font-semibold text-textPrimary">
+              <Clock className="h-4 w-4 text-textTertiary" aria-hidden />
               Access window
             </div>
             <p className="mt-4 text-sm leading-6 text-textSecondary">
@@ -59,7 +57,7 @@ export default function ProfessionalConsultationContextPage() {
 function ScopeCard({ body, title }: { body: string; title: string }) {
   return (
     <PremiumCard>
-      <h2 className="text-lg font-black">{title}</h2>
+      <h2 className="text-lg font-semibold tracking-[-0.01em]">{title}</h2>
       <p className="mt-3 text-sm leading-6 text-textSecondary">{body}</p>
     </PremiumCard>
   );

@@ -33,11 +33,16 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "accounts",
     "audit",
+    "beta",
     "billing",
     "catalog",
+    "notifications",
+    "payments",
     "planning",
     "risk",
     "journal",
+    "knowledge",
+    "learning",
     "portfolio",
     "marketplace",
     "privacy",
@@ -128,6 +133,7 @@ REST_FRAMEWORK = {
         "scam_check": os.getenv("THROTTLE_SCAM_CHECK_RATE", "30/min"),
         "simulators": os.getenv("THROTTLE_SIMULATORS_RATE", "60/min"),
         "consultation_create": os.getenv("THROTTLE_CONSULTATION_CREATE_RATE", "10/min"),
+        "payments": os.getenv("THROTTLE_PAYMENTS_RATE", "60/min"),
     },
     "PAGE_SIZE": 20,
 }
@@ -156,3 +162,19 @@ X_FRAME_OPTIONS = "DENY"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
+
+MPESA_ENVIRONMENT = os.getenv("MPESA_ENVIRONMENT", "sandbox").lower()
+MPESA_MOCK_MODE = os.getenv("MPESA_MOCK_MODE", str(DEBUG)).lower() == "true"
+MPESA_BASE_URL = os.getenv(
+    "MPESA_BASE_URL",
+    "https://sandbox.safaricom.co.ke" if MPESA_ENVIRONMENT == "sandbox" else "https://api.safaricom.co.ke",
+)
+MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "")
+MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "")
+MPESA_BUSINESS_SHORTCODE = os.getenv("MPESA_BUSINESS_SHORTCODE", "")
+MPESA_PASSKEY = os.getenv("MPESA_PASSKEY", "")
+MPESA_CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "")
+MPESA_TRANSACTION_TYPE = os.getenv("MPESA_TRANSACTION_TYPE", "CustomerPayBillOnline")
+MPESA_ACCOUNT_REFERENCE = os.getenv("MPESA_ACCOUNT_REFERENCE", "PesaRoute")
+MPESA_INTENT_EXPIRY_MINUTES = int(os.getenv("MPESA_INTENT_EXPIRY_MINUTES", "15"))
+BETA_ONLY_MODE = os.getenv("BETA_ONLY_MODE", "false").lower() == "true"

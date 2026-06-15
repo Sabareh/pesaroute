@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from marketplace.models import ConsultationRequest, ConsultationResponse, Professional
+from marketplace.models import ConsultationOffer, ConsultationRequest, ConsultationResponse, Professional
 
 
 class ProfessionalSerializer(serializers.ModelSerializer):
@@ -46,17 +46,51 @@ class ConsultationResponseSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "professional", "professional_name", "status", "created_at", "updated_at"]
 
 
+class ConsultationOfferSerializer(serializers.ModelSerializer):
+    professional_name = serializers.CharField(source="professional.name", read_only=True)
+
+    class Meta:
+        model = ConsultationOffer
+        fields = [
+            "id",
+            "consultation_request",
+            "professional",
+            "professional_name",
+            "proposed_fee",
+            "platform_fee_amount",
+            "message",
+            "estimated_duration",
+            "available_slots_text",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "consultation_request",
+            "professional",
+            "professional_name",
+            "platform_fee_amount",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+
+
 class ConsultationRequestSerializer(serializers.ModelSerializer):
     professional = serializers.PrimaryKeyRelatedField(
         queryset=Professional.objects.all(), required=False, allow_null=True, write_only=True
     )
     selected_professional_detail = ProfessionalSerializer(source="selected_professional", read_only=True)
     responses = ConsultationResponseSerializer(many=True, read_only=True)
+    offers = ConsultationOfferSerializer(many=True, read_only=True)
 
     class Meta:
         model = ConsultationRequest
         fields = [
             "id",
+            "learning_track",
+            "journal_entry",
             "professional",
             "selected_professional",
             "selected_professional_detail",
@@ -72,16 +106,34 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             "topic",
             "notes",
             "status",
+            "platform_fee_amount",
+            "paid_at",
+            "scheduled_at",
             "created_at",
+            "updated_at",
             "responses",
+            "offers",
         ]
-        read_only_fields = ["id", "status", "created_at", "responses", "selected_professional_detail"]
+        read_only_fields = [
+            "id",
+            "status",
+            "platform_fee_amount",
+            "paid_at",
+            "scheduled_at",
+            "created_at",
+            "updated_at",
+            "responses",
+            "offers",
+            "selected_professional_detail",
+        ]
         extra_kwargs = {
             "topic": {"required": False, "allow_blank": True},
             "notes": {"required": False, "allow_blank": True},
             "user_question": {"required": False, "allow_blank": True},
             "data_grant": {"required": False, "allow_null": True},
             "selected_professional": {"required": False, "allow_null": True},
+            "learning_track": {"required": False, "allow_null": True},
+            "journal_entry": {"required": False, "allow_null": True},
         }
 
     def validate(self, attrs):
@@ -98,6 +150,10 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"data_grant": "Grant must belong to the requesting user."})
         if grant and selected_professional and grant.grantee_id != selected_professional.id:
             raise serializers.ValidationError({"data_grant": "Grant must target the selected professional."})
+
+        journal_entry = attrs.get("journal_entry")
+        if journal_entry and request and journal_entry.user_id != request.user.id:
+            raise serializers.ValidationError({"journal_entry": "Journal entry must belong to the requesting user."})
 
         mode = attrs.get("amount_display_mode", ConsultationRequest.AmountDisplayMode.RANGE)
         range_min = attrs.get("amount_range_min")
@@ -142,6 +198,7 @@ class ConsultationRequestSerializer(serializers.ModelSerializer):
 class ConsultationLeadSerializer(serializers.ModelSerializer):
     selected_professional_name = serializers.CharField(source="selected_professional.name", read_only=True)
     response_count = serializers.SerializerMethodField()
+    offer_count = serializers.SerializerMethodField()
     user_question = serializers.SerializerMethodField()
 
     class Meta:
@@ -161,11 +218,15 @@ class ConsultationLeadSerializer(serializers.ModelSerializer):
             "selected_professional_name",
             "created_at",
             "response_count",
+            "offer_count",
         ]
         read_only_fields = fields
 
     def get_response_count(self, obj):
         return obj.responses.count()
+
+    def get_offer_count(self, obj):
+        return obj.offers.count()
 
     def get_user_question(self, obj):
         request = self.context.get("request")
@@ -185,8 +246,16 @@ class ConsultationLeadSerializer(serializers.ModelSerializer):
 class ConsultationResponseCreateSerializer(serializers.Serializer):
     response_text = serializers.CharField()
     next_steps = serializers.CharField(required=False, allow_blank=True)
+    proposed_fee = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    estimated_duration = serializers.CharField(required=False, allow_blank=True, default="30 minutes")
+    available_slots_text = serializers.CharField(required=False, allow_blank=True)
 
     def validate_response_text(self, value):
         if len(value.strip()) < 5:
             raise serializers.ValidationError("Response is too short.")
         return value.strip()
+
+    def validate_proposed_fee(self, value):
+        if value is not None and value < Decimal("0.00"):
+            raise serializers.ValidationError("Fee cannot be negative.")
+        return value

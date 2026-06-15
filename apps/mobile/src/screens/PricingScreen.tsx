@@ -8,6 +8,7 @@ import type {
 } from "../api/client";
 import { PremiumCard, maliPrime, maliPrimeText } from "../components/maliprime";
 import type { AuthCredentials } from "../types";
+import { CheckoutScreen, type CheckoutItem } from "./CheckoutScreen";
 
 const fallbackPlans: BillingPlanApiResponse[] = [
   {
@@ -32,7 +33,8 @@ const fallbackPlans: BillingPlanApiResponse[] = [
       "unlimited_scam_checks",
       "portfolio_mirror",
       "advanced_route_engine",
-      "professional_request_priority"
+      "private_journal_unlimited",
+      "professional_review_priority"
     ],
     is_active: true
   },
@@ -48,7 +50,8 @@ const fallbackPlans: BillingPlanApiResponse[] = [
       "unlimited_scam_checks",
       "portfolio_mirror",
       "advanced_route_engine",
-      "professional_request_priority"
+      "private_journal_unlimited",
+      "professional_review_priority"
     ],
     is_active: true
   },
@@ -59,7 +62,7 @@ const fallbackPlans: BillingPlanApiResponse[] = [
     audience: "professional",
     price_kes: 1000,
     billing_period: "monthly",
-    included_entitlements: ["professional_dashboard", "professional_leads"],
+    included_entitlements: ["professional_profile_public", "professional_lead_inbox"],
     is_active: true
   },
   {
@@ -69,22 +72,47 @@ const fallbackPlans: BillingPlanApiResponse[] = [
     audience: "professional",
     price_kes: 2500,
     billing_period: "monthly",
-    included_entitlements: ["professional_dashboard", "professional_leads", "professional_analytics"],
+    included_entitlements: ["professional_profile_public", "professional_lead_inbox", "professional_client_notes"],
     is_active: true
   }
 ];
 
 const fallbackPacks: OneOffPackApiResponse[] = [
-  { code: "global_investing_pack", name: "Global investing pack", price_kes: 500, payment_provider: "manual_placeholder" },
-  { code: "treasury_bills_pack", name: "Treasury bills pack", price_kes: 300, payment_provider: "manual_placeholder" },
-  { code: "sacco_chama_pack", name: "SACCO/chama pack", price_kes: 300, payment_provider: "manual_placeholder" },
   {
-    code: "land_due_diligence_literacy_pack",
-    name: "Land due diligence literacy pack",
+    code: "global_investing_pack",
+    name: "Global investing pack",
+    entitlement_key: "global_investing_pack_access",
     price_kes: 500,
     payment_provider: "manual_placeholder"
   },
-  { code: "diaspora_pack", name: "Diaspora pack", price_kes: 500, payment_provider: "manual_placeholder" }
+  {
+    code: "treasury_bills_pack",
+    name: "Treasury bills pack",
+    entitlement_key: "treasury_bills_pack_access",
+    price_kes: 300,
+    payment_provider: "manual_placeholder"
+  },
+  {
+    code: "sacco_chama_pack",
+    name: "SACCO/chama pack",
+    entitlement_key: "sacco_chama_pack_access",
+    price_kes: 300,
+    payment_provider: "manual_placeholder"
+  },
+  {
+    code: "land_due_diligence_literacy_pack",
+    name: "Land due diligence literacy pack",
+    entitlement_key: "land_pack_access",
+    price_kes: 500,
+    payment_provider: "manual_placeholder"
+  },
+  {
+    code: "diaspora_pack",
+    name: "Diaspora pack",
+    entitlement_key: "diaspora_pack_access",
+    price_kes: 500,
+    payment_provider: "manual_placeholder"
+  }
 ];
 
 function priceText(plan: BillingPlanApiResponse) {
@@ -113,9 +141,7 @@ export function PricingScreen({
 }) {
   const [plans, setPlans] = useState<BillingPlanApiResponse[]>(fallbackPlans);
   const [packs, setPacks] = useState<OneOffPackApiResponse[]>(fallbackPacks);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -137,55 +163,55 @@ export function PricingScreen({
     };
   }, [apiClient]);
 
-  async function mockSubscription(planCode: BillingPlanApiResponse["code"]) {
+  function openSubscriptionCheckout(plan: BillingPlanApiResponse) {
     if (!auth || !isAuthenticated) {
       onRequestAuth();
       return;
     }
-    setLoading(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const response = await apiClient.devMockPurchase({ kind: "subscription", plan_code: planCode, days: 30 }, auth);
-      setStatus(response.detail);
-      await onRefreshEntitlements();
-    } catch (purchaseError) {
-      setError(purchaseError instanceof Error ? purchaseError.message : "Could not create development purchase.");
-    } finally {
-      setLoading(false);
-    }
+    setCheckoutItem({
+      amountKes: plan.price_kes,
+      kind: "subscription",
+      planCode: plan.code,
+      title: plan.name
+    });
   }
 
-  async function mockPack(packCode: OneOffPackApiResponse["code"]) {
+  function openPackCheckout(pack: OneOffPackApiResponse) {
     if (!auth || !isAuthenticated) {
       onRequestAuth();
       return;
     }
-    setLoading(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const response = await apiClient.devMockPurchase({ kind: "pack", pack_code: packCode }, auth);
-      setStatus(response.detail);
-      await onRefreshEntitlements();
-    } catch (purchaseError) {
-      setError(purchaseError instanceof Error ? purchaseError.message : "Could not create development pack.");
-    } finally {
-      setLoading(false);
-    }
+    setCheckoutItem({
+      amountKes: pack.price_kes,
+      kind: "pack",
+      packCode: pack.code,
+      title: pack.name
+    });
+  }
+
+  if (checkoutItem && auth) {
+    return (
+      <CheckoutScreen
+        apiClient={apiClient}
+        auth={auth}
+        item={checkoutItem}
+        onBack={() => setCheckoutItem(null)}
+        onRefreshEntitlements={onRefreshEntitlements}
+      />
+    );
   }
 
   return (
     <View>
       <Text style={maliPrimeText.title}>Pricing</Text>
       <Text style={maliPrimeText.subtitle}>
-        Billing is a development skeleton only. No M-Pesa, cards, payouts, or real payment collection are connected.
+        Pay for PesaRoute learning access only. PesaRoute payments are never for investment execution.
       </Text>
 
       <PremiumCard tone="warning">
-        <Text style={styles.devTitle}>Development placeholder</Text>
+        <Text style={styles.devTitle}>M-Pesa foundation</Text>
         <Text style={styles.devCopy}>
-          Mock purchases only change local backend entitlement state for testing. They do not collect money.
+          Daraja credentials stay on the backend. We never ask for your M-Pesa PIN inside PesaRoute.
         </Text>
       </PremiumCard>
 
@@ -206,8 +232,7 @@ export function PricingScreen({
           .map((plan) => (
             <PlanCard
               key={plan.code}
-              loading={loading}
-              onMockPurchase={() => mockSubscription(plan.code)}
+              onCheckout={() => openSubscriptionCheckout(plan)}
               plan={plan}
               purchased={plan.code === "free" || Boolean(entitlements?.features.portfolio_mirror)}
             />
@@ -222,9 +247,9 @@ export function PricingScreen({
               <Text style={styles.cardTitle}>{pack.name}</Text>
               <Text style={styles.badge}>KES {pack.price_kes.toLocaleString("en-KE")}</Text>
             </View>
-            <Text style={styles.cardCopy}>Unlocks the guide pack later. Current flow is development-only.</Text>
-            <Pressable accessibilityRole="button" disabled={loading} onPress={() => mockPack(pack.code)} style={styles.secondaryButton}>
-              <Text style={styles.secondaryText}>{entitlements?.packs[pack.code] ? "Granted" : "Dev grant pack"}</Text>
+            <Text style={styles.cardCopy}>Paid learning pack access. No investment money is collected here.</Text>
+            <Pressable accessibilityRole="button" onPress={() => openPackCheckout(pack)} style={styles.secondaryButton}>
+              <Text style={styles.secondaryText}>{entitlements?.packs[pack.code] ? "Granted" : "Pay with M-Pesa"}</Text>
             </Pressable>
           </View>
         ))}
@@ -237,28 +262,22 @@ export function PricingScreen({
           .map((plan) => (
             <PlanCard
               key={plan.code}
-              loading={loading}
-              onMockPurchase={() => mockSubscription(plan.code)}
+              onCheckout={() => openSubscriptionCheckout(plan)}
               plan={plan}
-              purchased={Boolean(entitlements?.features.professional_dashboard)}
+              purchased={Boolean(entitlements?.features.professional_lead_inbox)}
             />
           ))}
       </View>
-
-      {status ? <Text style={styles.status}>{status}</Text> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
 function PlanCard({
-  loading,
-  onMockPurchase,
+  onCheckout,
   plan,
   purchased
 }: {
-  loading: boolean;
-  onMockPurchase: () => void;
+  onCheckout: () => void;
   plan: BillingPlanApiResponse;
   purchased: boolean;
 }) {
@@ -276,8 +295,8 @@ function PlanCard({
         ))}
       </View>
       {plan.code !== "free" ? (
-        <Pressable accessibilityRole="button" disabled={loading} onPress={onMockPurchase} style={styles.primaryButton}>
-          <Text style={styles.primaryText}>{purchased ? "Dev grant again" : "Dev mock purchase"}</Text>
+        <Pressable accessibilityRole="button" onPress={onCheckout} style={styles.primaryButton}>
+          <Text style={styles.primaryText}>{purchased ? "Pay again" : "Pay with M-Pesa"}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -308,9 +327,9 @@ const styles = StyleSheet.create({
   cardHeader: { alignItems: "center", flexDirection: "row", gap: 10, justifyContent: "space-between" },
   cardTitle: { color: maliPrime.colors.textPrimary, flex: 1, fontSize: 16, fontWeight: "900" },
   badge: {
-    backgroundColor: "#EAF0FF",
+    backgroundColor: maliPrime.colors.surfaceAlt,
     borderRadius: maliPrime.radius.pill,
-    color: maliPrime.colors.primary,
+    color: maliPrime.colors.textPrimary,
     fontSize: 11,
     fontWeight: "900",
     overflow: "hidden",
@@ -329,7 +348,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     minHeight: 46
   },
-  primaryText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "900" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "700" },
   secondaryButton: {
     alignItems: "center",
     backgroundColor: maliPrime.colors.surfaceAlt,
@@ -338,7 +357,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     minHeight: 44
   },
-  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
-  status: { color: maliPrime.colors.emerald, fontSize: 13, fontWeight: "900", lineHeight: 19, marginTop: 12 },
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  status: { color: maliPrime.colors.emerald, fontSize: 13, fontWeight: "700", lineHeight: 19, marginTop: 12 },
   error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19, marginTop: 12 }
 });

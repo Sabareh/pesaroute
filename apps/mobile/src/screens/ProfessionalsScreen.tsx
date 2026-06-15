@@ -90,6 +90,7 @@ export function ProfessionalsScreen({
   const [riskPreference, setRiskPreference] = useState<ConsultationRequestApiRequest["risk_preference"]>("not_sure");
   const [preferredLanguage, setPreferredLanguage] = useState<"en" | "sw">("en");
   const [question, setQuestion] = useState("");
+  const [paymentPhone, setPaymentPhone] = useState("");
   const [shareContact, setShareContact] = useState(false);
   const [sharePortfolioSummary, setSharePortfolioSummary] = useState(true);
   const [shareExactValues, setShareExactValues] = useState(false);
@@ -210,6 +211,52 @@ export function ProfessionalsScreen({
       await loadMyRequests();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not create review request.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function acceptOffer(offerId: number) {
+    if (!auth) {
+      onRequestAuth();
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    try {
+      await apiClient.acceptConsultationOffer(offerId, auth);
+      setStatus("Offer accepted. Start payment only if the fee and professional are correct.");
+      await loadMyRequests();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not accept offer.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function startConsultationPayment(requestId: number) {
+    if (!auth) {
+      onRequestAuth();
+      return;
+    }
+    if (!paymentPhone.trim()) {
+      setError("Enter the M-Pesa phone number for the review payment prompt.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    try {
+      const intent = await apiClient.startConsultationPayment(
+        requestId,
+        { phone_number: paymentPhone.trim(), idempotency_key: `consultation-${requestId}` },
+        auth
+      );
+      setStatus(`Consultation payment intent created: ${intent.status}. Approve only the phone prompt if the amount is correct.`);
+      await loadMyRequests();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not start consultation payment.");
     } finally {
       setLoading(false);
     }
@@ -451,6 +498,7 @@ export function ProfessionalsScreen({
                     <Text style={styles.meta}>{request.amount_display_mode}: {request.amount_range_min && request.amount_range_max ? `KES ${request.amount_range_min}-${request.amount_range_max}` : "Hidden"}</Text>
                     <Text style={styles.cardCopy}>{request.user_question}</Text>
                     <Text style={styles.meta}>Submitted {formatDate(request.created_at)}</Text>
+                    {request.paid_at ? <Text style={styles.status}>Paid {formatDate(request.paid_at)}</Text> : null}
                     {request.responses?.length ? (
                       <View style={styles.responseBox}>
                         <Text style={styles.responseTitle}>Professional response</Text>
@@ -460,6 +508,52 @@ export function ProfessionalsScreen({
                     ) : (
                       <Text style={styles.meta}>Response placeholder: awaiting professional reply.</Text>
                     )}
+                    {request.offers?.length ? (
+                      <View style={styles.responseBox}>
+                        <Text style={styles.responseTitle}>Professional offers</Text>
+                        {request.offers.map((offer) => (
+                          <View key={offer.id} style={styles.offerBox}>
+                            <Text style={styles.cardCopy}>{offer.professional_name}: KES {offer.proposed_fee}</Text>
+                            <Text style={styles.meta}>
+                              {offer.estimated_duration}. Status: {offer.status}. {offer.available_slots_text}
+                            </Text>
+                            <Text style={styles.meta}>Educational/professional review only. No guaranteed returns.</Text>
+                            {offer.status === "pending" ? (
+                              <Pressable
+                                accessibilityRole="button"
+                                disabled={loading}
+                                onPress={() => acceptOffer(offer.id)}
+                                style={styles.secondaryButton}
+                              >
+                                <Text style={styles.secondaryText}>Accept offer</Text>
+                              </Pressable>
+                            ) : null}
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                    {request.status === "user_selected_professional" || request.status === "awaiting_payment" ? (
+                      <View style={styles.responseBox}>
+                        <Text style={styles.responseTitle}>Review payment</Text>
+                        <Text style={styles.cardCopy}>We never ask for your M-Pesa PIN inside PesaRoute.</Text>
+                        <TextInput
+                          keyboardType="phone-pad"
+                          onChangeText={setPaymentPhone}
+                          placeholder="M-Pesa phone e.g. 0712 345 678"
+                          placeholderTextColor="#7D8794"
+                          style={styles.input}
+                          value={paymentPhone}
+                        />
+                        <Pressable
+                          accessibilityRole="button"
+                          disabled={loading}
+                          onPress={() => startConsultationPayment(request.id)}
+                          style={styles.primaryButton}
+                        >
+                          <Text style={styles.primaryText}>Start consultation payment</Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
                   </View>
                 ))}
               </View>
@@ -485,8 +579,8 @@ function ConsentSwitch({
       <Text style={styles.switchLabel}>{label}</Text>
       <Switch
         onValueChange={onValueChange}
-        thumbColor={value ? "#ffffff" : "#f5f5f5"}
-        trackColor={{ false: "#C8D1DE", true: maliPrime.colors.primary }}
+        thumbColor={value ? maliPrime.colors.surface : maliPrime.colors.surfaceAlt}
+        trackColor={{ false: maliPrime.colors.surfaceSubtle, true: maliPrime.colors.emerald }}
         value={value}
       />
     </View>
@@ -516,9 +610,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10
   },
-  pillActive: { backgroundColor: "#EAF0FF", borderColor: maliPrime.colors.primary },
-  pillText: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "900", textTransform: "capitalize" },
-  pillTextActive: { color: maliPrime.colors.primary },
+  pillActive: { backgroundColor: maliPrime.colors.primary, borderColor: maliPrime.colors.primary },
+  pillText: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700", textTransform: "capitalize" },
+  pillTextActive: { color: maliPrime.colors.surface },
   filterRow: { gap: 0, marginTop: 8 },
   list: { gap: 12, marginTop: 14 },
   card: {
@@ -576,7 +670,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: 14
   },
-  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "900", textAlign: "center" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 14, fontWeight: "700", textAlign: "center" },
   secondaryButton: {
     alignItems: "center",
     backgroundColor: maliPrime.colors.surfaceAlt,
@@ -585,11 +679,17 @@ const styles = StyleSheet.create({
     marginTop: 14,
     minHeight: 46
   },
-  secondaryText: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
   error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19, marginTop: 10 },
   status: { color: maliPrime.colors.emerald, fontSize: 13, fontWeight: "900", lineHeight: 19, marginTop: 10 },
   empty: { color: maliPrime.colors.textSecondary, fontSize: 14, marginTop: 12 },
   responseBox: { backgroundColor: maliPrime.colors.surfaceAlt, borderRadius: maliPrime.radius.md, marginTop: 12, padding: 12 },
-  responseTitle: { color: maliPrime.colors.primary, fontSize: 13, fontWeight: "900" },
-  disabled: { backgroundColor: "#9FB2D6" }
+  offerBox: {
+    borderTopColor: maliPrime.colors.border,
+    borderTopWidth: 1,
+    marginTop: 10,
+    paddingTop: 10
+  },
+  responseTitle: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  disabled: { backgroundColor: maliPrime.colors.textTertiary }
 });

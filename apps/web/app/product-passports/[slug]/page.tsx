@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CheckCircle2, FileText, Scale, ShieldCheck } from "lucide-react";
-import { AppShell, PageShell, PremiumCard, PrivacyPromiseCard, SectionHeader, TrustBadge } from "../../components/maliprime";
+import {
+  AppleLikeNav,
+  AppShell,
+  EditorialImage,
+  PageShell,
+  PremiumCard,
+  PrivacyPromiseCard,
+  SectionHeader,
+  TrustBadge
+} from "../../components/maliprime";
 import { findPublicPassport, publicPassports } from "../catalog";
 
 export function generateStaticParams() {
@@ -32,8 +41,12 @@ export default async function ProductPassportPage({ params }: { params: Promise<
 
   return (
     <AppShell>
+      <AppleLikeNav />
       <PageShell className="max-w-5xl">
-        <Link href="/product-passports" className="inline-flex items-center gap-2 text-sm font-bold text-primary">
+        <Link
+          href="/product-passports"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-textSecondary transition hover:text-textPrimary"
+        >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Product passports
         </Link>
@@ -42,11 +55,19 @@ export default async function ProductPassportPage({ params }: { params: Promise<
           <SectionHeader eyebrow={passport.category} title={passport.name} body={passport.description} />
           <div className="mt-5 flex flex-wrap gap-2">
             <TrustBadge tone="muted">{passport.provider}</TrustBadge>
-            <TrustBadge tone="primary">{passport.riskLevel} risk</TrustBadge>
+            <TrustBadge tone={passport.riskLevel === "High" ? "danger" : "muted"}>{passport.riskLevel} risk</TrustBadge>
             <TrustBadge tone="emerald">{passport.liquidityLevel} liquidity</TrustBadge>
-            <TrustBadge tone="amber">Educational information</TrustBadge>
+            <TrustBadge tone="muted">Educational information</TrustBadge>
           </div>
         </header>
+
+        <EditorialImage
+          alt="A notebook, phone, and Kenyan shillings used for checking an investment route before sending money."
+          caption="Passport details stay educational: verify externally, compare risks, and avoid rushed commitments."
+          className="mt-8"
+          imgClassName="aspect-[16/7]"
+          src="/images/private-review-notebook.jpg"
+        />
 
         <section className="mt-6 grid gap-3 md:grid-cols-2">
           <PrivacyPromiseCard icon={ShieldCheck} text="Educational information only. This page is not an investment recommendation." />
@@ -68,6 +89,8 @@ export default async function ProductPassportPage({ params }: { params: Promise<
           <Fact label="Minimum" value={passport.minimumAmount} />
           <Fact label="Regulator category" value={passport.regulatorCategory} />
           <Fact label="Execution" value="External provider only" />
+          <Fact label="Source" value={passport.sourceLabel} />
+          <Fact label="Last verified" value={passport.lastVerified} />
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-2">
@@ -78,11 +101,18 @@ export default async function ProductPassportPage({ params }: { params: Promise<
         </section>
 
         <PremiumCard className="mt-8">
-          <h2 className="text-xl font-black">External route</h2>
+          <h2 className="text-xl font-semibold tracking-[-0.01em]">External route</h2>
           <p className="mt-3 text-sm leading-6 text-textSecondary">{passport.externalRoute}</p>
           <p className="mt-3 text-sm leading-6 text-textSecondary">
-            PesaRoute shows the route explanation only. Any application, transfer, custody, execution, or payment happens
-            outside PesaRoute after independent verification.
+            Source:{" "}
+            <a className="font-semibold text-textPrimary underline decoration-border underline-offset-4" href={passport.sourceUrl}>
+              {passport.sourceLabel}
+            </a>
+            . If no source exists for future passports, show editorial educational content.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-textSecondary">
+            PesaRoute shows the route explanation only. Any application, transfer, custody, execution, or payment happens outside PesaRoute
+            after independent verification.
           </p>
         </PremiumCard>
       </PageShell>
@@ -93,8 +123,8 @@ export default async function ProductPassportPage({ params }: { params: Promise<
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <PremiumCard>
-      <p className="text-xs font-black uppercase tracking-[0.12em] text-textSecondary">{label}</p>
-      <p className="mt-2 text-base font-black text-textPrimary">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-textTertiary">{label}</p>
+      <p className="mt-2 text-base font-semibold text-textPrimary">{value}</p>
     </PremiumCard>
   );
 }
@@ -104,11 +134,11 @@ function ListBlock({ icon = "check", items, title }: { icon?: "check" | "disclos
 
   return (
     <PremiumCard>
-      <h2 className="text-xl font-black">{title}</h2>
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">{title}</h2>
       <div className="mt-4 grid gap-3">
         {items.map((item) => (
           <div className="flex gap-3" key={item}>
-            <Icon className="mt-0.5 h-5 w-5 shrink-0 text-emerald" aria-hidden />
+            <Icon className="mt-0.5 h-5 w-5 shrink-0 text-textTertiary" aria-hidden />
             <p className="text-sm leading-6 text-textSecondary">{item}</p>
           </div>
         ))}

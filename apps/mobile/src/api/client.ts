@@ -55,6 +55,7 @@ export type RegisterApiRequest = LoginApiRequest & {
   user_type?: UserProfileApiResponse["user_type"];
   approximate_investment_range?: string;
   privacy_mode_enabled?: boolean;
+  invite_code?: string;
 };
 
 export type DataGrantScope =
@@ -86,6 +87,8 @@ export type DataGrantApiRequest = {
 };
 
 export type ConsultationRequestApiRequest = {
+  learning_track?: number;
+  journal_entry?: number;
   selected_professional?: number;
   professional?: number;
   data_grant?: number;
@@ -139,6 +142,21 @@ export type ConsultationResponseApiResponse = {
   updated_at: string;
 };
 
+export type ConsultationOfferApiResponse = {
+  id: number;
+  consultation_request: number;
+  professional: number;
+  professional_name: string;
+  proposed_fee: string;
+  platform_fee_amount: string;
+  message: string;
+  estimated_duration: string;
+  available_slots_text: string;
+  status: "pending" | "accepted" | "rejected" | "expired";
+  created_at: string;
+  updated_at: string;
+};
+
 export type ConsultationRequestApiResponse = {
   id: number;
   selected_professional: number | null;
@@ -155,8 +173,13 @@ export type ConsultationRequestApiResponse = {
   topic?: string;
   notes?: string;
   status: string;
+  platform_fee_amount?: string;
+  paid_at?: string | null;
+  scheduled_at?: string | null;
   created_at: string;
+  updated_at?: string;
   responses?: ConsultationResponseApiResponse[];
+  offers?: ConsultationOfferApiResponse[];
 };
 
 export type ProductPassportQuery = {
@@ -190,6 +213,12 @@ export type OneOffPackApiResponse = {
     | "land_due_diligence_literacy_pack"
     | "diaspora_pack";
   name: string;
+  entitlement_key:
+    | "global_investing_pack_access"
+    | "treasury_bills_pack_access"
+    | "sacco_chama_pack_access"
+    | "land_pack_access"
+    | "diaspora_pack_access";
   price_kes: number;
   payment_provider: "manual_placeholder";
 };
@@ -202,12 +231,264 @@ export type BillingEntitlementSnapshot = {
     unlimited_scam_checks: boolean;
     portfolio_mirror: boolean;
     advanced_route_engine: boolean;
-    professional_request_priority: boolean;
-    professional_dashboard: boolean;
+    premium_learning: boolean;
+    private_journal_unlimited: boolean;
+    professional_review_priority: boolean;
+    professional_lead_inbox: boolean;
+    professional_profile_public: boolean;
+    professional_client_notes: boolean;
   };
   packs: Record<string, boolean>;
   dev_mode: boolean;
   payment_provider: "manual_placeholder";
+};
+
+export type PaymentPurpose = "subscription" | "one_off_pack" | "professional_consultation";
+
+export type PaymentIntentStatus = "pending" | "initiated" | "successful" | "failed" | "cancelled" | "expired";
+
+export type PaymentIntentApiRequest = {
+  purpose: PaymentPurpose;
+  plan_code?: BillingPlanApiResponse["code"];
+  pack_code?: OneOffPackApiResponse["code"];
+  consultation_request?: number;
+  phone_number?: string;
+  idempotency_key?: string;
+};
+
+export type PaymentIntentApiResponse = {
+  id: number;
+  purpose: PaymentPurpose;
+  plan_code: string;
+  pack_code: string;
+  consultation_request: number | null;
+  amount: string;
+  currency: "KES";
+  phone_number_masked: string;
+  provider: "mpesa";
+  status: PaymentIntentStatus;
+  provider_checkout_request_id: string;
+  provider_merchant_request_id: string;
+  provider_receipt: string;
+  idempotency_key: string;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+};
+
+export type NotificationApiResponse = {
+  id: number;
+  channel: "in_app" | "email" | "push" | "sms_placeholder";
+  type: string;
+  title: string;
+  body: string;
+  status: "unread" | "read" | "archived";
+  created_at: string;
+  read_at: string | null;
+};
+
+export type BetaFeatureFlagsApiResponse = {
+  payments_enabled: boolean;
+  professional_marketplace_enabled: boolean;
+  packs_enabled: boolean;
+  subscriptions_enabled: boolean;
+  beta_only_mode: boolean;
+};
+
+export type BetaFeedbackApiRequest = {
+  category: "payment_issue" | "privacy_question" | "professional_review_issue" | "bug_report" | "general";
+  message: string;
+  screenshot_placeholder?: string;
+};
+
+export type LearningLevel = "beginner" | "intermediate" | "advanced";
+
+export type LearningLessonType =
+  | "article"
+  | "quiz"
+  | "flashcard"
+  | "simulation"
+  | "journal_prompt"
+  | "checklist"
+  | "professional_review_prompt";
+
+export type LearningLessonApiResponse = {
+  id: number;
+  title: string;
+  slug: string;
+  lesson_type: LearningLessonType;
+  body: string;
+  summary: string;
+  order: number;
+  xp_reward: number;
+  is_premium: boolean;
+  status: string;
+  locked: boolean;
+};
+
+export type LearningCourseApiResponse = {
+  id: number;
+  track:
+    | number
+    | {
+        id: number;
+        title: string;
+        slug: string;
+        description: string;
+        level: LearningLevel;
+        target_user_type: string;
+        estimated_minutes: number;
+        is_premium: boolean;
+        status: string;
+        order: number;
+        course_count?: number;
+        lesson_count?: number;
+      };
+  title: string;
+  slug: string;
+  description: string;
+  order: number;
+  estimated_minutes: number;
+  is_premium: boolean;
+  status: string;
+  lessons: LearningLessonApiResponse[];
+};
+
+export type LearningTrackApiResponse = {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  level: LearningLevel;
+  target_user_type: string;
+  estimated_minutes: number;
+  is_premium: boolean;
+  status: string;
+  order: number;
+  course_count?: number;
+  lesson_count?: number;
+  courses?: LearningCourseApiResponse[];
+};
+
+export type LearningResourceApiResponse = {
+  id: number;
+  title: string;
+  resource_type: "guide" | "cheat_sheet" | "tutorial" | "glossary" | "market_brief" | "checklist";
+  body: string;
+  related_track: number | null;
+  related_track_slug: string;
+  related_product_category: number | null;
+  related_product_category_slug: string;
+  is_premium: boolean;
+  status: string;
+  locked?: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserLessonProgressApiResponse = {
+  id: number;
+  lesson: number;
+  lesson_title: string;
+  lesson_type: LearningLessonType;
+  course_slug: string;
+  track_slug: string;
+  status: "not_started" | "in_progress" | "completed";
+  score: string | null;
+  attempts: number;
+  completed_at: string | null;
+  updated_at: string;
+};
+
+export type UserCourseProgressApiResponse = {
+  id: number;
+  course: number;
+  course_title: string;
+  course_slug: string;
+  track_slug: string;
+  percent_complete: string;
+  last_lesson: number | null;
+  last_lesson_title: string;
+  completed_at: string | null;
+  updated_at: string;
+};
+
+export type UserBadgeApiResponse = {
+  id: number;
+  badge: {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    icon_key: string;
+    criteria_key: string;
+  };
+  awarded_at: string;
+};
+
+export type UserStreakApiResponse = {
+  current_streak_days: number;
+  longest_streak_days: number;
+  last_activity_date: string | null;
+  streak_freezes_available: number;
+  updated_at: string;
+};
+
+export type LearningProgressApiResponse = {
+  total_xp: number;
+  lessons: UserLessonProgressApiResponse[];
+  courses: UserCourseProgressApiResponse[];
+  badges: UserBadgeApiResponse[];
+  streak: UserStreakApiResponse;
+};
+
+export type LearningHomeApiResponse = {
+  streak: UserStreakApiResponse | null;
+  total_xp: number;
+  continue_learning: {
+    track: LearningTrackApiResponse;
+    course: Pick<LearningCourseApiResponse, "id" | "title" | "slug" | "estimated_minutes">;
+    lesson: LearningLessonApiResponse;
+  } | null;
+  recommended_track: LearningTrackApiResponse | null;
+  recent_badges: UserBadgeApiResponse[];
+  daily_challenge: {
+    title: string;
+    body: string;
+    action: "journal_reflection";
+    xp_reward: number;
+  };
+  quick_actions: Array<{ key: string; label: string }>;
+};
+
+export type LearningLibraryApiResponse = {
+  saved_tracks: LearningTrackApiResponse[];
+  in_progress_courses: UserCourseProgressApiResponse[];
+  completed_courses: UserCourseProgressApiResponse[];
+  practice_suggestions: LearningTrackApiResponse[];
+};
+
+export type LearningProgressSummaryApiResponse = {
+  total_xp: number;
+  streak: UserStreakApiResponse;
+  badges: UserBadgeApiResponse[];
+  completed_lessons: UserLessonProgressApiResponse[];
+  simulations_completed: number;
+  journal_reflections_completed: number;
+};
+
+export type LearningCompleteWithActionApiRequest = {
+  score?: number;
+  simulation_run_id?: number;
+  journal_entry_id?: number;
+  consultation_request_id?: number;
+};
+
+export type LearningCompleteWithActionApiResponse = {
+  progress: UserLessonProgressApiResponse;
+  action_xp_awarded: number;
+  linked_actions: string[];
+  total_xp: number;
 };
 
 type Paginated<T> = {
@@ -232,27 +513,34 @@ export type MMFApiRequest = {
   principal: string;
   annual_rate_percent: string;
   months: number;
+  learning_lesson_id?: number;
 };
 
 export type TBillApiRequest = {
   face_value: string;
   discount_rate_percent: string;
   days: number;
+  learning_lesson_id?: number;
 };
 
 export type SaccoApiRequest = {
   monthly_deposit: string;
   months: number;
   annual_dividend_percent: string;
+  learning_lesson_id?: number;
 };
 
 export type GlobalRouteApiRequest = {
   amount_kes: string;
   fx_rate: string;
   transfer_fee_percent: string;
+  learning_lesson_id?: number;
 };
 
 export type JournalApiRequest = {
+  learning_lesson?: number;
+  learning_course?: number;
+  learning_track?: number;
   goal: string;
   decision: string;
   amount_display_mode: AmountDisplayMode;
@@ -468,6 +756,26 @@ export class PesaRouteApiClient {
     });
   }
 
+  createPaymentIntent(body: PaymentIntentApiRequest, auth: AuthCredentials) {
+    return this.request<PaymentIntentApiResponse>("/api/payments/intents/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  initiatePaymentIntent(id: number, phoneNumber: string, auth: AuthCredentials) {
+    return this.request<PaymentIntentApiResponse>(`/api/payments/intents/${id}/initiate/`, {
+      method: "POST",
+      body: { phone_number: phoneNumber },
+      auth
+    });
+  }
+
+  getPaymentIntent(id: number, auth: AuthCredentials) {
+    return this.request<PaymentIntentApiResponse>(`/api/payments/intents/${id}/`, { auth });
+  }
+
   async listProfessionals() {
     const response = await this.request<Paginated<ProfessionalApiResponse>>("/api/marketplace/professionals/");
     return response.results;
@@ -554,5 +862,115 @@ export class PesaRouteApiClient {
 
   async myConsultationRequests(auth: AuthCredentials) {
     return this.listAll<ConsultationRequestApiResponse>("/api/marketplace/my-consultation-requests/", auth);
+  }
+
+  acceptConsultationOffer(id: number, auth: AuthCredentials) {
+    return this.request<ConsultationOfferApiResponse>(`/api/marketplace/consultation-offers/${id}/accept/`, {
+      method: "POST",
+      auth
+    });
+  }
+
+  startConsultationPayment(id: number, body: { phone_number?: string; idempotency_key?: string }, auth: AuthCredentials) {
+    return this.request<PaymentIntentApiResponse>(`/api/marketplace/consultation-requests/${id}/start-payment/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  consultationPaidStatus(id: number, auth: AuthCredentials) {
+    return this.request<ConsultationRequestApiResponse>(`/api/marketplace/consultation-requests/${id}/paid-status/`, {
+      auth
+    });
+  }
+
+  async notifications(auth: AuthCredentials) {
+    return this.listAll<NotificationApiResponse>("/api/notifications/", auth);
+  }
+
+  markNotificationRead(id: number, auth: AuthCredentials) {
+    return this.request<NotificationApiResponse>(`/api/notifications/${id}/read/`, { method: "POST", auth });
+  }
+
+  betaFlags() {
+    return this.request<BetaFeatureFlagsApiResponse>("/api/beta/flags/");
+  }
+
+  sendBetaFeedback(body: BetaFeedbackApiRequest, auth?: AuthCredentials | null) {
+    return this.request<{ id: number }>("/api/beta/feedback/", { method: "POST", body, auth });
+  }
+
+  async learningTracks(query?: { level?: LearningLevel; target_user_type?: string }) {
+    const response = await this.request<Paginated<LearningTrackApiResponse>>(withQuery("/api/learning/tracks/", query));
+    return response.results;
+  }
+
+  learningHome(auth?: AuthCredentials | null) {
+    return this.request<LearningHomeApiResponse>("/api/learning/home/", { auth });
+  }
+
+  learningLibrary(auth?: AuthCredentials | null) {
+    return this.request<LearningLibraryApiResponse>("/api/learning/library/", { auth });
+  }
+
+  learningProgress(auth: AuthCredentials) {
+    return this.request<LearningProgressSummaryApiResponse>("/api/learning/progress/", { auth });
+  }
+
+  learningTrack(slug: string) {
+    return this.request<LearningTrackApiResponse>(`/api/learning/tracks/${slug}/`);
+  }
+
+  learningCourse(slug: string) {
+    return this.request<LearningCourseApiResponse>(`/api/learning/courses/${slug}/`);
+  }
+
+  async learningResources(query?: { resource_type?: LearningResourceApiResponse["resource_type"]; track?: string }) {
+    return this.listAll<LearningResourceApiResponse>(withQuery("/api/learning/resources/", query));
+  }
+
+  learningMyProgress(auth: AuthCredentials) {
+    return this.request<LearningProgressApiResponse>("/api/learning/my-progress/", { auth });
+  }
+
+  startLearningLesson(id: number, auth: AuthCredentials) {
+    return this.request<UserLessonProgressApiResponse>(`/api/learning/lessons/${id}/start/`, {
+      method: "POST",
+      auth
+    });
+  }
+
+  completeLearningLesson(id: number, auth: AuthCredentials, score?: number) {
+    return this.request<UserLessonProgressApiResponse>(`/api/learning/lessons/${id}/complete/`, {
+      method: "POST",
+      body: score === undefined ? {} : { score },
+      auth
+    });
+  }
+
+  completeLearningLessonWithAction(id: number, body: LearningCompleteWithActionApiRequest, auth: AuthCredentials) {
+    return this.request<LearningCompleteWithActionApiResponse>(`/api/learning/lessons/${id}/complete-with-action/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  learningXp(auth: AuthCredentials) {
+    return this.request<{ total_xp: number; events: Array<{ id: number; source_type: string; source_id: string; xp_amount: number; created_at: string }> }>(
+      "/api/learning/xp/",
+      { auth }
+    );
+  }
+
+  learningBadges(auth: AuthCredentials) {
+    return this.request<{ available: UserBadgeApiResponse["badge"][]; earned: UserBadgeApiResponse[] }>("/api/learning/badges/", {
+      auth
+    });
+  }
+
+  learningStreak(auth: AuthCredentials) {
+    return this.request<UserStreakApiResponse>("/api/learning/streak/", { auth });
   }
 }

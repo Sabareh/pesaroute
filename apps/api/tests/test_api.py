@@ -318,8 +318,8 @@ def test_professional_can_respond_to_eligible_lead(api_client, user, professiona
     )
     assert response.status_code == 201
     lead.refresh_from_db()
-    assert lead.status == ConsultationRequest.Status.RESPONDED
-    assert lead.selected_professional == professional
+    assert lead.status == ConsultationRequest.Status.PROFESSIONAL_RESPONDED
+    assert lead.selected_professional is None
     assert ConsultationResponse.objects.filter(consultation_request=lead, professional=professional).exists()
 
 

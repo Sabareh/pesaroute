@@ -16,6 +16,7 @@ from billing.services import (
     entitlement_snapshot,
     grant_dev_pack,
     grant_dev_subscription,
+    pack_access_key,
     seed_default_plans,
 )
 
@@ -47,6 +48,7 @@ class OneOffPackListView(APIView):
                 {
                     "code": code,
                     "name": label,
+                    "entitlement_key": pack_access_key(code),
                     "price_kes": ONE_OFF_PACK_PRICES.get(code, 0),
                     "payment_provider": "manual_placeholder",
                 }

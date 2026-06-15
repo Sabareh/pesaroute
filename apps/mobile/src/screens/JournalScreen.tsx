@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { maliPrime } from "../components/maliprime";
 import type { AmountDisplayMode, JournalEntry, JournalEntryDraft } from "../types";
 
 const amountModes: AmountDisplayMode[] = ["exact", "rounded", "range", "hidden"];
@@ -109,11 +110,17 @@ export function JournalScreen({
       </View>
 
       <View style={styles.form}>
-        <TextInput onChangeText={setGoal} placeholder="Goal" placeholderTextColor="#7D8794" style={styles.input} value={goal} />
+        <TextInput
+          onChangeText={setGoal}
+          placeholder="Goal"
+          placeholderTextColor={maliPrime.colors.textTertiary}
+          style={styles.input}
+          value={goal}
+        />
         <TextInput
           onChangeText={setDecision}
           placeholder="Decision"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           style={styles.input}
           value={decision}
         />
@@ -121,7 +128,7 @@ export function JournalScreen({
           editable={amountDisplayMode !== "hidden"}
           onChangeText={setAmountText}
           placeholder="Amount e.g. KES 10k-20k"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           style={[styles.input, amountDisplayMode === "hidden" && styles.inputDisabled]}
           value={amountDisplayMode === "hidden" ? "" : amountText}
         />
@@ -141,7 +148,7 @@ export function JournalScreen({
           multiline
           onChangeText={setReason}
           placeholder="Reason and risks considered"
-          placeholderTextColor="#7D8794"
+          placeholderTextColor={maliPrime.colors.textTertiary}
           style={[styles.input, styles.multi]}
           textAlignVertical="top"
           value={reason}
@@ -202,105 +209,106 @@ export function JournalScreen({
 }
 
 const styles = StyleSheet.create({
-  title: { color: "#0B1220", fontSize: 30, fontWeight: "900" },
-  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  title: { color: maliPrime.colors.textPrimary, fontSize: 30, fontWeight: "700", lineHeight: 36 },
+  copy: { color: maliPrime.colors.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 10 },
   syncCard: {
-    backgroundColor: "#fff8ef",
-    borderColor: "#F7D79A",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
     borderWidth: 1,
     marginTop: 16,
-    padding: 14
+    padding: 14,
+    ...maliPrime.shadow
   },
-  syncTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
-  syncCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 4 },
+  syncTitle: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "700" },
+  syncCopy: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 },
   syncButton: {
     alignItems: "center",
-    backgroundColor: "#0B1220",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
   },
-  syncButtonText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
+  syncButtonText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "700" },
   promptButton: {
     alignItems: "center",
-    backgroundColor: "#2457FF",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 12,
     minHeight: 44
   },
-  promptButtonText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
+  promptButtonText: { color: maliPrime.colors.surface, fontSize: 13, fontWeight: "700" },
   form: { gap: 10, marginTop: 20 },
   input: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E5EAF0",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
     borderWidth: 1,
-    color: "#0B1220",
+    color: maliPrime.colors.textPrimary,
     fontSize: 15,
     minHeight: 50,
     paddingHorizontal: 14
   },
-  inputDisabled: { backgroundColor: "#F1F4F9" },
+  inputDisabled: { backgroundColor: maliPrime.colors.surfaceAlt },
   multi: { minHeight: 100, paddingTop: 14, textAlignVertical: "top" },
   modeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   mode: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E5EAF0",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.pill,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 8
   },
-  modeActive: { backgroundColor: "#EAF0FF", borderColor: "#2457FF" },
-  modeText: { color: "#5B6472", fontSize: 12, fontWeight: "900", textTransform: "capitalize" },
-  modeTextActive: { color: "#2457FF" },
+  modeActive: { backgroundColor: maliPrime.colors.primary, borderColor: maliPrime.colors.primary },
+  modeText: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
+  modeTextActive: { color: maliPrime.colors.surface },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  save: { alignItems: "center", backgroundColor: "#2457FF", borderRadius: 16, flex: 1, justifyContent: "center", minHeight: 50 },
-  saveDisabled: { backgroundColor: "#9FB2D6" },
-  saveText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
-  cancel: { alignItems: "center", backgroundColor: "#EAF0FF", borderRadius: 16, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
-  cancelText: { color: "#2457FF", fontSize: 13, fontWeight: "900" },
-  status: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 10 },
-  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 8 },
-  listTitle: { color: "#0B1220", fontSize: 18, fontWeight: "900", marginTop: 24 },
-  empty: { color: "#5B6472", fontSize: 14, marginTop: 10 },
+  save: { alignItems: "center", backgroundColor: maliPrime.colors.primary, borderRadius: maliPrime.radius.md, flex: 1, justifyContent: "center", minHeight: 50 },
+  saveDisabled: { backgroundColor: maliPrime.colors.textTertiary },
+  saveText: { color: maliPrime.colors.surface, fontSize: 15, fontWeight: "700" },
+  cancel: { alignItems: "center", backgroundColor: maliPrime.colors.surfaceAlt, borderRadius: maliPrime.radius.md, justifyContent: "center", minHeight: 50, paddingHorizontal: 14 },
+  cancelText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  status: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 10 },
+  error: { color: maliPrime.colors.warning, fontSize: 13, lineHeight: 19, marginTop: 8 },
+  listTitle: { color: maliPrime.colors.textPrimary, fontSize: 18, fontWeight: "700", marginTop: 24 },
+  empty: { color: maliPrime.colors.textSecondary, fontSize: 14, marginTop: 10 },
   entries: { gap: 10, marginTop: 12 },
-  entry: { backgroundColor: "#ffffff", borderColor: "#E5EAF0", borderRadius: 16, borderWidth: 1, padding: 14 },
+  entry: { backgroundColor: maliPrime.colors.surface, borderColor: maliPrime.colors.border, borderRadius: maliPrime.radius.lg, borderWidth: 1, padding: 14 },
   entryMuted: { opacity: 0.72 },
-  entryGoal: { color: "#2457FF", flex: 1, fontSize: 13, fontWeight: "900" },
+  entryGoal: { color: maliPrime.colors.textPrimary, flex: 1, fontSize: 13, fontWeight: "700" },
   privateBadge: {
-    backgroundColor: "#E9F8F1",
-    borderRadius: 16,
-    color: "#0FA36B",
+    backgroundColor: "#E8F0EA",
+    borderRadius: maliPrime.radius.pill,
+    color: maliPrime.colors.emerald,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
     overflow: "hidden",
     paddingHorizontal: 8,
     paddingVertical: 4
   },
   entryMetaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   syncPill: {
-    backgroundColor: "#EAF0FF",
-    borderRadius: 16,
-    color: "#2457FF",
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.pill,
+    color: maliPrime.colors.textSecondary,
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "700",
     overflow: "hidden",
     paddingHorizontal: 8,
     paddingVertical: 4,
     textTransform: "uppercase"
   },
-  syncPillError: { backgroundColor: "#FDECEC", color: "#A86500" },
-  entryDecision: { color: "#0B1220", fontSize: 15, fontWeight: "900", lineHeight: 22, marginTop: 4 },
-  entryMeta: { color: "#5B6472", fontSize: 12, fontWeight: "800", marginTop: 6 },
-  entryReason: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  syncPillError: { backgroundColor: "#FFF1F0", color: maliPrime.colors.danger },
+  entryDecision: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "700", lineHeight: 22, marginTop: 4 },
+  entryMeta: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", marginTop: 6 },
+  entryReason: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
   itemActions: { flexDirection: "row", gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: "#EAF0FF", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
-  smallButtonText: { color: "#2457FF", fontSize: 12, fontWeight: "900" },
-  deleteButton: { backgroundColor: "#FDECEC", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8 },
-  deleteButtonText: { color: "#A86500", fontSize: 12, fontWeight: "900" },
+  smallButton: { backgroundColor: maliPrime.colors.surfaceAlt, borderRadius: maliPrime.radius.pill, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButtonText: { color: maliPrime.colors.textPrimary, fontSize: 12, fontWeight: "700" },
+  deleteButton: { backgroundColor: "#FFF1F0", borderRadius: maliPrime.radius.pill, paddingHorizontal: 12, paddingVertical: 8 },
+  deleteButtonText: { color: maliPrime.colors.danger, fontSize: 12, fontWeight: "700" },
   pressed: { opacity: 0.78 }
 });

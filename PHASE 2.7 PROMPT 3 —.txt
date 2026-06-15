@@ -1,0 +1,333 @@
+PHASE 2.7 PROMPT 3 — Build safe scheduled data pipeline framework for Kenyan investment sources
+
+Now build the first version of scheduled data pipelines for PesaRoute.
+
+Goal:
+Create a safe, auditable, slow-growing data pipeline framework that can regularly update the Kenya Investment Knowledge Base from public/official sources.
+
+Important:
+Do not build fragile scraping everywhere.
+Do not bypass robots.txt or terms.
+Do not redistribute restricted NSE market prices.
+Do not add AI.
+Do not add investment execution.
+Do not add account linking.
+Do not create data that looks verified if it has not passed validation/review.
+
+Pipeline philosophy:
+Extract safely → store raw snapshot → parse → normalize → validate → stage → compare changes → admin review if needed → publish canonical data.
+
+Pipeline stages:
+
+1. source discovery/check
+2. fetch raw content
+3. store raw snapshot
+4. parse into SourceRecord
+5. normalize
+6. validate
+7. create DataQualityIssue if needed
+8. upsert staging data
+9. compare with canonical data
+10. auto-approve low-risk updates
+11. require admin review for sensitive changes
+12. publish
+13. update freshness status
+14. notify admin of important changes
+
+Tasks:
+
+1. Create pipeline package/module:
+
+* pipelines/
+* connectors/
+* parsers/
+* validators/
+* normalizers/
+* publishers/
+* schedules/
+
+2. Create base connector interface:
+
+* source_slug
+* fetch()
+* parse(raw_snapshot)
+* normalize(parsed_records)
+* validate(normalized_records)
+* stage(normalized_records)
+* publish(staged_records, auto_approve=False)
+* run(dry_run=False)
+
+3. Implement common utilities:
+
+* safe HTTP client with timeout
+* user-agent configuration
+* retry with backoff
+* content hashing
+* content type detection
+* raw snapshot storage
+* parser error handling
+* structured logging
+* ingestion run status updates
+* idempotent source record upserts
+
+4. Add management commands:
+
+* python manage.py run_data_pipeline --source SOURCE_SLUG --dry-run
+* python manage.py run_data_pipeline --all-active --dry-run
+* python manage.py list_data_sources
+* python manage.py mark_source_stale --source SOURCE_SLUG
+* python manage.py import_source_csv --source SOURCE_SLUG --file path/to/file.csv
+
+5. Add CSV import framework:
+   This is important because some official data may be PDFs or pages that are better curated manually first.
+   CSV import should support:
+
+* providers
+* product passports
+* listed companies
+* SACCOs
+* government securities
+* regulator licensees
+* learning references
+
+CSV import must:
+
+* validate required columns
+* create SourceRecord entries
+* attach SourceReferences
+* support dry-run
+* produce DataQualityIssue rows
+* not overwrite published data without review unless --auto-approve is passed
+
+6. Create connector stubs and first safe implementations:
+
+A. CMA licensee connector
+Source slugs:
+
+* cma-approved-cis
+* cma-fund-managers
+* cma-investment-advisers
+* cma-stockbrokers
+  Purpose:
+* fetch official pages where possible
+* parse only if structure is simple and stable
+* otherwise store raw snapshot and mark needs_review
+* normalize to InvestmentProvider and RegulatedEntityStatus
+* attach SourceReference
+
+B. CBK Treasury bills connector
+Source slug:
+
+* cbk-treasury-bills
+  Purpose:
+* fetch CBK Treasury bills page
+* parse available current schedule/results links if simple
+* store raw snapshot
+* support manual PDF/CSV import for auction results
+* normalize to GovernmentSecurityReference
+* do not fail if PDF parsing is unavailable
+* mark needs_review where extraction is uncertain
+
+C. CBK Treasury bonds connector
+Source slug:
+
+* cbk-treasury-bonds
+  Purpose:
+* similar to T-bills
+* handle bonds and infrastructure bonds as source references
+* do not overfit to one PDF format
+
+D. NSE listed companies connector
+Source slug:
+
+* nse-listed-companies
+  Purpose:
+* fetch listed companies page
+* normalize company names/symbols if available
+* do not fetch/redistribute restricted price data
+* add source reference to NSE data services policy page
+* mark market data as restricted/permission_required in source notes
+
+E. SASRA regulated SACCOs connector
+Source slug:
+
+* sasra-regulated-saccos
+  Purpose:
+* fetch regulated SACCOs/list page
+* parse if simple
+* otherwise raw snapshot + manual CSV workflow
+* normalize to SaccoEntity
+* mark status and year if available
+
+F. RBA registered providers connector
+Source slug:
+
+* rba-registered-service-providers
+  Purpose:
+* fetch registered fund managers/service provider references
+* parse if simple
+* otherwise raw snapshot + manual CSV workflow
+* normalize provider/service-provider statuses
+
+G. IRA licensed entities connector
+Source slug:
+
+* ira-licensed-entities
+  Purpose:
+* fetch official licensed insurers/intermediaries references
+* parse if simple
+* otherwise raw snapshot + manual CSV workflow
+* normalize insurer/intermediary provider references for educational directory
+
+7. Add freshness logic:
+   For each ProductPassport, Provider, RegulatedEntityStatus, ListedCompany, SaccoEntity, GovernmentSecurityReference:
+
+* fresh if last_verified_at within expected update frequency
+* acceptable if slightly older
+* stale if older than threshold
+* unknown if never verified
+
+Suggested thresholds:
+
+* CBK auction data: stale after 14 days
+* NSE listed company list: stale after 30 days
+* CMA licensees: stale after 30–60 days
+* SASRA SACCO lists: stale after 90 days or annually depending source
+* RBA/IRA: stale after 60–90 days
+* generic educational content: review every 180 days
+
+8. Add scheduled tasks:
+   Use existing Celery/Celery Beat or project’s scheduler.
+
+Schedules:
+
+* CBK Treasury bills: weekly
+* CBK Treasury bonds: weekly
+* NSE listed companies: weekly
+* CMA licensees: weekly or monthly
+* SASRA SACCOs: monthly
+* RBA service providers: monthly
+* IRA licensed entities: monthly
+* data freshness scan: daily
+* data quality issue summary: daily
+
+If Celery Beat is not configured, add scheduler placeholders and docs.
+
+9. Admin review workflow:
+   Add admin views or endpoints:
+
+* list ingestion runs
+* inspect raw snapshot metadata
+* inspect source records needing review
+* compare old vs new normalized payload
+* approve source record
+* reject source record
+* publish approved changes
+* view data quality issues
+* view stale sources
+* manually mark source as verified
+
+10. Change events:
+    Create DataChangeEvent model if useful:
+
+* object_type
+* object_id
+* change_type:
+
+  * created
+  * updated
+  * retired
+  * stale
+  * source_changed
+* old_value JSON
+* new_value JSON
+* source
+* ingestion_run
+* requires_review
+* created_at
+
+Use this for:
+
+* auditability
+* admin review
+* future notifications
+* provider change history
+
+11. API/UI updates:
+    Public product/provider pages should show:
+
+* Source
+* Last verified
+* Freshness label
+* “Verify with regulator/provider before committing money”
+* “Educational information only”
+
+Admin pages should show:
+
+* pipeline health
+* last successful run
+* data freshness summary
+* open data quality issues
+* pending reviews
+
+12. Tests:
+    Add tests for:
+
+* pipeline dry-run does not publish
+* successful connector creates ingestion run
+* raw snapshot stored with content hash
+* duplicate source record does not duplicate canonical provider
+* CSV import validates required fields
+* bad CSV creates DataQualityIssue
+* stale freshness logic works
+* admin review required for sensitive updates
+* public API does not expose raw_payload/internal notes
+* NSE connector does not ingest price data unless explicitly allowed/configured
+
+13. Documentation:
+    Create docs/data-pipelines.md with:
+
+* pipeline architecture
+* source list
+* schedule
+* source terms/permission caution
+* CSV import format examples
+* dry-run process
+* admin review process
+* freshness rules
+* troubleshooting
+* how to add a new connector
+* how to disable a connector
+* production safety checklist
+
+14. Seed/update DataSource records:
+    Ensure all supported source slugs exist with:
+
+* homepage_url
+* data_url
+* parser_strategy
+* update_frequency
+* authority_level
+* license_notes
+* terms_url if known
+* is_active default false for connectors that are not fully safe yet
+* active only for manually tested safe connectors
+
+Important safety defaults:
+
+* New connectors should run in dry-run mode first.
+* Auto-publish should be false by default.
+* Sensitive changes should need admin approval.
+* If parser confidence is low, mark needs_review.
+* If source terms are unclear, fetch metadata only and use manual CSV import.
+
+At the end:
+
+* run backend tests
+* run one or two pipelines in dry-run if network is available
+* run CSV import test with sample CSV fixtures
+* summarize pipeline framework
+* summarize active/inactive connectors
+* summarize data freshness rules
+* summarize remaining work before production scheduling
+

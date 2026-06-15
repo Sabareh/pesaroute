@@ -123,6 +123,22 @@ export type ProductPassport = {
   documents_needed: string[];
   execution_route_external: string;
   disclosures: string;
+  public_source_url?: string;
+  last_verified_at?: string | null;
+  source_references?: Array<{
+    id: number;
+    title: string;
+    url: string;
+    citation_label: string;
+    notes: string;
+    source?: {
+      id: number;
+      name: string;
+      slug: string;
+      homepage_url: string;
+      data_url: string;
+    };
+  }>;
   is_sponsored: boolean;
   status: string;
   created_at?: string;

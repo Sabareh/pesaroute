@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import type { UserProfileApiResponse } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { maliPrime } from "../components/maliprime";
 
 const userTypes: Array<{ label: string; value: UserProfileApiResponse["user_type"] }> = [
   { label: "Student", value: "student" },
@@ -95,8 +96,8 @@ export function PrivacyOnboardingScreen() {
         </View>
         <Switch
           onValueChange={setPrivacyModeEnabled}
-          thumbColor={privacyModeEnabled ? "#ffffff" : "#f5f5f5"}
-          trackColor={{ false: "#C8D1DE", true: "#2457FF" }}
+          thumbColor={privacyModeEnabled ? maliPrime.colors.surface : maliPrime.colors.surfaceAlt}
+          trackColor={{ false: maliPrime.colors.surfaceSubtle, true: maliPrime.colors.emerald }}
           value={privacyModeEnabled}
         />
       </View>
@@ -119,27 +120,27 @@ export function PrivacyOnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  eyebrow: { color: "#F59E0B", fontSize: 13, fontWeight: "900", textTransform: "uppercase" },
-  title: { color: "#0B1220", fontSize: 32, fontWeight: "900", lineHeight: 40, marginTop: 10 },
-  copy: { color: "#5B6472", fontSize: 16, lineHeight: 24, marginTop: 12 },
-  groupTitle: { color: "#0B1220", fontSize: 15, fontWeight: "900", marginTop: 20 },
+  eyebrow: { color: maliPrime.colors.amber, fontSize: 13, fontWeight: "700", textTransform: "uppercase" },
+  title: { color: maliPrime.colors.textPrimary, fontSize: 32, fontWeight: "700", lineHeight: 40, marginTop: 10 },
+  copy: { color: maliPrime.colors.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 12 },
+  groupTitle: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "700", marginTop: 20 },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   pill: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E5EAF0",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.pill,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10
   },
-  pillActive: { backgroundColor: "#EAF0FF", borderColor: "#2457FF" },
-  pillText: { color: "#5B6472", fontSize: 13, fontWeight: "900" },
-  pillTextActive: { color: "#2457FF" },
+  pillActive: { backgroundColor: maliPrime.colors.primary, borderColor: maliPrime.colors.primary },
+  pillText: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700" },
+  pillTextActive: { color: maliPrime.colors.surface },
   switchRow: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#E5EAF0",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.lg,
     borderWidth: 1,
     flexDirection: "row",
     gap: 14,
@@ -148,26 +149,26 @@ const styles = StyleSheet.create({
     padding: 14
   },
   switchText: { flex: 1 },
-  switchTitle: { color: "#0B1220", fontSize: 15, fontWeight: "900" },
-  switchCopy: { color: "#5B6472", fontSize: 13, lineHeight: 19, marginTop: 4 },
-  error: { color: "#A86500", fontSize: 13, lineHeight: 19, marginTop: 10 },
+  switchTitle: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "700" },
+  switchCopy: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 },
+  error: { color: maliPrime.colors.warning, fontSize: 13, lineHeight: 19, marginTop: 10 },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#2457FF",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.primary,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 20,
     minHeight: 52
   },
-  primaryText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
+  primaryText: { color: maliPrime.colors.surface, fontSize: 15, fontWeight: "700" },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: "#EAF0FF",
-    borderRadius: 16,
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.md,
     justifyContent: "center",
     marginTop: 10,
     minHeight: 48
   },
-  secondaryText: { color: "#2457FF", fontSize: 13, fontWeight: "900" },
-  disabled: { backgroundColor: "#9FB2D6" }
+  secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  disabled: { backgroundColor: maliPrime.colors.textTertiary }
 });

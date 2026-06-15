@@ -3,6 +3,7 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 
 from billing.models import Entitlement, EntitlementCode, Invoice, OneOffPackCode, OneOffPurchase, Plan, Subscription
@@ -14,22 +15,29 @@ FREE_ENTITLEMENTS = {
 }
 
 PREMIUM_ENTITLEMENTS = {
+    EntitlementCode.PREMIUM_LEARNING,
     EntitlementCode.UNLIMITED_SIMULATIONS,
     EntitlementCode.UNLIMITED_SCAM_CHECKS,
     EntitlementCode.PORTFOLIO_MIRROR,
     EntitlementCode.ADVANCED_ROUTE_ENGINE,
-    EntitlementCode.PROFESSIONAL_REQUEST_PRIORITY,
+    EntitlementCode.PRIVATE_JOURNAL_UNLIMITED,
+    EntitlementCode.PROFESSIONAL_REVIEW_PRIORITY,
 }
 
 PROFESSIONAL_BASIC_ENTITLEMENTS = {
-    EntitlementCode.PROFESSIONAL_DASHBOARD,
-    EntitlementCode.PROFESSIONAL_LEADS,
+    EntitlementCode.PROFESSIONAL_PROFILE_PUBLIC,
+    EntitlementCode.PROFESSIONAL_LEAD_INBOX,
 }
 
 PROFESSIONAL_PRO_ENTITLEMENTS = {
-    EntitlementCode.PROFESSIONAL_DASHBOARD,
-    EntitlementCode.PROFESSIONAL_LEADS,
-    EntitlementCode.PROFESSIONAL_ANALYTICS,
+    EntitlementCode.PROFESSIONAL_PROFILE_PUBLIC,
+    EntitlementCode.PROFESSIONAL_LEAD_INBOX,
+    EntitlementCode.PROFESSIONAL_CLIENT_NOTES,
+}
+
+PROFESSIONAL_PLAN_FEATURES = {
+    Plan.Code.PROFESSIONAL_BASIC: PROFESSIONAL_BASIC_ENTITLEMENTS,
+    Plan.Code.PROFESSIONAL_PRO: PROFESSIONAL_PRO_ENTITLEMENTS,
 }
 
 DEFAULT_PLANS: list[dict[str, Any]] = [
@@ -83,6 +91,32 @@ ONE_OFF_PACK_PRICES = {
     OneOffPackCode.DIASPORA: 500,
 }
 
+PACK_ENTITLEMENT_BY_CODE = {
+    OneOffPackCode.GLOBAL_INVESTING: EntitlementCode.GLOBAL_INVESTING_PACK_ACCESS,
+    OneOffPackCode.TREASURY_BILLS: EntitlementCode.TREASURY_BILLS_PACK_ACCESS,
+    OneOffPackCode.SACCO_CHAMA: EntitlementCode.SACCO_CHAMA_PACK_ACCESS,
+    OneOffPackCode.LAND_DUE_DILIGENCE_LITERACY: EntitlementCode.LAND_PACK_ACCESS,
+    OneOffPackCode.DIASPORA: EntitlementCode.DIASPORA_PACK_ACCESS,
+}
+
+ENTITLEMENT_KEYS = {
+    EntitlementCode.PREMIUM_LEARNING,
+    EntitlementCode.UNLIMITED_SIMULATIONS,
+    EntitlementCode.UNLIMITED_SCAM_CHECKS,
+    EntitlementCode.PORTFOLIO_MIRROR,
+    EntitlementCode.ADVANCED_ROUTE_ENGINE,
+    EntitlementCode.PRIVATE_JOURNAL_UNLIMITED,
+    EntitlementCode.PROFESSIONAL_REVIEW_PRIORITY,
+    EntitlementCode.GLOBAL_INVESTING_PACK_ACCESS,
+    EntitlementCode.TREASURY_BILLS_PACK_ACCESS,
+    EntitlementCode.SACCO_CHAMA_PACK_ACCESS,
+    EntitlementCode.LAND_PACK_ACCESS,
+    EntitlementCode.DIASPORA_PACK_ACCESS,
+    EntitlementCode.PROFESSIONAL_LEAD_INBOX,
+    EntitlementCode.PROFESSIONAL_PROFILE_PUBLIC,
+    EntitlementCode.PROFESSIONAL_CLIENT_NOTES,
+}
+
 
 def seed_default_plans() -> list[Plan]:
     plans: list[Plan] = []
@@ -131,9 +165,9 @@ def active_pack_entitlements(user) -> set[str]:
     if not is_authenticated_user(user):
         return set()
     return {
-        purchase.pack_code
+        PACK_ENTITLEMENT_BY_CODE[purchase.pack_code]
         for purchase in OneOffPurchase.objects.filter(user=user, status=OneOffPurchase.Status.COMPLETED)
-        if purchase.is_active
+        if purchase.is_active and purchase.pack_code in PACK_ENTITLEMENT_BY_CODE
     }
 
 
@@ -145,8 +179,33 @@ def get_entitlement_codes(user) -> set[str]:
     return entitlements
 
 
+def user_has_entitlement(user, entitlement_key: str) -> bool:
+    return entitlement_key in get_entitlement_codes(user)
+
+
 def has_entitlement(user, code: str) -> bool:
-    return code in get_entitlement_codes(user)
+    # Backward-compatible alias for older callers.
+    return user_has_entitlement(user, code)
+
+
+def require_entitlement(user, entitlement_key: str) -> None:
+    if not user_has_entitlement(user, entitlement_key):
+        raise PermissionDenied(f"Missing required entitlement: {entitlement_key}")
+
+
+def professional_has_plan_feature(professional, feature_key: str) -> bool:
+    user = getattr(professional, "user", None)
+    if user is None and hasattr(professional, "is_authenticated"):
+        user = professional
+    return user_has_entitlement(user, feature_key)
+
+
+def pack_access_key(pack_code: str) -> str:
+    return PACK_ENTITLEMENT_BY_CODE[pack_code]
+
+
+def has_pack_access(user, pack_code: str) -> bool:
+    return user_has_entitlement(user, pack_access_key(pack_code))
 
 
 def entitlement_snapshot(user) -> dict[str, Any]:
@@ -155,14 +214,18 @@ def entitlement_snapshot(user) -> dict[str, Any]:
         "is_authenticated": is_authenticated_user(user),
         "entitlements": codes,
         "features": {
+            "premium_learning": EntitlementCode.PREMIUM_LEARNING in codes,
             "unlimited_simulations": EntitlementCode.UNLIMITED_SIMULATIONS in codes,
             "unlimited_scam_checks": EntitlementCode.UNLIMITED_SCAM_CHECKS in codes,
             "portfolio_mirror": EntitlementCode.PORTFOLIO_MIRROR in codes,
             "advanced_route_engine": EntitlementCode.ADVANCED_ROUTE_ENGINE in codes,
-            "professional_request_priority": EntitlementCode.PROFESSIONAL_REQUEST_PRIORITY in codes,
-            "professional_dashboard": EntitlementCode.PROFESSIONAL_DASHBOARD in codes,
+            "private_journal_unlimited": EntitlementCode.PRIVATE_JOURNAL_UNLIMITED in codes,
+            "professional_review_priority": EntitlementCode.PROFESSIONAL_REVIEW_PRIORITY in codes,
+            "professional_lead_inbox": EntitlementCode.PROFESSIONAL_LEAD_INBOX in codes,
+            "professional_profile_public": EntitlementCode.PROFESSIONAL_PROFILE_PUBLIC in codes,
+            "professional_client_notes": EntitlementCode.PROFESSIONAL_CLIENT_NOTES in codes,
         },
-        "packs": {pack_code: pack_code in codes for pack_code in OneOffPackCode.values},
+        "packs": {pack_code: PACK_ENTITLEMENT_BY_CODE[pack_code] in codes for pack_code in OneOffPackCode.values},
         "dev_mode": settings.DEBUG,
         "payment_provider": "manual_placeholder",
     }
@@ -214,3 +277,11 @@ def grant_dev_pack(user, pack_code: str) -> OneOffPurchase:
         },
     )
     return purchase
+
+
+def expire_dev_subscriptions(user, plan_code: str | None = None) -> int:
+    queryset = Subscription.objects.filter(user=user)
+    if plan_code:
+        queryset = queryset.filter(plan__code=plan_code)
+    now = timezone.now()
+    return queryset.update(status=Subscription.Status.EXPIRED, current_period_end=now - timedelta(seconds=1))

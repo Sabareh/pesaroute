@@ -1,0 +1,250 @@
+PHASE 3 PROMPT 3 — Professional paid review flow, beta admin, notifications, and final QA
+
+Implement Phase 3 monetization completion for PesaRoute.
+
+Goal:
+Finish the private beta monetization loop:
+
+* user pays for premium/packs
+* user can request professional review
+* professional can respond
+* professional review can be booked as a paid service
+* beta admin can manage users, professionals, payments, and feature access
+* notifications work for key events
+* app is ready for 20–50 private beta users
+
+PART A — Professional paid review flow
+
+Backend tasks:
+
+1. Extend ConsultationRequest lifecycle:
+
+   * draft
+   * submitted
+   * professional_responded
+   * user_selected_professional
+   * awaiting_payment
+   * paid
+   * scheduled
+   * completed
+   * cancelled
+2. Add ConsultationOffer if needed:
+
+   * consultation_request
+   * professional
+   * proposed_fee
+   * message
+   * estimated_duration
+   * available_slots_text optional
+   * status: pending | accepted | rejected | expired
+3. Add payment support for professional consultation:
+
+   * create payment intent with purpose professional_consultation
+   * mark consultation paid after successful payment
+   * do not implement professional payout yet
+   * record platform_fee placeholder
+4. Add endpoints:
+
+   * professional creates/responds with offer
+   * user accepts offer
+   * user starts consultation payment
+   * user views paid consultation status
+   * professional views paid/scheduled consultations
+5. Add permission tests:
+
+   * professional cannot see exact data without grant
+   * user can only accept offers for their own request
+   * professional can only respond to eligible requests
+   * payment success marks consultation paid
+   * failed payment does not mark paid
+
+Mobile tasks:
+
+1. My Requests screen:
+
+   * show request status
+   * show professional responses/offers
+   * allow selecting professional
+   * allow starting payment
+   * show paid status
+2. Professional detail/review flow:
+
+   * show clear “educational/professional review” wording
+   * do not imply guaranteed returns
+   * do not imply platform advice
+3. Data sharing:
+
+   * before booking, show what data professional can see
+   * exact values default OFF
+   * access duration visible
+
+Professional web portal tasks:
+
+1. Leads inbox:
+
+   * view eligible leads
+   * respond with offer
+   * see accepted/paid consultations
+2. Lead detail:
+
+   * show limited view if no grant
+   * show granted context only if allowed
+3. Add status badges.
+
+PART B — Notifications
+
+Backend tasks:
+
+1. Add notification model if missing:
+
+   * user
+   * channel: in_app | email | push | sms_placeholder
+   * type
+   * title
+   * body
+   * status
+   * created_at
+   * read_at
+2. Add notifications for:
+
+   * payment successful
+   * payment failed
+   * premium activated
+   * pack unlocked
+   * professional responded
+   * consultation paid
+   * data grant expiring
+   * journal review reminder
+3. Add endpoints:
+
+   * GET /api/notifications/
+   * POST /api/notifications/{id}/read/
+4. Mobile:
+
+   * notification inbox
+   * notification badge
+   * basic push placeholder if push infra exists
+5. Do not overbuild SMS/WhatsApp yet.
+
+PART C — Private beta admin
+
+Backend/admin tasks:
+
+1. Add admin views or admin endpoints for:
+
+   * users
+   * professionals
+   * professional verification
+   * payment intents
+   * subscriptions
+   * one-off purchases
+   * consultation requests
+   * product passports
+   * audit events
+2. Add beta controls:
+
+   * invite codes
+   * waitlist approval
+   * feature flags:
+
+     * payments_enabled
+     * professional_marketplace_enabled
+     * packs_enabled
+     * subscriptions_enabled
+     * beta_only_mode
+3. Add BetaInvite model:
+
+   * code
+   * email/phone optional
+   * max_uses
+   * used_count
+   * expires_at
+   * created_by
+   * is_active
+4. Add tests for invite code registration if implemented.
+5. Add docs/private-beta.md:
+
+   * invite process
+   * test user process
+   * beta feedback collection
+   * payment testing
+   * support process
+   * rollback plan
+
+Mobile tasks:
+
+1. Add beta invite code screen if beta_only_mode is enabled.
+2. Add feedback button:
+
+   * “Send beta feedback”
+   * collect category, message, optional screenshot placeholder
+3. Add support/help screen:
+
+   * payment issue
+   * privacy question
+   * professional review issue
+   * bug report
+
+PART D — Phase 3 QA
+
+Run a full QA pass.
+
+Verify flows:
+
+1. Free user uses route engine.
+2. Free user hits premium limit and sees upgrade.
+3. User starts premium checkout.
+4. Mock/sandbox M-Pesa success activates premium.
+5. User buys one-off pack.
+6. User creates consultation request.
+7. Professional responds with offer.
+8. User grants limited data access.
+9. User pays for consultation.
+10. Professional sees only allowed context.
+11. Notifications appear.
+12. Admin can inspect payment and consultation state.
+13. Duplicate payment callback does not double-unlock.
+14. Failed payment does not unlock features.
+15. User cannot view another user's payment, journal, portfolio, or consultation.
+
+Security/privacy checks:
+
+* no M-Pesa PIN collected
+* no bank passwords collected
+* no broker credentials collected
+* no exact values shown when hidden/range mode is selected
+* professional access is scoped
+* data grants can expire/revoke
+* payment webhooks are idempotent
+* secrets are env-based
+* logs do not expose sensitive fields
+
+Create docs/phase-3-beta-readiness.md with:
+
+* what works
+* what is incomplete
+* payment test checklist
+* beta user checklist
+* admin checklist
+* security/privacy checklist
+* known risks
+* go/no-go recommendation for 20–50 beta users
+
+Do not:
+
+* add AI
+* add investment execution
+* add account linking
+* add provider paid rankings
+* add professional payouts
+* add advanced analytics unless already simple
+
+At the end:
+
+* run backend tests
+* run mobile checks
+* run web checks
+* provide pass/fail summary
+* list commands run
+* list files changed
+* state whether Phase 3 is beta-ready

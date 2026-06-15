@@ -1,8 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
 import {
   ArrowRight,
-  BadgeCheck,
   BookOpen,
   Calculator,
   ClipboardCheck,
@@ -18,45 +16,36 @@ import {
 } from "lucide-react";
 import {
   AmountRangeSelector,
+  AppleLikeNav,
   AppShell,
+  EditorialImage,
+  FeatureCard,
   GoalChip,
   PageShell,
   PremiumCard,
+  PricingCard,
   PrimaryButton,
-  PrivacyPromiseCard,
+  SecondaryButton,
   SectionHeader,
-  SimulatorCard,
   TrustBadge
 } from "./components/maliprime";
 
-const trustPromises = [
-  "No M-Pesa PIN",
-  "No bank passwords",
-  "No execution",
-  "Privacy-first",
-  "Professionals verified"
-];
-
-const problemPoints = [
-  "Money apps make moving funds easy, but they rarely explain which route fits a Kenyan user's goal.",
-  "Influencers can make products sound simple without showing liquidity, risk, fees, or regulatory context.",
-  "First-time investors often need a calm checklist before speaking to a provider or professional."
-];
+const trustPromises = ["No M-Pesa PIN", "No bank passwords", "No execution", "Privacy-first", "Professionals verified"];
 
 const features = [
   {
     title: "Route engine",
-    body: "Start with an amount range and goal, then see what to learn first, what to avoid, and what questions to ask.",
+    body: "Start with an amount range and goal, then learn what to compare, what to avoid, and what to ask.",
     icon: Route
   },
   {
     title: "Product passports",
-    body: "Compare educational profiles for MMFs, Treasury bills, SACCOs, chamas, global routes, land, and high-risk areas.",
+    body: "Scan educational profiles for MMFs, Treasury bills, SACCOs, chamas, global routes, land, and risk areas.",
     icon: FileSearch
   },
   {
     title: "Simulators",
-    body: "Run local educational scenarios for MMFs, T-bills, SACCOs, and global investing routes before acting elsewhere.",
+    body: "Run calm local scenarios for MMFs, T-bills, SACCOs, and global routes before acting elsewhere.",
     icon: Calculator
   },
   {
@@ -66,12 +55,12 @@ const features = [
   },
   {
     title: "Private journal",
-    body: "Write down decisions, assumptions, and questions with exact, rounded, range, or hidden amount display modes.",
+    body: "Save decisions with exact, rounded, range, or hidden amount modes.",
     icon: LockKeyhole
   },
   {
     title: "Professional review",
-    body: "Request scoped review from verified professionals while sharing only what you explicitly approve.",
+    body: "Request scoped review from verified professionals while sharing only what you approve.",
     icon: Users
   }
 ];
@@ -80,11 +69,11 @@ const productCategories = [
   { name: "MMFs", icon: WalletCards, note: "Yield, withdrawal timing, fund manager checks." },
   { name: "Treasury bills", icon: Landmark, note: "Auction calendar, maturity, discount pricing." },
   { name: "SACCOs", icon: Users, note: "Share capital, deposits, governance, liquidity." },
-  { name: "Chamas", icon: ClipboardCheck, note: "Member rules, record keeping, contribution discipline." },
+  { name: "Chamas", icon: ClipboardCheck, note: "Member rules, records, contribution discipline." },
   { name: "NSE stocks", icon: BookOpen, note: "Volatility, broker checks, diversification basics." },
   { name: "US stocks/ETFs", icon: Globe2, note: "FX costs, offshore brokerage, tax considerations." },
   { name: "Land", icon: Map, note: "Title search, survey checks, legal review." },
-  { name: "Bitcoin/crypto risk", icon: ShieldAlert, note: "Volatility, custody, scams, regulatory caution." }
+  { name: "Crypto risk", icon: ShieldAlert, note: "Volatility, custody, scams, regulatory caution." }
 ];
 
 const pricingPlans = [
@@ -121,64 +110,62 @@ const goals = [
 export default function HomePage() {
   return (
     <AppShell>
-      <section className="relative min-h-[88vh] overflow-hidden bg-primaryDark text-white">
+      <AppleLikeNav />
+
+      <section className="relative isolate min-h-[680px] overflow-hidden bg-[#11110f] text-white">
         <Image
-          src="/hero-workspace.png"
-          alt="Kenyan personal finance planning workspace"
+          alt="A Nairobi workspace with a notebook, Kenyan shillings, and a phone showing investment route options."
+          className="absolute inset-0 -z-10 h-full w-full object-cover"
           fill
           priority
-          className="object-cover object-center opacity-70"
           sizes="100vw"
+          src="/images/nairobi-workspace-hero.jpg"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,27,51,0.94),rgba(11,27,51,0.76)_52%,rgba(11,27,51,0.38))]" />
-
-        <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2 text-lg font-black">
-            <Route className="h-6 w-6 text-emerald" aria-hidden />
-            PesaRoute
-          </Link>
-          <nav className="hidden items-center gap-6 text-sm font-semibold text-white/82 sm:flex">
-            <a href="#features">Features</a>
-            <Link href="/product-passports">Passports</Link>
-            <Link href="/professional/dashboard">Professionals</Link>
-            <Link href="/provider/dashboard">Providers</Link>
-            <a href="#privacy">Privacy</a>
-          </nav>
-        </header>
-
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-5 pb-14 pt-10 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:pt-16">
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(17,17,15,0.86)_0%,rgba(17,17,15,0.68)_38%,rgba(17,17,15,0.18)_72%,rgba(17,17,15,0.05)_100%)]" />
+        <div className="mx-auto flex min-h-[680px] max-w-7xl items-end px-5 py-14 sm:px-8 sm:py-20">
           <div className="max-w-3xl">
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/18 bg-primary px-4 py-2 text-sm font-bold text-white shadow-button">
-              <BadgeCheck className="h-4 w-4" aria-hidden />
+            <TrustBadge tone="primary" className="border-white/20 bg-white/10 text-white">
               Kenya-first investment clarity
-            </p>
-            <h1 className="max-w-3xl text-5xl font-black leading-[1.02] sm:text-6xl lg:text-7xl">
+            </TrustBadge>
+            <h1 className="mt-7 max-w-4xl text-5xl font-semibold leading-[1.03] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
               Understand your investment route before you move your money.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/88 sm:text-xl">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/74 sm:text-xl">
               PesaRoute helps Kenyans learn, compare, simulate, journal, and get verified professional guidance before
               investing.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton href="#amount" className="bg-white text-primaryDark hover:bg-surfaceAlt">
+              <PrimaryButton href="#amount" className="!bg-white !text-textPrimary hover:!bg-white/90">
                 Start with my amount
-                <ArrowRight className="h-5 w-5" aria-hidden />
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </PrimaryButton>
-              <PrimaryButton href="/product-passports" className="bg-emerald text-primaryDark hover:bg-white">
+              <SecondaryButton href="/learning" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
+                Open learning engine
+              </SecondaryButton>
+              <SecondaryButton href="/product-passports" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
                 Explore product passports
-              </PrimaryButton>
+              </SecondaryButton>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div id="amount" className="self-end rounded-[24px] border border-white/14 bg-surface p-5 text-textPrimary shadow-card">
-            <h2 className="text-xl font-black">Choose a starting point</h2>
-            <p className="mt-2 text-sm leading-6 text-textSecondary">
-              Use a range first. PesaRoute does not need exact balances for learning flows.
+      <PageShell className="-mt-10">
+        <div className="mx-auto mt-12 grid max-w-6xl gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+          <PremiumCard id="amount" className="lg:sticky lg:top-20 lg:self-start">
+            <p className="text-sm font-semibold text-textSecondary">Start with a range</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em]">Choose a starting point</h2>
+            <p className="mt-3 text-sm leading-6 text-textSecondary">
+              You can learn with ranges. PesaRoute does not need exact balances for the core learning flow.
             </p>
             <div className="mt-5">
               <AmountRangeSelector ranges={amountRanges} />
             </div>
+          </PremiumCard>
+
+          <PremiumCard>
+            <p className="text-sm font-semibold text-textSecondary">Pick the decision you are trying to make</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {goals.map((goal, index) => (
                 <GoalChip active={index === 1} key={goal}>
@@ -186,47 +173,80 @@ export default function HomePage() {
                 </GoalChip>
               ))}
             </div>
-          </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {trustPromises.map((promise) => (
+                <div className="rounded-lg border border-border bg-surfaceSubtle px-4 py-3 text-sm font-medium text-textSecondary" key={promise}>
+                  {promise}
+                </div>
+              ))}
+            </div>
+          </PremiumCard>
         </div>
-      </section>
-
-      <section className="border-b border-border bg-surface px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-7xl flex-wrap gap-2">
-          {trustPromises.map((promise) => (
-            <TrustBadge tone="emerald" key={promise}>
-              {promise}
-            </TrustBadge>
-          ))}
-        </div>
-      </section>
+      </PageShell>
 
       <PageShell>
-        <section className="grid gap-8 py-10 lg:grid-cols-[0.8fr_1.2fr]">
+        <section className="grid gap-8 py-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
           <SectionHeader
-            eyebrow="The problem"
-            title="Kenyans have more options than ever, but decision clarity is still hard to find."
-            body="PesaRoute is built for the moment before action: when a user needs to understand the route, risks, documents, liquidity, and red flags before sending money anywhere."
+            eyebrow="The moment before action"
+            title="Decision clarity for Kenyan investors, without moving money."
+            body="PesaRoute is built for the quiet step before a user sends money anywhere: understand the route, risks, liquidity, documents, fees, and red flags."
           />
-          <div className="grid gap-4 md:grid-cols-3">
-            {problemPoints.map((point) => (
-              <PremiumCard key={point}>
-                <p className="text-sm leading-6 text-textSecondary">{point}</p>
+          <EditorialImage
+            alt="A phone beside a notebook and Kenyan shillings, representing private route planning before sending money."
+            caption="PesaRoute keeps the planning step separate from the money movement step."
+            className="min-h-[320px]"
+            imgClassName="aspect-[16/9]"
+            src="/images/route-planning-phone.jpg"
+          />
+        </section>
+      </PageShell>
+
+      <section id="learning" className="bg-surface px-5 py-16 sm:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
+          <div>
+            <SectionHeader
+              eyebrow="Learning engine"
+              title="One guided journey, not separate tools."
+              body="The Phase 2.6 loop is now visible: start a track, finish a short lesson, practice, run a relevant simulator, save a private reflection, then review progress before asking for professional help."
+            />
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <PrimaryButton href="/learning">
+                View learning dashboard
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </PrimaryButton>
+              <SecondaryButton href="/#amount">Start from amount range</SecondaryButton>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["1", "Short lesson", "Plain-language examples using KES, risk, liquidity, fees, and provider checks."],
+              ["2", "Practice", "Quiz and flashcard prompts reward understanding, not risky money movement."],
+              ["3", "Simulator", "MMF, T-bill, SACCO, and global route estimates connect back to the lesson."],
+              ["4", "Private journal", "Users can save a reflection with exact, rounded, range, or hidden amount modes."],
+              ["5", "Progress", "XP, streaks, badges, and library views show what to continue next."],
+              ["6", "Scoped review", "Advanced lessons can lead to professional review without exposing private details by default."]
+            ].map(([step, title, body]) => (
+              <PremiumCard key={step}>
+                <p className="text-xs font-semibold uppercase text-textTertiary">Step {step}</p>
+                <h3 className="mt-3 text-lg font-semibold tracking-[-0.01em]">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-textSecondary">{body}</p>
               </PremiumCard>
             ))}
           </div>
-        </section>
-      </PageShell>
+        </div>
+      </section>
 
       <section id="features" className="bg-surface px-5 py-16 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <SectionHeader
             eyebrow="MVP flows"
-            title="Learn, compare, simulate, journal, and ask for scoped review."
-            body="The foundation stays simple: education first, privacy by default, no investment execution."
+            title="Learn, compare, simulate, journal, and request scoped review."
+            body="Every flow stays educational. PesaRoute does not execute investments, hold funds, or ask for financial account credentials."
           />
           <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
-              <SimulatorCard body={feature.body} icon={feature.icon} key={feature.title} title={feature.title} />
+              <FeatureCard body={feature.body} icon={feature.icon} key={feature.title} title={feature.title} />
             ))}
           </div>
         </div>
@@ -235,15 +255,15 @@ export default function HomePage() {
       <PageShell>
         <section className="py-10">
           <SectionHeader
-            eyebrow="Product categories"
-            title="Kenyan routes, global routes, and high-risk areas in one learning map."
-            body="Each category is framed as educational information with risk, liquidity, regulator, document, and disclosure context."
+            eyebrow="Product passports"
+            title="Clean educational cards for local and global routes."
+            body="Each passport explains risk, liquidity, regulator context, beginner mistakes, documents, and the external route."
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {productCategories.map((category) => (
               <PremiumCard key={category.name}>
-                <category.icon className="h-6 w-6 text-primary" aria-hidden />
-                <h3 className="mt-4 text-lg font-black">{category.name}</h3>
+                <category.icon className="h-5 w-5 text-textTertiary" aria-hidden />
+                <h3 className="mt-4 text-lg font-semibold tracking-[-0.01em]">{category.name}</h3>
                 <p className="mt-2 text-sm leading-6 text-textSecondary">{category.note}</p>
               </PremiumCard>
             ))}
@@ -251,73 +271,72 @@ export default function HomePage() {
         </section>
       </PageShell>
 
-      <section className="bg-primaryDark px-5 py-16 text-white sm:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+      <section className="px-5 py-16 sm:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 overflow-hidden rounded-lg border border-[#252520] bg-[#11110f] p-6 text-white shadow-soft sm:p-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald">Professional marketplace</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
-              When you need human guidance, request review from verified professionals.
+            <p className="text-xs font-semibold uppercase text-white/56">Professional marketplace</p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-4xl">
+              Human review, with private data hidden by default.
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/76">
-              Users choose what to share, professionals see limited qualified context first, and private details stay
-              hidden unless a scoped grant allows them.
+            <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
+              Users choose what to share, professionals see limited qualified context first, and access expires
+              automatically.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton href="/professional/dashboard" className="bg-white text-primaryDark hover:bg-surfaceAlt">
+              <SecondaryButton href="/professional/dashboard" className="border-white/10 bg-white text-textPrimary hover:bg-white/90">
                 Professional portal
-              </PrimaryButton>
-              <PrimaryButton href="/provider/dashboard" className="bg-emerald text-primaryDark hover:bg-white">
+              </SecondaryButton>
+              <SecondaryButton href="/provider/dashboard" className="border-white/10 bg-white/10 text-white hover:bg-white/15">
                 Provider portal
-              </PrimaryButton>
+              </SecondaryButton>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              "Limited view until user grants access.",
-              "Exact values remain hidden by default.",
-              "Access expires automatically.",
-              "Professionals respond without asking for credentials."
-            ].map((item) => (
-              <PrivacyPromiseCard icon={LockKeyhole} key={item} text={item} />
-            ))}
-          </div>
+          <figure className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+            <Image
+              alt="Notebook and cash on a desk, representing a private professional review context."
+              className="aspect-[16/9] h-full w-full object-cover"
+              height={572}
+              sizes="(min-width: 1024px) 42vw, 100vw"
+              src="/images/private-review-notebook.jpg"
+              width={1100}
+            />
+          </figure>
         </div>
       </section>
 
       <section id="privacy" className="px-5 py-16 sm:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
           <SectionHeader
             eyebrow="Privacy"
-            title="A trust model that is part of the product, not fine print."
-            body="PesaRoute does not ask for payment PINs, bank passwords, broker credentials, or MMF credentials. Users can plan with ranges, hide exact totals, and revoke professional access."
+            title="Trust rules users can understand before they sign up."
+            body="PesaRoute does not ask for M-Pesa PINs, bank passwords, broker credentials, or MMF credentials. Users can plan with ranges and revoke professional access."
           />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              "We do not hold or execute investments.",
-              "Users control what professionals see.",
-              "Data grants are scoped and time-limited.",
-              "Hidden and range modes avoid exposing exact values."
-            ].map((promise) => (
-              <PrivacyPromiseCard icon={ClipboardCheck} key={promise} text={promise} />
-            ))}
-          </div>
+          <EditorialImage
+            alt="A calm desk scene with a phone and written planning notes for privacy-first investment decisions."
+            caption="Users can plan with ranges and decide what, if anything, to share."
+            imgClassName="aspect-[16/9]"
+            src="/images/provider-passport-desk.jpg"
+          />
         </div>
       </section>
 
       <section id="pricing" className="bg-surface px-5 py-16 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <SectionHeader
-            eyebrow="Pricing placeholder"
-            title="Prepared for monetization, without payment integrations yet."
-            body="Billing and entitlements can be tested in development, but M-Pesa, cards, payouts, and provider billing are intentionally not connected."
+            eyebrow="Pricing foundation"
+            title="Checkout preparation without investment payment rails."
+            body="M-Pesa checkout is only for PesaRoute subscriptions, learning packs, and future review fees. It is not for investment execution."
           />
           <div className="mt-9 grid gap-4 md:grid-cols-3">
             {pricingPlans.map((plan) => (
-              <PremiumCard key={plan.name}>
-                <h3 className="text-lg font-black">{plan.name}</h3>
-                <p className="mt-2 text-2xl font-black text-primary">{plan.price}</p>
-                <p className="mt-3 text-sm leading-6 text-textSecondary">{plan.body}</p>
-              </PremiumCard>
+              <PricingCard
+                body={plan.body}
+                ctaHref="/payments/status"
+                ctaLabel="View payment status flow"
+                key={plan.name}
+                name={plan.name}
+                price={plan.price}
+              />
             ))}
           </div>
         </div>
@@ -325,11 +344,10 @@ export default function HomePage() {
 
       <footer className="border-t border-border px-5 py-10 sm:px-8">
         <div className="mx-auto grid max-w-7xl gap-5 text-sm leading-6 text-textSecondary md:grid-cols-[0.9fr_1.1fr]">
-          <p className="font-black text-textPrimary">PesaRoute</p>
+          <p className="font-semibold text-textPrimary">PesaRoute</p>
           <p>
             Educational information only. PesaRoute does not provide investment execution, custody, guaranteed returns,
-            M-Pesa services, bank account linking, or broker account linking. Verify with providers, regulators, and
-            licensed professionals before acting.
+            M-Pesa services, bank account linking, or broker account linking.
           </p>
         </div>
       </footer>

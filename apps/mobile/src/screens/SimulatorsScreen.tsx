@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import type { BillingEntitlementSnapshot, PesaRouteApiClient } from "../api/client";
-import { LiquidityBadge, PremiumCard, PrimaryButton, RiskBadge, maliPrime, maliPrimeText } from "../components/maliprime";
+import { LiquidityBadge, PremiumCard, PrimaryButton, RiskBadge, SecondaryButton, maliPrime, maliPrimeText } from "../components/maliprime";
+import type { AuthCredentials, JournalEntryDraft } from "../types";
 import { formatKes, formatUsd, parseMoneyInput } from "../utils/format";
 import { simulateGlobalRoute, simulateMMF, simulateSacco, simulateTBill } from "../utils/simulators";
 
@@ -23,6 +24,11 @@ type ApiSimulationState = {
   sacco?: Record<string, unknown>;
   global?: Record<string, unknown>;
 };
+
+function readSimulationRunId(result?: Record<string, unknown>) {
+  const value = result?.simulation_run_id;
+  return typeof value === "number" ? value : null;
+}
 
 function DetailedSimulatorCard({
   beginnerMistake,
@@ -62,11 +68,19 @@ function DetailedSimulatorCard({
 
 export function SimulatorsScreen({
   apiClient,
+  auth,
   entitlements,
+  learningLessonContext,
+  onLearningSimulationComplete,
+  onSaveJournal,
   onOpenPricing
 }: {
   apiClient: PesaRouteApiClient;
+  auth?: AuthCredentials | null;
   entitlements: BillingEntitlementSnapshot | null;
+  learningLessonContext?: { id: number; title: string } | null;
+  onLearningSimulationComplete?: (simulationRunId: number) => Promise<void> | void;
+  onSaveJournal?: (entry: JournalEntryDraft) => void;
   onOpenPricing: () => void;
 }) {
   const [amount, setAmount] = useState("50000");
@@ -74,6 +88,7 @@ export function SimulatorsScreen({
   const [rate, setRate] = useState("12");
   const [fxRate, setFxRate] = useState("130");
   const [apiState, setApiState] = useState<ApiSimulationState>({ loading: false, source: "local", error: null });
+  const [learningStatus, setLearningStatus] = useState<string | null>(null);
   const parsedAmount = parseMoneyInput(amount, 50000);
   const parsedMonths = Math.max(1, Math.round(parseMoneyInput(months, 12)));
   const parsedRate = parseMoneyInput(rate, 12);
@@ -91,30 +106,46 @@ export function SimulatorsScreen({
 
   async function runApiSimulators() {
     setApiState({ loading: true, source: "local", error: null });
+    setLearningStatus(null);
+    const learning_lesson_id = learningLessonContext?.id;
     try {
       const [mmf, tbill, sacco, global] = await Promise.all([
         apiClient.simulateMMF({
           principal: parsedAmount.toFixed(2),
           annual_rate_percent: parsedRate.toFixed(2),
-          months: parsedMonths
+          months: parsedMonths,
+          learning_lesson_id
         }),
         apiClient.simulateTBill({
           face_value: parsedAmount.toFixed(2),
           discount_rate_percent: parsedRate.toFixed(2),
-          days: 91
+          days: 91,
+          learning_lesson_id
         }),
         apiClient.simulateSacco({
           monthly_deposit: parsedAmount.toFixed(2),
           months: parsedMonths,
-          annual_dividend_percent: "8.00"
+          annual_dividend_percent: "8.00",
+          learning_lesson_id
         }),
         apiClient.simulateGlobalRoute({
           amount_kes: parsedAmount.toFixed(2),
           fx_rate: parsedFx.toFixed(4),
-          transfer_fee_percent: "2.00"
+          transfer_fee_percent: "2.00",
+          learning_lesson_id
         })
       ]);
       setApiState({ loading: false, source: "api", error: null, mmf, tbill, sacco, global });
+      const simulationRunId =
+        readSimulationRunId(mmf) ?? readSimulationRunId(tbill) ?? readSimulationRunId(sacco) ?? readSimulationRunId(global);
+      if (simulationRunId && onLearningSimulationComplete) {
+        try {
+          await onLearningSimulationComplete(simulationRunId);
+          setLearningStatus(auth ? "Learning progress updated with simulator practice." : "Simulator completed. Log in to sync XP.");
+        } catch {
+          setLearningStatus("Simulator completed. Learning progress can retry when the API is reachable.");
+        }
+      }
     } catch (error) {
       setApiState({
         loading: false,
@@ -124,10 +155,28 @@ export function SimulatorsScreen({
     }
   }
 
+  function saveSimulatorReflection() {
+    onSaveJournal?.({
+      goal: learningLessonContext ? "Learning simulator reflection" : "Simulator reflection",
+      decision: learningLessonContext?.title ?? "Reviewed simulator output",
+      amountDisplayMode: "range",
+      amountText: `KES ${amount}`,
+      reason: "For education only. Compare before committing money and speak to a licensed professional when needed."
+    });
+    setLearningStatus("Reflection saved to journal. Use ranges if you do not want exact amounts.");
+  }
+
   return (
     <View style={styles.screen}>
       <Text style={maliPrimeText.title}>Simulators</Text>
       <Text style={maliPrimeText.subtitle}>This is an educational simulation, not investment advice. Local calculations run offline.</Text>
+      {learningLessonContext ? (
+        <PremiumCard tone="alt">
+          <Text style={styles.contextLabel}>Learning practice</Text>
+          <Text style={styles.contextTitle}>{learningLessonContext.title}</Text>
+          <Text style={styles.contextCopy}>Run a simulator, then save a reflection before making any real-world decision.</Text>
+        </PremiumCard>
+      ) : null}
       {!entitlements?.features.unlimited_simulations ? (
         <PremiumCard tone="warning">
           <Text style={styles.lockTitle}>Free simulation access</Text>
@@ -150,6 +199,8 @@ export function SimulatorsScreen({
         Showing {apiState.source === "api" ? "API response" : "local fallback"}.
       </Text>
       {apiState.error ? <Text style={styles.error}>{apiState.error}</Text> : null}
+      {learningStatus ? <Text style={styles.learningStatus}>{learningStatus}</Text> : null}
+      {onSaveJournal ? <SecondaryButton onPress={saveSimulatorReflection}>Save simulator reflection</SecondaryButton> : null}
 
       <DetailedSimulatorCard
         beginnerMistake="Chasing the highest posted yield without checking fees, withdrawal time, and provider regulation."
@@ -204,6 +255,9 @@ export function SimulatorsScreen({
 
 const styles = StyleSheet.create({
   screen: { gap: 14 },
+  contextLabel: { color: maliPrime.colors.textTertiary, fontSize: 11, fontWeight: "900", textTransform: "uppercase" },
+  contextTitle: { color: maliPrime.colors.textPrimary, fontSize: 17, fontWeight: "900", lineHeight: 23, marginTop: 8 },
+  contextCopy: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 5 },
   lockTitle: { color: "#A86500", fontSize: 14, fontWeight: "900" },
   lockCopy: { color: "#7A5B22", fontSize: 13, lineHeight: 19, marginTop: 5 },
   cardAction: { marginTop: 12 },
@@ -224,6 +278,7 @@ const styles = StyleSheet.create({
   source: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "900", textTransform: "uppercase" },
   sourceApi: { color: maliPrime.colors.primary },
   error: { color: maliPrime.colors.danger, fontSize: 13, lineHeight: 19 },
+  learningStatus: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700", lineHeight: 19 },
   cardTitle: { color: maliPrime.colors.textPrimary, fontSize: 16, fontWeight: "900" },
   cardValue: { color: maliPrime.colors.primary, fontSize: 17, fontWeight: "900", lineHeight: 24, marginTop: 8 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },

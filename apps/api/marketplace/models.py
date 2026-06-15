@@ -102,12 +102,36 @@ class ConsultationRequest(models.Model):
         SWAHILI = "sw", "Swahili"
 
     class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        PROFESSIONAL_RESPONDED = "professional_responded", "Professional responded"
+        USER_SELECTED_PROFESSIONAL = "user_selected_professional", "User selected professional"
+        AWAITING_PAYMENT = "awaiting_payment", "Awaiting payment"
+        PAID = "paid", "Paid"
+        SCHEDULED = "scheduled", "Scheduled"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+        # Legacy MVP statuses retained for existing beta data and tests.
         REQUESTED = "requested", "Requested"
         REVIEWING = "reviewing", "Reviewing"
         RESPONDED = "responded", "Responded"
         CLOSED = "closed", "Closed"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="consultation_requests")
+    learning_track = models.ForeignKey(
+        "learning.LearningTrack",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="consultation_requests",
+    )
+    journal_entry = models.ForeignKey(
+        "journal.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="consultation_requests",
+    )
     professional = models.ForeignKey(
         Professional, null=True, blank=True, on_delete=models.SET_NULL, related_name="consultation_requests"
     )
@@ -132,16 +156,23 @@ class ConsultationRequest(models.Model):
     topic = models.CharField(max_length=180)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.REQUESTED)
+    platform_fee_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["learning_track", "created_at"]),
+            models.Index(fields=["journal_entry", "created_at"]),
             models.Index(fields=["professional", "created_at"]),
             models.Index(fields=["selected_professional", "created_at"]),
             models.Index(fields=["category", "status", "created_at"]),
             models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["status", "updated_at"]),
         ]
 
     def __str__(self) -> str:
@@ -159,6 +190,35 @@ class ConsultationRequest(models.Model):
         if not self.notes and self.user_question:
             self.notes = self.user_question
         super().save(*args, **kwargs)
+
+
+class ConsultationOffer(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+        EXPIRED = "expired", "Expired"
+
+    consultation_request = models.ForeignKey(ConsultationRequest, on_delete=models.CASCADE, related_name="offers")
+    professional = models.ForeignKey(Professional, on_delete=models.CASCADE, related_name="consultation_offers")
+    proposed_fee = models.DecimalField(max_digits=12, decimal_places=2)
+    platform_fee_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    message = models.TextField()
+    estimated_duration = models.CharField(max_length=80)
+    available_slots_text = models.TextField(blank=True)
+    status = models.CharField(max_length=32, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["consultation_request", "status", "created_at"]),
+            models.Index(fields=["professional", "status", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.professional_id}:{self.consultation_request_id}:{self.status}"
 
 
 class ConsultationResponse(models.Model):

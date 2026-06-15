@@ -13,6 +13,9 @@ export type PublicPassport = {
   documentsNeeded: string[];
   disclosures: string[];
   externalRoute: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  lastVerified: string;
 };
 
 export const publicPassports: PublicPassport[] = [
@@ -30,7 +33,10 @@ export const publicPassports: PublicPassport[] = [
     beginnerMistakes: ["Treating quoted yield as a promised return", "Ignoring withdrawal processing time"],
     documentsNeeded: ["National ID or passport", "KRA PIN", "Bank or M-Pesa details as requested by provider"],
     disclosures: ["Returns vary daily", "Fees can reduce net yield", "Withdrawals may not be instant"],
-    externalRoute: "Compare here, then verify directly with a licensed provider before opening externally."
+    externalRoute: "Compare here, then verify directly with a licensed provider before opening externally.",
+    sourceLabel: "Capital Markets Authority licensee register",
+    sourceUrl: "https://licensees.cma.or.ke/",
+    lastVerified: "15 Jun 2026"
   },
   {
     slug: "generic-treasury-bill-via-dhowcsd",
@@ -46,7 +52,10 @@ export const publicPassports: PublicPassport[] = [
     beginnerMistakes: ["Using money needed before maturity", "Confusing discount rate with net return"],
     documentsNeeded: ["National ID or passport", "KRA PIN", "CDS/DhowCSD account setup details"],
     disclosures: ["Auction outcomes vary", "Funds can be locked until maturity", "Tax treatment can change"],
-    externalRoute: "Use official channels and verify current CBK/DhowCSD instructions before acting."
+    externalRoute: "Use official channels and verify current CBK/DhowCSD instructions before acting.",
+    sourceLabel: "CBK government securities and DhowCSD",
+    sourceUrl: "https://www.centralbank.go.ke/securities/",
+    lastVerified: "15 Jun 2026"
   },
   {
     slug: "generic-sacco-deposits",
@@ -62,7 +71,10 @@ export const publicPassports: PublicPassport[] = [
     beginnerMistakes: ["Assuming deposits are instantly liquid", "Skipping governance and audited accounts"],
     documentsNeeded: ["Membership form", "National ID", "KRA PIN", "Share capital or joining fee evidence"],
     disclosures: ["Liquidity depends on bylaws", "Governance quality varies", "Loan obligations can affect deposits"],
-    externalRoute: "Review documents and speak directly with the SACCO before joining externally."
+    externalRoute: "Review documents and speak directly with the SACCO before joining externally.",
+    sourceLabel: "SASRA licensed SACCO lists",
+    sourceUrl: "https://www.sasra.go.ke/licensed-dt-saccos/",
+    lastVerified: "15 Jun 2026"
   },
   {
     slug: "generic-us-etf-route",
@@ -78,7 +90,10 @@ export const publicPassports: PublicPassport[] = [
     beginnerMistakes: ["Ignoring FX spreads", "Treating global access as lower risk"],
     documentsNeeded: ["Identity verification", "Tax details", "Source of funds details", "Broker onboarding documents"],
     disclosures: ["Currency risk applies", "Foreign tax and estate rules may apply", "Broker custody risk varies"],
-    externalRoute: "Verify broker status, tax obligations, and transfer costs independently before acting."
+    externalRoute: "Verify broker status, tax obligations, and transfer costs independently before acting.",
+    sourceLabel: "KRA tax education reference",
+    sourceUrl: "https://www.kra.go.ke/",
+    lastVerified: "15 Jun 2026"
   },
   {
     slug: "generic-land-due-diligence-checklist",
@@ -94,7 +109,10 @@ export const publicPassports: PublicPassport[] = [
     beginnerMistakes: ["Paying before verification", "Skipping seller identity checks"],
     documentsNeeded: ["Title documents", "Seller identity documents", "Survey map", "Official search results"],
     disclosures: ["Fraud risk can be high", "Liquidity is low", "Independent legal review is important"],
-    externalRoute: "Use independent legal and official registry checks before any external transaction."
+    externalRoute: "Use independent legal and official registry checks before any external transaction.",
+    sourceLabel: "KRA tax education reference",
+    sourceUrl: "https://www.kra.go.ke/",
+    lastVerified: "15 Jun 2026"
   }
 ];
 
