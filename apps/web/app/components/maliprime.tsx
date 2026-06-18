@@ -28,41 +28,125 @@ const badgeToneClass: Record<BadgeTone, string> = {
   muted: "border-border bg-surfaceSubtle text-textSecondary"
 };
 
+// The global sidebar + top bar now live in AppFrame (rendered from the root layout),
+// so the app shell is applied end-to-end. These keep their old call sites working:
+// AppShell is a passthrough (no second <main>), and AppleLikeNav renders nothing.
 export function AppShell({ children }: { children: ReactNode }) {
-  return <main className="min-h-screen bg-background text-textPrimary">{children}</main>;
+  return <>{children}</>;
 }
 
 export function PageShell({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 ${className}`}>{children}</div>;
+  return <div className={`mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 ${className}`}>{children}</div>;
+}
+
+type BannerAccent = "green" | "amber" | "blue" | "violet";
+type BannerArtKind = "layers" | "rings" | "shield" | "bars" | "compare" | "search";
+
+// One accent colour per banner (DataCamp-style). Literal class strings so Tailwind JIT keeps them.
+const bannerAccent: Record<BannerAccent, { pill: string; art: string }> = {
+  green: { pill: "border-accent/40 bg-accent/15 text-accent", art: "text-accent" },
+  amber: { pill: "border-amber/50 bg-amber/15 text-amber", art: "text-amber" },
+  blue: { pill: "border-sky/50 bg-sky/15 text-sky", art: "text-sky" },
+  violet: { pill: "border-violet/50 bg-violet/15 text-violet", art: "text-violet" }
+};
+
+function BannerArt({ kind, className }: { kind: BannerArtKind; className?: string }) {
+  const common = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const art: Record<BannerArtKind, ReactNode> = {
+    layers: (
+      <>
+        <path d="M80 18 134 46 80 74 26 46Z" />
+        <path d="M26 66 80 94 134 66" opacity={0.6} />
+        <path d="M26 86 80 114 134 86" opacity={0.35} />
+      </>
+    ),
+    rings: (
+      <>
+        <circle cx="80" cy="66" r="46" opacity={0.4} />
+        <circle cx="80" cy="66" r="28" />
+        <path d="M80 20a46 46 0 0 1 46 46" />
+        <path d="M118 52 126 66 112 70" />
+      </>
+    ),
+    shield: (
+      <>
+        <path d="M80 16 124 32v34c0 30-44 52-44 52s-44-22-44-52V32Z" opacity={0.55} />
+        <path d="M62 66 74 80l24-30" />
+      </>
+    ),
+    bars: (
+      <>
+        <path d="M30 112h104" opacity={0.5} />
+        <rect x="44" y="70" width="16" height="42" rx="2" opacity={0.5} />
+        <rect x="72" y="46" width="16" height="66" rx="2" />
+        <rect x="100" y="84" width="16" height="28" rx="2" opacity={0.5} />
+      </>
+    ),
+    compare: (
+      <>
+        <rect x="30" y="40" width="42" height="56" rx="4" opacity={0.5} />
+        <rect x="88" y="28" width="42" height="68" rx="4" />
+        <path d="M80 24v80" opacity={0.4} />
+      </>
+    ),
+    search: (
+      <>
+        <circle cx="72" cy="60" r="34" />
+        <path d="M98 86 122 110" />
+        <path d="M58 60h28M72 46v28" opacity={0.5} />
+      </>
+    )
+  };
+  return (
+    <svg className={className} width="180" height="140" viewBox="0 0 160 130" aria-hidden="true" {...common}>
+      {art[kind]}
+    </svg>
+  );
+}
+
+/**
+ * Coloured page banner (deep-navy hero) carrying the page's header information,
+ * like DataCamp's section banners. Dark in both themes. `accent` tints the badge
+ * pill + the right-side line-art (`art`); `badge` is a short accent pill.
+ */
+export function PageBanner({
+  eyebrow,
+  title,
+  description,
+  badge,
+  accent = "green",
+  art,
+  children
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  badge?: string;
+  accent?: BannerAccent;
+  art?: BannerArtKind;
+  children?: ReactNode;
+}) {
+  const tone = bannerAccent[accent] ?? bannerAccent.green;
+  return (
+    <section className="relative overflow-hidden rounded-xl bg-bannerBg p-6 text-bannerText sm:p-8">
+      {art ? (
+        <BannerArt kind={art} className={`pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 opacity-60 lg:block ${tone.art}`} />
+      ) : null}
+      <div className="relative max-w-2xl">
+        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-wider text-bannerMuted">{eyebrow}</p> : null}
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-[-0.01em] sm:text-3xl">{title}</h1>
+          {badge ? <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${tone.pill}`}>{badge}</span> : null}
+        </div>
+        {description ? <p className="mt-2 text-sm leading-6 text-bannerMuted">{description}</p> : null}
+        {children ? <div className="mt-4">{children}</div> : null}
+      </div>
+    </section>
+  );
 }
 
 export function AppleLikeNav() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-surface/90 text-textPrimary backdrop-blur-xl">
-      <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="text-sm font-semibold tracking-[-0.01em] text-textPrimary">
-          PesaRoute
-        </Link>
-        <nav className="hidden items-center gap-7 text-xs font-medium text-textSecondary sm:flex">
-          <Link className="transition hover:text-textPrimary" href="/learning">
-            Learning
-          </Link>
-          <Link className="transition hover:text-textPrimary" href="/product-passports">
-            Passports
-          </Link>
-          <Link className="transition hover:text-textPrimary" href="/professional/dashboard">
-            Professionals
-          </Link>
-          <Link className="transition hover:text-textPrimary" href="/provider/dashboard">
-            Providers
-          </Link>
-          <Link className="transition hover:text-textPrimary" href="/payments/status">
-            Payments
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
+  return null;
 }
 
 export function PremiumCard({ children, className = "", id }: { children: ReactNode; className?: string; id?: string }) {
@@ -294,6 +378,114 @@ export function TrustBadge({ children, className = "", tone = "primary" }: { chi
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${badgeToneClass[tone]} ${className}`}>
       {children}
     </span>
+  );
+}
+
+// Circular progress ring with the PesaRoute accent→violet gradient. Centre slot
+// renders whatever you pass as children (e.g. the percentage).
+export function ProgressRing({
+  value,
+  size = 132,
+  stroke = 10,
+  children
+}: {
+  value: number;
+  size?: number;
+  stroke?: number;
+  children?: ReactNode;
+}) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.max(0, Math.min(100, value));
+  const offset = circumference - (pct / 100) * circumference;
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <defs>
+          <linearGradient id="pr-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgb(var(--c-accent))" />
+            <stop offset="100%" stopColor="rgb(var(--c-violet))" />
+          </linearGradient>
+        </defs>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(var(--c-surfaceSubtle))" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="url(#pr-ring-gradient)"
+          strokeWidth={stroke}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 600ms ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+const statToneClass: Record<"accent" | "amber" | "sky" | "muted", string> = {
+  accent: "text-accent",
+  amber: "text-amber",
+  sky: "text-sky",
+  muted: "text-textSecondary"
+};
+
+export function StatPill({
+  icon: Icon,
+  value,
+  label,
+  tone = "accent"
+}: {
+  icon?: IconType;
+  value: ReactNode;
+  label: string;
+  tone?: "accent" | "amber" | "sky" | "muted";
+}) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-3 shadow-card">
+      {Icon ? <Icon className={`h-5 w-5 ${statToneClass[tone]}`} aria-hidden /> : null}
+      <div>
+        <p className="text-lg font-bold leading-none text-textPrimary">{value}</p>
+        <p className="mt-1 text-xs font-medium text-textSecondary">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+const tileToneClass: Record<"accent" | "amber" | "violet" | "sky", string> = {
+  accent: "bg-accent/15 text-accent",
+  amber: "bg-amber/15 text-amber",
+  violet: "bg-violet/15 text-violet",
+  sky: "bg-sky/15 text-sky"
+};
+
+export function IconTile({
+  icon: Icon,
+  tone = "accent",
+  title,
+  body,
+  href
+}: {
+  icon: IconType;
+  tone?: "accent" | "amber" | "violet" | "sky";
+  title: string;
+  body: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-borderStrong"
+    >
+      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${tileToneClass[tone]}`}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <p className="mt-3 text-base font-semibold text-textPrimary">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-textSecondary">{body}</p>
+    </Link>
   );
 }
 

@@ -1,0 +1,210 @@
+# Non-CIS education routes: NSE/CDSC, SACCO, pension, insurance, fixed deposit,
+# global investing, crypto, land. These are *education routes*, not endorsements.
+# Equity/global/crypto/land are scenario-only (no implied return, no live prices).
+source:
+  slug: pesaroute-editorial-routes
+  name: PesaRoute editorial investment routes
+  url: https://pesaroute.co.ke/
+  authority_level: editorial
+  source_type: manual_editorial
+providers:
+  - name: Nairobi Securities Exchange
+    aliases: [NSE]
+    provider_type: exchange
+    source_confidence: official
+    website: https://www.nse.co.ke/
+    source_url: https://www.nse.co.ke/listed-companies/
+    products:
+      - name: NSE Listed Share Route
+        product_type: nse_share_route
+        currency: KES
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "No fixed minimum; depends on share price and broker rules. Live prices are not shown here."
+        tags: [scenario_only, official_source]
+      - name: NSE ETF and REIT Route
+        product_type: reit
+        currency: KES
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: editorial
+        published_status: draft
+        minimum_amount_notes: "Education route. Verify listed ETFs/REITs and broker access with NSE."
+        tags: [scenario_only, needs_review]
+      - name: Listed Company Directory
+        product_type: nse_share_route
+        currency: KES
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: official
+        minimum_amount_notes: "Directory of listed companies only. No live or restricted prices are ingested."
+        tags: [official_source, scenario_only]
+  - name: Central Depository & Settlement Corporation (CDSC)
+    aliases: [CDSC]
+    provider_type: depository
+    source_confidence: official
+    website: https://www.cdsckenya.com/
+    products:
+      - name: CDS Account Route
+        product_type: cds_account_route
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        source_confidence: official
+        minimum_amount_notes: "A CDS account is needed to hold listed securities. Open via a CMA-licensed broker."
+        tags: [official_source]
+  - name: SASRA-Regulated SACCOs
+    aliases: [SASRA, SACCO]
+    provider_type: sacco
+    source_confidence: official
+    website: https://www.sasra.go.ke/
+    products:
+      - name: SACCO Deposits Route
+        product_type: sacco_deposit
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        minimum_amount_notes: "Deposit and dividend terms vary by SACCO. Verify SASRA status and bylaws."
+        tags: [scenario_only]
+      - name: SACCO Share Capital Route
+        product_type: sacco_share_capital
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        minimum_amount_notes: "Share capital is often locked or transferable only under SACCO rules."
+        tags: [scenario_only]
+      - name: SACCO Loan Multiplier Education Route
+        product_type: sacco_deposit
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        minimum_amount_notes: "Loan eligibility is typically a multiple of deposits; varies by SACCO."
+        tags: [scenario_only]
+  - name: RBA-Registered Retirement Providers
+    aliases: [RBA, Pension]
+    provider_type: pension_provider
+    source_confidence: official
+    website: https://www.rba.go.ke/
+    products:
+      - name: Pension/Retirement Fund Education Route
+        product_type: pension_product
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        published_status: draft
+        minimum_amount_notes: "Education route. Returns are not simulated unless product-specific assumptions exist."
+        tags: [scenario_only, needs_review]
+      - name: Individual Pension Plan Education Route
+        product_type: pension_product
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        published_status: draft
+        minimum_amount_notes: "Education route. Verify the registered provider and plan terms with RBA."
+        tags: [scenario_only, needs_review]
+  - name: IRA-Regulated Insurers
+    aliases: [IRA, Insurance]
+    provider_type: insurer
+    source_confidence: official
+    website: https://www.ira.go.ke/
+    products:
+      - name: Education Policy Route
+        product_type: insurance_linked_investment
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        published_status: draft
+        minimum_amount_notes: "Education only, not a recommendation. Verify terms with the insurer and IRA."
+        tags: [scenario_only, needs_review]
+      - name: Endowment / Investment-Linked Insurance Education Route
+        product_type: insurance_linked_investment
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        published_status: draft
+        minimum_amount_notes: "Education only, not a recommendation. Verify terms with the insurer and IRA."
+        tags: [scenario_only, needs_review]
+  - name: Kenyan Banks (Fixed Deposits)
+    aliases: [Fixed Deposit]
+    provider_type: bank
+    source_confidence: editorial
+    products:
+      - name: Fixed Deposit Education Route
+        product_type: fixed_deposit
+        currency: KES
+        risk_level: low
+        liquidity_level: low
+        source_confidence: editorial
+        minimum_amount_notes: "Provider-specific FD rates are added only from source-linked bank pages."
+        tags: [scenario_only]
+  - name: Global Investing Routes
+    aliases: [Hisa, Ndovu, Interactive Brokers]
+    provider_type: wealth_platform
+    source_confidence: editorial
+    products:
+      - name: Hisa Global Stocks Route
+        product_type: global_stock_route
+        currency: USD
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "Route education, not provider endorsement. Mind currency, custody, and platform risk."
+        tags: [scenario_only, usd, needs_review]
+      - name: Ndovu Managed Global Investing Route
+        product_type: global_etf_route
+        currency: USD
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "Route education, not provider endorsement. Mind currency, custody, and platform risk."
+        tags: [scenario_only, usd, needs_review]
+      - name: Interactive Brokers Direct Global Broker Route
+        product_type: global_stock_route
+        currency: USD
+        risk_level: high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "Route education, not provider endorsement. Mind currency, custody, tax, and platform risk."
+        tags: [scenario_only, usd, needs_review]
+  - name: Land Investing Literacy
+    aliases: [Land]
+    provider_type: other
+    source_confidence: editorial
+    products:
+      - name: Land Due Diligence Route
+        product_type: land_due_diligence
+        currency: KES
+        risk_level: medium
+        liquidity_level: low
+        source_confidence: editorial
+        minimum_amount_notes: "Due-diligence literacy route. No rate; land is illiquid and needs legal review."
+        tags: [scenario_only]
+  - name: Crypto Risk Literacy
+    aliases: [Bitcoin, Crypto]
+    provider_type: other
+    source_confidence: editorial
+    products:
+      - name: Bitcoin Self-Custody Education Route
+        product_type: bitcoin_crypto_risk_route
+        currency: USD
+        risk_level: very_high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "High-risk literacy route. No execution, no custody, no promised returns."
+        tags: [scenario_only, usd, needs_review]
+      - name: Crypto Risk Education Route
+        product_type: bitcoin_crypto_risk_route
+        currency: USD
+        risk_level: very_high
+        liquidity_level: medium
+        source_confidence: editorial
+        minimum_amount_notes: "High-risk literacy route. Regulatory treatment can change; verify current law."
+        tags: [scenario_only, usd, needs_review]

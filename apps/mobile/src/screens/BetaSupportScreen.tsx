@@ -55,8 +55,8 @@ export function BetaSupportScreen({
     <View>
       <Text style={maliPrimeText.title}>Support and beta feedback</Text>
       <Text style={maliPrimeText.subtitle}>
-        Tell us about payment issues, privacy questions, professional review issues, or bugs. Do not include M-Pesa PINs,
-        bank passwords, or broker credentials.
+        Tell us about payment issues, privacy questions, professional review issues, or bugs. Keep the report focused on
+        what happened in the app.
       </Text>
 
       <PremiumCard>

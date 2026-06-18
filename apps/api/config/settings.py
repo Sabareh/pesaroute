@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "portfolio",
     "marketplace",
     "privacy",
+    "land",
 ]
 
 MIDDLEWARE = [
@@ -162,6 +163,36 @@ X_FRAME_OPTIONS = "DENY"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
+# Run the scheduler in East Africa Time so "off-peak" means off-peak for Kenyan users.
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "Africa/Nairobi")
+CELERY_ENABLE_UTC = False
+CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"
+
+# Daily off-peak refresh of the Kenya investment product catalog. Times are EAT.
+# These jobs are source-linked and idempotent: they re-import the canonical fixtures
+# and only *stage* live-scraped rows for review — they never invent or publish rates.
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "refresh-kenya-product-catalog": {
+        "task": "pipelines.tasks.refresh_kenya_product_catalog",
+        "schedule": crontab(hour=2, minute=30),  # 02:30 EAT — lowest-traffic window
+        "kwargs": {"publish": True},
+    },
+    "refresh-cma-cis-products": {
+        "task": "pipelines.tasks.refresh_cma_cis_products",
+        "schedule": crontab(hour=3, minute=0),  # 03:00 EAT
+        "kwargs": {"publish": True},
+    },
+    "refresh-published-rates": {
+        "task": "pipelines.tasks.refresh_published_rates",
+        "schedule": crontab(hour=3, minute=30),  # 03:30 EAT — re-apply rates after re-import
+    },
+    "scan-catalog-freshness": {
+        "task": "pipelines.tasks.scan_catalog_freshness",
+        "schedule": crontab(hour=4, minute=0),  # 04:00 EAT
+    },
+}
 
 MPESA_ENVIRONMENT = os.getenv("MPESA_ENVIRONMENT", "sandbox").lower()
 MPESA_MOCK_MODE = os.getenv("MPESA_MOCK_MODE", str(DEBUG)).lower() == "true"

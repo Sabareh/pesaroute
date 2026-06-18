@@ -1,0 +1,67 @@
+# Source-linked, dated published rates. Values are NOT invented — each is fetched
+# from the cited source and stamped with the date it was reported. Refresh by
+# re-fetching the sources and updating rate_value + snapshot_date.
+#
+# CBK Treasury bill rates are official auction results. MMF effective annual yields
+# are compiled by a third-party tracker (Serrari) from provider-reported figures;
+# they are labelled third_party confidence and "as at" the report date. Verify the
+# current figure with the provider before acting.
+sources:
+  cbk_tbills:
+    slug: cbk-treasury-bills
+    name: CBK Treasury Bills auction results
+    url: https://www.centralbank.go.ke/bills-bonds/treasury-bills/
+    confidence: official
+  serrari_mmf:
+    slug: serrari-mmf-index
+    name: Serrari Group Kenya KES MMF index
+    url: https://serrarigroup.com/ke/mmf/
+    confidence: third_party
+
+rate_groups:
+  - source: cbk_tbills
+    snapshot_date: "2026-06-18"
+    rate_type: t_bill_average_rate
+    rate_period: auction
+    currency: KES
+    raw_label_suffix: "average rate, CBK auction 18 Jun 2026"
+    entries:
+      - match_name: "91-Day Treasury Bill"
+        rate_value: "8.7067"
+      - match_name: "182-Day Treasury Bill"
+        rate_value: "8.6006"
+      - match_name: "364-Day Treasury Bill"
+        rate_value: "8.8715"
+
+  - source: serrari_mmf
+    snapshot_date: "2026-06-17"
+    rate_type: effective_annual_yield
+    rate_period: annual
+    currency: KES
+    product_type: money_market_fund
+    raw_label_suffix: "effective annual yield, per Serrari MMF index (17 Jun 2026)"
+    entries:
+      - { match_provider: "Nabo", rate_value: "13.33" }
+      - { match_provider: "Cytonn", rate_value: "12.00" }
+      - { match_provider: "Etica", rate_value: "10.89" }
+      - { match_provider: "Lofty", rate_value: "10.68" }
+      - { match_provider: "Arvocap", rate_value: "10.49" }
+      - { match_provider: "Madison", rate_value: "10.44" }
+      - { match_provider: "Kuza", rate_value: "10.37" }
+      - { match_provider: "Old Mutual", rate_value: "10.08" }
+      - { match_provider: "Orient", rate_value: "9.95" }
+      - { match_provider: "Jubilee", rate_value: "9.94" }
+      - { match_provider: "Britam", rate_value: "9.67" }
+      - { match_provider: "Apollo", rate_value: "9.14" }
+      - { match_provider: "Dry Associates", rate_value: "9.12" }
+      - { match_provider: "GenAfrica", rate_value: "9.07" }
+      - { match_provider: "KCB", rate_value: "9.03" }
+      - { match_provider: "Sanlam", rate_value: "9.00" }
+      - { match_provider: "Genghis", rate_value: "8.88" }
+      - { match_provider: "CIC", rate_value: "8.43" }
+      - { match_provider: "CPF", rate_value: "8.10" }
+      - { match_provider: "Co-op", rate_value: "7.90" }
+      - { match_provider: "ICEA", rate_value: "7.60" }
+      - { match_provider: "NCBA", rate_value: "6.65" }
+      - { match_provider: "African Alliance", rate_value: "5.95" }
+      - { match_provider: "Stanbic", rate_value: "5.25" }

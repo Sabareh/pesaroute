@@ -78,6 +78,36 @@ function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function isGenericLearningBody(value?: string) {
+  if (!value) return false;
+  const normalized = value.toLowerCase();
+  return (
+    normalized.includes("educational content:") ||
+    normalized.includes("learn first, compare clearly, understand risks and liquidity") ||
+    normalized.includes("this lesson is educational only. compare risks")
+  );
+}
+
+function formatReviewDate(value?: string | null) {
+  if (!value) return "Review date pending";
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function freshnessFromReview(nextReviewDueAt?: string | null) {
+  if (!nextReviewDueAt) return "unknown";
+  const dueAt = new Date(nextReviewDueAt).getTime();
+  if (!Number.isFinite(dueAt)) return "unknown";
+  const now = Date.now();
+  const daysUntilDue = (dueAt - now) / (1000 * 60 * 60 * 24);
+  if (daysUntilDue < 0) return "stale";
+  if (daysUntilDue <= 30) return "acceptable";
+  return "fresh";
+}
+
 function formatMinutes(minutes: number) {
   return minutes <= 0 ? "Self-paced" : `${minutes} min`;
 }
@@ -197,6 +227,7 @@ export function LearnScreen({
   const [quizChoice, setQuizChoice] = useState<string | null>(null);
   const [quizFeedback, setQuizFeedback] = useState<string | null>(null);
   const [flashcardRevealed, setFlashcardRevealed] = useState(false);
+  const [sourcesExpanded, setSourcesExpanded] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const cacheRef = useRef({ tracks: mockLearningTracks, resources: mockLearningResources });
 
@@ -302,6 +333,7 @@ export function LearnScreen({
     setQuizChoice(null);
     setQuizFeedback(null);
     setFlashcardRevealed(false);
+    setSourcesExpanded(false);
   }
 
   async function openTrack(track: LearningTrackApiResponse) {
@@ -335,6 +367,7 @@ export function LearnScreen({
     setQuizChoice(null);
     setQuizFeedback(null);
     setFlashcardRevealed(false);
+    setSourcesExpanded(false);
     setActionStatus(null);
     if (auth && isAuthenticated && source === "api") {
       try {
@@ -386,7 +419,7 @@ export function LearnScreen({
             goal: "Learning reflection",
             decision: lesson.title,
             amount_display_mode: "hidden",
-            reason: lesson.summary || "For education only. Compare before committing money.",
+            reason: lesson.summary || "Compare what you learned with your goal, timeline, and risk questions.",
             visibility: "private"
           },
           auth
@@ -486,12 +519,6 @@ export function LearnScreen({
           ))}
         </View>
 
-        <PremiumCard>
-          <Text style={styles.cardTitle}>Privacy promise</Text>
-          <Text style={styles.cardBody}>
-            PesaRoute teaches and records decisions. It does not ask for M-Pesa PINs, bank passwords, broker credentials, or execute investments.
-          </Text>
-        </PremiumCard>
       </View>
     );
   }
@@ -597,6 +624,234 @@ export function LearnScreen({
     );
   }
 
+  function renderStructuredBlock(
+    block: LearningLessonApiResponse["structured_content"][number],
+    index: number,
+    lesson?: LearningLessonApiResponse
+  ) {
+    const key = `${block.type}-${index}`;
+    if (block.type === "heading") {
+      return (
+        <Text key={key} style={styles.structuredHeading}>
+          {block.text}
+        </Text>
+      );
+    }
+    if (block.type === "paragraph" || block.type === "example") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.lessonBody}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "scenario") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.eyebrow}>Kenyan scenario</Text>
+          <Text style={styles.contentPanelTitle}>{block.title}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "definition") {
+      return (
+        <View key={key} style={styles.definitionPanel}>
+          <Text style={styles.eyebrow}>Key term</Text>
+          <Text style={styles.contentPanelTitle}>{block.term}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "checklist") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Checklist"}</Text>
+          <View style={styles.checkList}>
+            {(block.items ?? []).map((item) => (
+              <View key={item} style={styles.checkItem}>
+                <View style={styles.checkDot} />
+                <Text style={styles.checkText}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    if (block.type === "caution") {
+      return (
+        <View key={key} style={[styles.contentPanel, styles.cautionPanel]}>
+          <Text style={styles.eyebrow}>What can go wrong</Text>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Caution"}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "key_takeaway") {
+      return (
+        <View key={key} style={styles.takeawayPanel}>
+          <Text style={styles.eyebrow}>Key takeaway</Text>
+          <Text style={styles.takeawayText}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "comparison_table") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Compare"}</Text>
+          {(block.rows ?? []).map((row, rowIndex) => (
+            <View key={`${key}-${rowIndex}`} style={styles.tableRow}>
+              {row.map((cell, cellIndex) => (
+                <Text key={`${cell}-${cellIndex}`} style={styles.tableCell}>
+                  {cell}
+                </Text>
+              ))}
+            </View>
+          ))}
+        </View>
+      );
+    }
+    if (block.type === "simulator_cta") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Practice with numbers"}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+          <SecondaryButton onPress={() => onOpenSimulators(lesson ? { id: lesson.id, title: lesson.title } : null)}>
+            Open simulator
+          </SecondaryButton>
+        </View>
+      );
+    }
+    if (block.type === "journal_prompt") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Private reflection"}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+          <SecondaryButton onPress={onOpenJournal}>Open journal</SecondaryButton>
+        </View>
+      );
+    }
+    if (block.type === "professional_review_cta") {
+      return (
+        <View key={key} style={styles.contentPanel}>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Request review"}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+          <SecondaryButton onPress={onOpenProfessionals}>Professionals</SecondaryButton>
+        </View>
+      );
+    }
+    if (block.type === "quiz_prompt") {
+      return (
+        <View key={key} style={styles.definitionPanel}>
+          <Text style={styles.eyebrow}>Practice</Text>
+          <Text style={styles.contentPanelTitle}>{block.title ?? "Quiz prompt"}</Text>
+          <Text style={styles.contentPanelText}>{block.text}</Text>
+        </View>
+      );
+    }
+    if (block.type === "source_note") {
+      return (
+        <Text key={key} style={styles.sourceNote}>
+          {block.text}
+        </Text>
+      );
+    }
+    if (block.type === "disclaimer") return null;
+    return null;
+  }
+
+  function renderContentSources(
+    item: Pick<
+      LearningLessonApiResponse,
+      | "content_quality_score"
+      | "content_sources"
+      | "last_reviewed_at"
+      | "next_review_due_at"
+      | "source_confidence"
+      | "source_label"
+    >
+  ) {
+    const freshness = freshnessFromReview(item.next_review_due_at);
+    return (
+      <View style={styles.sourcesPanel}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setSourcesExpanded((current) => !current)}
+          style={styles.sourcesHeader}
+        >
+          <View>
+            <Text style={styles.contentPanelTitle}>Sources and review notes</Text>
+            <Text style={styles.sourceNote}>
+              {item.source_label} - {freshness} - reviewed {formatReviewDate(item.last_reviewed_at)}
+            </Text>
+          </View>
+          <Ionicons
+            color={maliPrime.colors.textSecondary}
+            name={sourcesExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+          />
+        </Pressable>
+        {sourcesExpanded ? (
+          <>
+            <View style={styles.metaRow}>
+              <TrustBadge tone="muted">{item.source_confidence}</TrustBadge>
+              <TrustBadge tone={freshness === "fresh" ? "emerald" : freshness === "stale" ? "amber" : "muted"}>
+                {freshness}
+              </TrustBadge>
+              <TrustBadge tone="muted">Quality {item.content_quality_score || "pending"}</TrustBadge>
+            </View>
+            {item.content_sources.length > 0 ? (
+          <View style={styles.sourceList}>
+            {item.content_sources.map((sourceItem) => (
+              <View key={sourceItem.id} style={styles.sourceItem}>
+                <Text style={styles.sourceTitle}>{sourceItem.title}</Text>
+                <Text style={styles.sourceOrg}>{sourceItem.organization || sourceItem.reliability_level}</Text>
+              </View>
+            ))}
+          </View>
+            ) : (
+              <Text style={styles.contentPanelText}>This lesson is editorial-reviewed and waiting for source attachment.</Text>
+            )}
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
+  function renderStructuredContent(item: LearningLessonApiResponse | LearningResourceApiResponse, lesson?: LearningLessonApiResponse) {
+    if ("needs_review_fallback" in item && item.needs_review_fallback) {
+      return (
+        <PremiumCard tone="warning">
+          <Text style={styles.cardTitle}>Content coming soon</Text>
+          <Text style={styles.cardBody}>
+            This lesson is being reviewed. Try another lesson or check the related resource.
+          </Text>
+        </PremiumCard>
+      );
+    }
+    if (item.structured_content && item.structured_content.length > 0) {
+      return (
+        <View style={styles.structuredStack}>
+          {item.structured_content.map((block, index) => renderStructuredBlock(block, index, lesson))}
+        </View>
+      );
+    }
+    if (item.body && !isGenericLearningBody(item.body)) {
+      return (
+        <PremiumCard>
+          <Text style={styles.lessonBody}>{item.body}</Text>
+        </PremiumCard>
+      );
+    }
+    return (
+      <PremiumCard tone="warning">
+        <Text style={styles.cardTitle}>Content coming soon</Text>
+        <Text style={styles.cardBody}>
+          This lesson is still being reviewed. Use the sources and product passports while PesaRoute editors finish the detailed lesson.
+        </Text>
+      </PremiumCard>
+    );
+  }
+
   function renderLesson() {
     if (!selectedLesson || !selectedCourse) return null;
     const lesson = selectedLesson;
@@ -618,11 +873,8 @@ export function LearnScreen({
           <ProgressLine value={selectedCourse.lessons.length > 0 ? ((selectedCourse.lessons.findIndex((item) => item.id === lesson.id) + 1) / selectedCourse.lessons.length) * 100 : 0} />
         </PremiumCard>
 
-        {lesson.body ? (
-          <PremiumCard>
-            <Text style={styles.lessonBody}>{lesson.body}</Text>
-          </PremiumCard>
-        ) : null}
+        {renderStructuredContent(lesson, lesson)}
+        {renderContentSources(lesson)}
 
         {lesson.lesson_type === "quiz" ? (
           <PremiumCard>
@@ -782,7 +1034,8 @@ export function LearnScreen({
               </Pressable>
             </View>
             <Text style={styles.sheetTitle}>{selectedResource.title}</Text>
-            <Text style={styles.lessonBody}>{selectedResource.body}</Text>
+            {renderStructuredContent(selectedResource)}
+            {renderContentSources(selectedResource)}
           </View>
         ) : null}
       </View>
@@ -1101,6 +1354,81 @@ const styles = StyleSheet.create({
   lessonMeta: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", marginTop: 4, textTransform: "capitalize" },
   lessonScreenTitle: { color: maliPrime.colors.textPrimary, fontSize: 25, fontWeight: "900", lineHeight: 31, marginTop: 10 },
   lessonBody: { color: maliPrime.colors.textPrimary, fontSize: 16, lineHeight: 25 },
+  structuredStack: { gap: 10 },
+  structuredHeading: { color: maliPrime.colors.textPrimary, fontSize: 22, fontWeight: "900", lineHeight: 28, marginTop: 2 },
+  contentPanel: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
+    borderWidth: 1,
+    gap: 9,
+    padding: 15
+  },
+  contentPanelTitle: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "900", lineHeight: 20 },
+  contentPanelText: { color: maliPrime.colors.textSecondary, fontSize: 14, lineHeight: 21 },
+  definitionPanel: {
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
+    borderWidth: 1,
+    gap: 8,
+    padding: 15
+  },
+  cautionPanel: { borderColor: "rgba(141,106,46,0.24)" },
+  takeawayPanel: {
+    backgroundColor: maliPrime.colors.textPrimary,
+    borderRadius: maliPrime.radius.md,
+    gap: 8,
+    padding: 15
+  },
+  takeawayText: { color: maliPrime.colors.surface, fontSize: 15, fontWeight: "800", lineHeight: 22 },
+  checkList: { gap: 9 },
+  checkItem: { alignItems: "flex-start", flexDirection: "row", gap: 10 },
+  checkDot: {
+    backgroundColor: maliPrime.colors.textPrimary,
+    borderRadius: maliPrime.radius.pill,
+    height: 6,
+    marginTop: 7,
+    width: 6
+  },
+  checkText: { color: maliPrime.colors.textSecondary, flex: 1, fontSize: 14, lineHeight: 21 },
+  tableRow: {
+    borderTopColor: maliPrime.colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 9
+  },
+  tableCell: { color: maliPrime.colors.textSecondary, flex: 1, fontSize: 12, fontWeight: "700", lineHeight: 18 },
+  disclaimerPanel: {
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
+    borderWidth: 1,
+    gap: 7,
+    padding: 14
+  },
+  disclaimerText: { color: maliPrime.colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  sourcesPanel: {
+    backgroundColor: maliPrime.colors.surface,
+    borderColor: maliPrime.colors.border,
+    borderRadius: maliPrime.radius.md,
+    borderWidth: 1,
+    gap: 10,
+    padding: 15
+  },
+  sourcesHeader: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between" },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  sourceNote: { color: maliPrime.colors.textTertiary, fontSize: 12, fontWeight: "700", lineHeight: 18 },
+  sourceList: { gap: 8 },
+  sourceItem: {
+    backgroundColor: maliPrime.colors.surfaceAlt,
+    borderRadius: maliPrime.radius.sm,
+    paddingHorizontal: 11,
+    paddingVertical: 10
+  },
+  sourceTitle: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "900", lineHeight: 18 },
+  sourceOrg: { color: maliPrime.colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 2 },
   answerList: { gap: 9, marginTop: 14 },
   answerButton: {
     backgroundColor: maliPrime.colors.surfaceAlt,

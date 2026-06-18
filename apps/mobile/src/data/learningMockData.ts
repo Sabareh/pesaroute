@@ -7,6 +7,42 @@ import type {
 
 const now = new Date().toISOString();
 
+const mockContentSource = {
+  id: 9001,
+  title: "PesaRoute Editorial Literacy Standard",
+  organization: "PesaRoute",
+  source_type: "editorial" as const,
+  url: "",
+  retrieved_at: now,
+  reliability_level: "editorial" as const
+};
+
+function reviewedContent(body: string) {
+  return {
+    structured_content: [
+      { type: "paragraph" as const, text: body },
+      {
+        type: "checklist" as const,
+        title: "Before money moves",
+        items: ["Name the goal and timeline.", "Check liquidity and fees.", "Write what can go wrong."]
+      },
+    ],
+    estimated_minutes: 5,
+    difficulty: "beginner" as const,
+    editorial_status: "reviewed" as const,
+    last_reviewed_at: now,
+    next_review_due_at: now,
+    review_frequency_days: 180,
+    source_confidence: "editorial" as const,
+    content_quality_score: 80,
+    content_warning_flags: [],
+    needs_review_fallback: false,
+    content_sources: [mockContentSource],
+    source_label: "Editorial reviewed",
+    disclaimer: ""
+  };
+}
+
 const moneyFoundationsCourse: LearningCourseApiResponse = {
   id: 1001,
   track: 101,
@@ -26,6 +62,9 @@ const moneyFoundationsCourse: LearningCourseApiResponse = {
       body:
         "Before choosing a product, write down the goal, timeline, amount range, and what would make the decision unsafe. This protects you from rushing toward the loudest promise.",
       summary: "Define the decision before comparing products.",
+      ...reviewedContent(
+        "Before choosing a product, write down the goal, timeline, amount range, and what would make the decision unsafe. This protects you from rushing toward the loudest promise."
+      ),
       order: 1,
       xp_reward: 10,
       is_premium: false,
@@ -39,6 +78,7 @@ const moneyFoundationsCourse: LearningCourseApiResponse = {
       lesson_type: "quiz",
       body: "Practice checking whether a product pitch explains access, fees, risk, and who regulates the provider.",
       summary: "A short practice question on information gaps.",
+      ...reviewedContent("Practice checking whether a product pitch explains access, fees, risk, and who regulates the provider."),
       order: 2,
       xp_reward: 15,
       is_premium: false,
@@ -52,6 +92,9 @@ const moneyFoundationsCourse: LearningCourseApiResponse = {
       lesson_type: "flashcard",
       body: "Flip cards for quick definitions you should remember before comparing MMFs, SACCOs, treasury products, land, or global routes.",
       summary: "Remember the difference between return, risk, and access.",
+      ...reviewedContent(
+        "Flip cards for quick definitions you should remember before comparing MMFs, SACCOs, treasury products, land, or global routes."
+      ),
       order: 3,
       xp_reward: 10,
       is_premium: false,
@@ -80,6 +123,9 @@ const mmfCourse: LearningCourseApiResponse = {
       body:
         "An MMF quoted yield is not a promised return. Check fees, tax treatment, withdrawal timing, and whether the fund is regulated before deciding.",
       summary: "Understand quoted yield without treating it as a promise.",
+      ...reviewedContent(
+        "An MMF quoted yield is not a promised return. Check fees, tax treatment, withdrawal timing, and whether the fund is regulated before deciding."
+      ),
       order: 1,
       xp_reward: 10,
       is_premium: false,
@@ -93,6 +139,7 @@ const mmfCourse: LearningCourseApiResponse = {
       lesson_type: "simulation",
       body: "Use the simulator to see how principal, rate, and time can change an estimate.",
       summary: "Practice with a simple MMF estimate.",
+      ...reviewedContent("Use the simulator to see how principal, rate, and time can change an estimate."),
       order: 2,
       xp_reward: 20,
       is_premium: false,
@@ -106,6 +153,7 @@ const mmfCourse: LearningCourseApiResponse = {
       lesson_type: "journal_prompt",
       body: "Write why an MMF might or might not fit your timeline. Keep the amount as a range if you prefer.",
       summary: "Create a private decision note.",
+      ...reviewedContent("Write why an MMF might or might not fit your timeline. Keep the amount as a range if you prefer."),
       order: 3,
       xp_reward: 10,
       is_premium: false,
@@ -134,6 +182,9 @@ const treasuryCourse: LearningCourseApiResponse = {
       body:
         "Treasury bills are bought at a discount and mature at face value. The purchase price, maturity period, and auction result matter more than a headline rate alone.",
       summary: "Understand why a T-bill purchase price can be below face value.",
+      ...reviewedContent(
+        "Treasury bills are bought at a discount and mature at face value. The purchase price, maturity period, and auction result matter more than a headline rate alone."
+      ),
       order: 1,
       xp_reward: 15,
       is_premium: true,
@@ -147,6 +198,7 @@ const treasuryCourse: LearningCourseApiResponse = {
       lesson_type: "checklist",
       body: "Confirm the minimum amount, CSD route, auction date, liquidity needs, and tax treatment before applying.",
       summary: "A quick checklist for T-bill readiness.",
+      ...reviewedContent("Confirm the minimum amount, CSD route, auction date, liquidity needs, and tax treatment before applying."),
       order: 2,
       xp_reward: 15,
       is_premium: true,
@@ -176,7 +228,7 @@ export const mockLearningTracks: LearningTrackApiResponse[] = [
     id: 102,
     title: "First MMF decision",
     slug: "first-mmf-decision",
-    description: "Compare money market funds as a learning route, not a shortcut to guaranteed returns.",
+    description: "Compare money market funds as a learning route, not a shortcut to promised payouts.",
     level: "beginner",
     target_user_type: "first_jobber",
     estimated_minutes: 42,
@@ -206,7 +258,7 @@ export const mockLearningTracks: LearningTrackApiResponse[] = [
     id: 104,
     title: "Scam defense",
     slug: "scam-defense",
-    description: "Practice identifying pressure, guaranteed returns, and missing regulator/provider details.",
+    description: "Practice identifying pressure, promised payouts, and missing regulator/provider details.",
     level: "beginner",
     target_user_type: "general",
     estimated_minutes: 30,
@@ -255,6 +307,7 @@ export const mockLearningResources: LearningResourceApiResponse[] = [
     title: "Investment decision checklist",
     resource_type: "checklist",
     body: "Goal, timeline, amount range, provider, regulator, fees, liquidity, tax notes, exit terms, and red flags.",
+    ...reviewedContent("Goal, timeline, amount range, provider, regulator, fees, liquidity, tax notes, exit terms, and red flags."),
     related_track: 101,
     related_track_slug: "money-foundations",
     related_product_category: null,
@@ -269,6 +322,7 @@ export const mockLearningResources: LearningResourceApiResponse[] = [
     title: "MMF terms cheat sheet",
     resource_type: "cheat_sheet",
     body: "Yield, management fee, withholding tax, settlement time, fund fact sheet, and redemption request.",
+    ...reviewedContent("Yield, management fee, withholding tax, settlement time, fund fact sheet, and redemption request."),
     related_track: 102,
     related_track_slug: "first-mmf-decision",
     related_product_category: null,
@@ -283,6 +337,7 @@ export const mockLearningResources: LearningResourceApiResponse[] = [
     title: "Treasury bill auction glossary",
     resource_type: "glossary",
     body: "Face value, discounted price, accepted yield, maturity, auction date, and CSD account.",
+    ...reviewedContent("Face value, discounted price, accepted yield, maturity, auction date, and CSD account."),
     related_track: 103,
     related_track_slug: "treasury-bills-basics",
     related_product_category: null,
@@ -296,7 +351,8 @@ export const mockLearningResources: LearningResourceApiResponse[] = [
     id: 204,
     title: "Scam pitch questions",
     resource_type: "guide",
-    body: "Who regulates this? What are the fees? Can I withdraw? Why is the return guaranteed? What happens if I say no today?",
+    body: "Who regulates this? What are the fees? Can I withdraw? Why is the payout being promised? What happens if I say no today?",
+    ...reviewedContent("Who regulates this? What are the fees? Can I withdraw? What happens if I say no today?"),
     related_track: 104,
     related_track_slug: "scam-defense",
     related_product_category: null,

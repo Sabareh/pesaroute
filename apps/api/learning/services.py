@@ -11,25 +11,34 @@ from django.utils import timezone
 from billing.models import EntitlementCode
 from billing.services import is_authenticated_user, user_has_entitlement
 from learning.models import (
+    Assessment,
+    AssessmentQuestion,
     Badge,
     Flashcard,
     LearningCourse,
     LearningLesson,
     LearningTrack,
+    PracticeQuestion,
+    PracticeSet,
     QuizQuestion,
+    UserAssessmentResult,
     UserBadge,
     UserCourseProgress,
     UserLessonProgress,
+    UserLibraryItem,
     UserStreak,
     XPEvent,
 )
 
 LESSON_XP = 10
-QUIZ_XP = 20
+QUIZ_XP = 5
 FLASHCARD_REVIEW_XP = 5
-SIMULATION_XP = 25
+SIMULATION_XP = 30
 JOURNAL_XP = 20
 SCAM_CHECK_XP = 20
+PRACTICE_SET_XP = 25
+ASSESSMENT_XP = 100
+STREAK_BONUS_XP = 25
 COURSE_XP = 100
 TRACK_XP = 500
 
@@ -137,6 +146,9 @@ def touch_streak(user) -> UserStreak | None:
     streak.longest_streak_days = max(streak.longest_streak_days, streak.current_streak_days)
     streak.last_activity_date = today
     streak.save(update_fields=["current_streak_days", "longest_streak_days", "last_activity_date", "updated_at"])
+    # Daily streak bonus. Safe from recursion: the nested award_xp -> touch_streak call
+    # returns early now that last_activity_date == today.
+    award_xp(user, XPEvent.SourceType.STREAK, today.isoformat(), STREAK_BONUS_XP)
     return streak
 
 
@@ -385,3 +397,133 @@ def review_flashcard(user, flashcard: Flashcard) -> dict:
     progress.save(update_fields=["status", "attempts", "updated_at"])
     award_xp(user, XPEvent.SourceType.FLASHCARD, flashcard.id, FLASHCARD_REVIEW_XP)
     return {"progress": progress, "xp_awarded": FLASHCARD_REVIEW_XP}
+
+
+def can_access_practice_set(user, practice_set: PracticeSet) -> bool:
+    return not practice_set.is_premium or can_access_premium_learning(user)
+
+
+def can_access_assessment(user, assessment: Assessment) -> bool:
+    return not assessment.is_premium or can_access_premium_learning(user)
+
+
+@transaction.atomic
+def submit_practice_set(user, practice_set: PracticeSet, answers: dict[str, str]) -> dict:
+    """
+    Grade a practice set. answers maps str(question_id) -> chosen answer.
+    Awards PRACTICE_SET_XP once per practice set (idempotent via XPEvent unique key).
+    """
+    if not can_access_practice_set(user, practice_set):
+        raise PermissionDenied("Premium learning entitlement required.")
+    questions = list(practice_set.questions.all())
+    total = len(questions)
+    results = []
+    correct_count = 0
+    for question in questions:
+        given = (answers.get(str(question.id)) or "").strip()
+        is_correct = given == question.correct_answer
+        if is_correct:
+            correct_count += 1
+        results.append(
+            {
+                "question_id": question.id,
+                "correct": is_correct,
+                "correct_answer": question.correct_answer,
+                "explanation": question.explanation,
+            }
+        )
+    score = round((correct_count / total) * 100, 2) if total else 0.0
+    already_awarded = XPEvent.objects.filter(
+        user=user, source_type=XPEvent.SourceType.PRACTICE, source_id=str(practice_set.id)
+    ).exists()
+    award_xp(user, XPEvent.SourceType.PRACTICE, practice_set.id, PRACTICE_SET_XP)
+    touch_streak(user)
+    return {
+        "practice_set_id": practice_set.id,
+        "total_questions": total,
+        "correct_count": correct_count,
+        "score": score,
+        "results": results,
+        "xp_awarded": 0 if already_awarded else PRACTICE_SET_XP,
+        "total_xp": total_xp(user),
+    }
+
+
+def _band_label(bands: dict, percent: float) -> str:
+    if not bands:
+        return ""
+    for bound in sorted(bands.keys(), key=lambda value: int(value)):
+        if percent <= int(bound):
+            return bands[bound]
+    # Fall back to the highest band.
+    highest = max(bands.keys(), key=lambda value: int(value))
+    return bands[highest]
+
+
+@transaction.atomic
+def submit_assessment(user, assessment: Assessment, answers: dict[str, str]) -> dict:
+    """
+    Score an assessment. answers maps str(question_id) -> chosen option value.
+
+    KNOWLEDGE assessments score percent-correct against option "correct" flags.
+    PROFILE assessments sum option "weight" values into a 0-100 band label.
+    Awards ASSESSMENT_XP once when passed (idempotent via XPEvent unique key).
+    """
+    if not can_access_assessment(user, assessment):
+        raise PermissionDenied("Premium learning entitlement required.")
+    questions = list(assessment.questions.all())
+    total = len(questions)
+    if assessment.scoring == Assessment.Scoring.KNOWLEDGE:
+        correct = 0
+        for question in questions:
+            given = (answers.get(str(question.id)) or "").strip()
+            option = next((opt for opt in question.options if str(opt.get("value")) == given), None)
+            if option and option.get("correct"):
+                correct += 1
+        percent = round((correct / total) * 100, 2) if total else 0.0
+    else:
+        max_weight = 0
+        earned_weight = 0
+        for question in questions:
+            weights = [int(opt.get("weight", 0)) for opt in question.options]
+            max_weight += max(weights) if weights else 0
+            given = (answers.get(str(question.id)) or "").strip()
+            option = next((opt for opt in question.options if str(opt.get("value")) == given), None)
+            earned_weight += int(option.get("weight", 0)) if option else 0
+        percent = round((earned_weight / max_weight) * 100, 2) if max_weight else 0.0
+
+    result_label = _band_label(assessment.result_bands, percent)
+    passed = percent >= assessment.pass_threshold
+    result, _created = UserAssessmentResult.objects.update_or_create(
+        user=user,
+        assessment=assessment,
+        defaults={
+            "score": Decimal(str(percent)),
+            "result_label": result_label,
+            "answers": answers,
+            "passed": passed,
+            "completed_at": timezone.now(),
+        },
+    )
+    xp_awarded = 0
+    if passed:
+        already_awarded = XPEvent.objects.filter(
+            user=user, source_type=XPEvent.SourceType.ASSESSMENT, source_id=str(assessment.id)
+        ).exists()
+        award_xp(user, XPEvent.SourceType.ASSESSMENT, assessment.id, ASSESSMENT_XP)
+        xp_awarded = 0 if already_awarded else ASSESSMENT_XP
+    touch_streak(user)
+    return {
+        "assessment_id": assessment.id,
+        "score": percent,
+        "result_label": result_label,
+        "passed": passed,
+        "xp_awarded": xp_awarded,
+        "total_xp": total_xp(user),
+        "result_id": result.id,
+    }
+
+
+def add_to_library(user, track: LearningTrack) -> UserLibraryItem:
+    item, _created = UserLibraryItem.objects.get_or_create(user=user, track=track)
+    return item

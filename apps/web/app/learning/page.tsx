@@ -1,4 +1,5 @@
 import { ArrowRight, BookOpen, ClipboardCheck, FileText, Gauge, GraduationCap, LockKeyhole, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import {
   AppleLikeNav,
   AppShell,
@@ -44,20 +45,103 @@ const journeySteps = [
 ];
 
 const tracks = [
-  ["Money foundations", "Free", "Goals, liquidity, risk, fees, provider checks, and scam pressure."],
-  ["First MMF decision", "Free", "Yield language, withdrawal timing, and fund manager checks."],
-  ["SACCO and chama basics", "Free", "Governance, records, contributions, and exit rules."],
-  ["Treasury bills basics", "Premium placeholder", "Face value, purchase price, auctions, maturity, and tax notes."],
-  ["Global investing route", "Premium placeholder", "FX costs, platform checks, custody, transfer fees, and tax questions."],
-  ["Scam defense", "Free", "Guaranteed returns, urgency, missing regulator details, and referral pressure."]
+  ["Money Foundations", "Free", "Emergency funds, risk, liquidity, comparison habits, and red-flag language."],
+  ["First Salary Money Plan", "Free", "Salary buckets, black-tax boundaries, emergency buffers, and first KES 10,000 decisions."],
+  ["Money Market Funds", "Free", "CMA scheme checks, yield language, fees, withdrawal timing, and MMF simulation."],
+  ["Treasury Bills and Bonds", "Free", "CBK securities, DhowCSD, face value, purchase price, coupons, maturity, and price risk."],
+  ["SACCO Smart Member", "Free", "SASRA checks, deposits, share capital, dividends, loan multipliers, and guarantor risk."],
+  ["Chama Investment Basics", "Free", "Contribution discipline, investment policies, minutes, voting, and land caution."],
+  ["Scam Defense", "Free", "Urgency, recruitment pressure, fake bots, land pressure sales, and questions before sending money."],
+  ["NSE Stocks for Beginners", "Free", "Shares, dividends, CDS accounts, brokers, long horizons, and journal discipline."],
+  ["Global Stocks and ETFs", "Premium placeholder", "ETF routes, USD/KES currency risk, platform custody, fees, and global simulations."],
+  ["Land Due Diligence Basics", "Premium placeholder", "Ardhisasa checks, seller authority, boundaries, public-land questions, and deposit discipline."],
+  ["Diaspora Investing Kenya", "Premium placeholder", "Cross-border goals, transfer route, FX, scoped sharing, and privacy boundaries."],
+  ["Farmer Seasonal Money Plan", "Free", "Harvest income, input reserves, liquidity, cooperative/SACCO rules, and payout journaling."],
+  ["Jua Kali Daily Income Plan", "Free", "Daily buckets, stock replacement, personal reserves, liquidity, and closing-time journaling."]
+];
+
+const detailedLessons = [
+  {
+    title: "Money Market Fund basics",
+    summary: "Use MMFs as a liquidity lesson, not a shortcut to a fixed return.",
+    scenario:
+      "A first-jobber has KES 8,000 left after rent and transport. Before placing it anywhere, they compare withdrawal time, fund manager status, fees, and whether this money may be needed in an emergency.",
+    checks: [
+      "Confirm fund manager, trustee, and provider documents.",
+      "Compare withdrawal timing and cut-off rules.",
+      "Look at net yield after fees, not only a headline number.",
+      "Keep emergency money separate from money you can leave longer."
+    ],
+    source: "Capital Markets Authority investor education",
+    href: "/learning/money-market-funds/what-is-a-money-market-fund"
+  },
+  {
+    title: "Treasury bill readiness",
+    summary: "Separate face value, purchase price, auction timing, maturity, and cash needs.",
+    scenario:
+      "A user wants to place KES 50,000 in a 91-day bill but may need school-fee money in two months. They check auction timing, maturity, and whether early access is realistic before applying.",
+    checks: [
+      "Confirm current instructions from CBK or DhowCSD.",
+      "Know whether the bid is competitive or non-competitive.",
+      "Calculate purchase price separately from face value.",
+      "Do not use money needed before maturity unless the exit route is clear."
+    ],
+    source: "Central Bank of Kenya government securities",
+    href: "/learning/treasury-bills-and-bonds/what-is-a-treasury-bill"
+  },
+  {
+    title: "SACCO member safety",
+    summary: "Understand deposits, share capital, guarantor exposure, dividends, and exit rules.",
+    scenario:
+      "A member is told contributions can qualify them for a loan. Before joining, they ask how deposits are withdrawn, what share capital means, who regulates the SACCO, and what happens if a borrower defaults.",
+    checks: [
+      "Verify regulated status on SASRA lists where applicable.",
+      "Separate withdrawable deposits from share capital.",
+      "Ask for written loan, guarantor, dividend, and exit rules.",
+      "Do not guarantee a loan you cannot afford to support."
+    ],
+    source: "SASRA regulated SACCO lists",
+    href: "/learning/sacco-smart-member/what-is-a-sacco"
+  },
+  {
+    title: "Scam pitch pause",
+    summary: "Slow down urgency, secrecy, recruitment pressure, missing regulator details, and unclear withdrawal rules.",
+    scenario:
+      "Someone sends a screenshot showing large profits and asks for a deposit today. The user copies the message into the scam checker and refuses to share PINs, passwords, OTPs, or money under pressure.",
+    checks: [
+      "Ask who regulates the provider and verify independently.",
+      "Reject requests for PINs, passwords, OTPs, or remote-control apps.",
+      "Watch for urgency, secrecy, referral rewards, and unclear withdrawals.",
+      "Speak to a licensed professional where the decision is material."
+    ],
+    source: "CMA investor education and PesaRoute editorial review",
+    href: "/learning/scam-defense/guaranteed-returns-are-a-red-flag"
+  }
+];
+
+const sourceLinks = [
+  ["Central Bank of Kenya", "https://www.centralbank.go.ke/securities/"],
+  ["CBK Treasury Bills", "https://www.centralbank.go.ke/securities/treasury-bills/"],
+  ["CBK Treasury Bonds", "https://www.centralbank.go.ke/securities/treasury-bonds/"],
+  ["DhowCSD", "https://dhowcsd.centralbank.go.ke/"],
+  ["Capital Markets Authority handbook", "https://handbook.cma.or.ke/"],
+  ["CMA licensees", "https://licensees.cma.or.ke/"],
+  ["CMA approved collective investment schemes", "https://licensees.cma.or.ke/licenses/15/"],
+  ["Nairobi Securities Exchange FAQs", "https://www.nse.co.ke/faqs/"],
+  ["CDSC account opening", "https://cdsckenya.com/account-opening/"],
+  ["SASRA licensed DT SACCOs", "https://www.sasra.go.ke/licensed-dt-saccos/"],
+  ["SASRA regulated SACCOs", "https://www.sasra.go.ke/regulated-saccos/"],
+  ["Ardhisasa", "https://ardhisasa.lands.go.ke/"],
+  ["National Land Commission", "https://landcommission.go.ke/"],
+  ["KRA withholding tax", "https://www.kra.go.ke/individual/filing-paying/types-of-taxes/individual-withholding-tax"],
+  ["KRA capital gains tax", "https://www.kra.go.ke/individual/filing-paying/types-of-taxes/capital-gains-tax"]
 ];
 
 const qaNotes = [
-  "For education only.",
   "Compare before committing money.",
   "Use ranges if you do not want exact amounts.",
-  "Speak to a licensed professional when needed.",
-  "PesaRoute does not hold or execute investments."
+  "Check sources and review dates.",
+  "Save the questions you still need answered."
 ];
 
 export default function LearningPage() {
@@ -104,6 +188,67 @@ export default function LearningPage() {
       </section>
 
       <PageShell>
+        <section className="py-8">
+          <SectionHeader
+            eyebrow="Detailed lessons"
+            title="Real lesson content, not placeholder paragraphs."
+            body="Each lesson is written as a practical decision check: scenario, key idea, checks before money moves, sources, and review date."
+          />
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            {detailedLessons.map((lesson) => (
+              <PremiumCard key={lesson.title}>
+                <TrustBadge tone="muted">Reviewed lesson sample</TrustBadge>
+                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.02em]">{lesson.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-textSecondary">{lesson.summary}</p>
+                <div className="mt-5 rounded-lg border border-border bg-surfaceSubtle p-4">
+                  <p className="text-xs font-semibold uppercase text-textTertiary">Kenyan scenario</p>
+                  <p className="mt-2 text-sm leading-6 text-textSecondary">{lesson.scenario}</p>
+                </div>
+                <div className="mt-5">
+                  <p className="text-xs font-semibold uppercase text-textTertiary">Before money moves</p>
+                  <div className="mt-3 grid gap-2">
+                    {lesson.checks.map((check) => (
+                      <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm leading-6 text-textSecondary" key={check}>
+                        {check}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-5 text-xs font-semibold uppercase text-textTertiary">Source: {lesson.source}</p>
+                <Link
+                  className="mt-5 inline-flex rounded-full border border-border px-4 py-2 text-sm font-semibold text-textPrimary transition hover:border-textTertiary"
+                  href={lesson.href}
+                >
+                  Open lesson
+                </Link>
+              </PremiumCard>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-4 py-8 lg:grid-cols-[0.72fr_1.28fr]">
+          <SectionHeader
+            eyebrow="Source references"
+            title="Lessons carry public source context and review dates."
+            body="Official sources are used where available. Editorial-only lessons are labelled so they can be reviewed before publication."
+          />
+          <PremiumCard>
+            <div className="grid gap-3">
+              {sourceLinks.map(([label, href]) => (
+                <a
+                  className="rounded-lg border border-border bg-surfaceSubtle px-4 py-3 text-sm font-medium text-textPrimary transition hover:border-borderStrong"
+                  href={href}
+                  key={href}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          </PremiumCard>
+        </section>
+
         <section className="py-8">
           <SectionHeader
             eyebrow="Guided core loop"

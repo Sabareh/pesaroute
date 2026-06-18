@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
@@ -30,7 +31,7 @@ import {
   TrustBadge
 } from "./components/maliprime";
 
-const trustPromises = ["No M-Pesa PIN", "No bank passwords", "No execution", "Privacy-first", "Professionals verified"];
+const trustPromises = ["Range planning", "Private journal", "Scoped sharing", "Reviewed sources", "Verified professionals"];
 
 const features = [
   {
@@ -135,12 +136,15 @@ export default function HomePage() {
               investing.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton href="#amount" className="!bg-white !text-textPrimary hover:!bg-white/90">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <PrimaryButton href="#amount" className="!bg-white !text-[#11110F] hover:!bg-white/90">
                 Start with my amount
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </PrimaryButton>
-              <SecondaryButton href="/learning" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
+              <SecondaryButton href="/simulate" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
+                Compare &amp; simulate products
+              </SecondaryButton>
+              <SecondaryButton href="/learn" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
                 Open learning engine
               </SecondaryButton>
               <SecondaryButton href="/product-passports" className="border-white/20 bg-white/10 text-white hover:bg-white/15">
@@ -210,7 +214,7 @@ export default function HomePage() {
               body="The Phase 2.6 loop is now visible: start a track, finish a short lesson, practice, run a relevant simulator, save a private reflection, then review progress before asking for professional help."
             />
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <PrimaryButton href="/learning">
+              <PrimaryButton href="/learn">
                 View learning dashboard
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </PrimaryButton>
@@ -283,7 +287,7 @@ export default function HomePage() {
               automatically.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <SecondaryButton href="/professional/dashboard" className="border-white/10 bg-white text-textPrimary hover:bg-white/90">
+              <SecondaryButton href="/professional/dashboard" className="border-white/10 bg-white text-[#11110F] hover:bg-white/90">
                 Professional portal
               </SecondaryButton>
               <SecondaryButton href="/provider/dashboard" className="border-white/10 bg-white/10 text-white hover:bg-white/15">
@@ -309,7 +313,7 @@ export default function HomePage() {
           <SectionHeader
             eyebrow="Privacy"
             title="Trust rules users can understand before they sign up."
-            body="PesaRoute does not ask for M-Pesa PINs, bank passwords, broker credentials, or MMF credentials. Users can plan with ranges and revoke professional access."
+            body="Users can plan with ranges, keep private notes scoped, and revoke professional access when sharing is no longer needed."
           />
           <EditorialImage
             alt="A calm desk scene with a phone and written planning notes for privacy-first investment decisions."
@@ -345,10 +349,9 @@ export default function HomePage() {
       <footer className="border-t border-border px-5 py-10 sm:px-8">
         <div className="mx-auto grid max-w-7xl gap-5 text-sm leading-6 text-textSecondary md:grid-cols-[0.9fr_1.1fr]">
           <p className="font-semibold text-textPrimary">PesaRoute</p>
-          <p>
-            Educational information only. PesaRoute does not provide investment execution, custody, guaranteed returns,
-            M-Pesa services, bank account linking, or broker account linking.
-          </p>
+          <Link className="font-medium text-textSecondary transition hover:text-textPrimary" href="/terms">
+            Terms &amp; Conditions
+          </Link>
         </div>
       </footer>
     </AppShell>

@@ -2,12 +2,18 @@ from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
 from catalog.models import ProductCategory
+from learning.content import EDUCATIONAL_DISCLAIMER, structured_lesson_content, sync_learning_sources
 from learning.models import (
+    Assessment,
+    AssessmentQuestion,
     Flashcard,
     LearningCourse,
     LearningLesson,
+    LearningModule,
     LearningResource,
     LearningTrack,
+    PracticeQuestion,
+    PracticeSet,
     QuizQuestion,
 )
 from learning.services import ensure_default_badges
@@ -116,7 +122,7 @@ TRACKS = [
         "target_user_type": LearningTrack.TargetUserType.GENERAL,
         "estimated_minutes": 45,
         "lessons": [
-            ("Guaranteed returns", "article"),
+            ("Promised high payouts", "article"),
             ("Recruitment schemes", "article"),
             ("Pressure tactics", "checklist"),
             ("Paste a suspicious pitch into scam checker", "simulation"),
@@ -156,19 +162,152 @@ TRACKS = [
 ]
 
 
-def lesson_body(title: str, track_title: str, lesson_type: str) -> str:
-    return (
-        f"{title} in the {track_title} track. This lesson is educational only. "
-        "Compare risks, costs, liquidity, and provider/regulator checks before moving money. "
-        "PesaRoute does not hold money, execute investments, promise returns, or ask for M-Pesa PINs, "
-        "bank passwords, broker credentials, or MMF credentials."
-        if lesson_type != LearningLesson.LessonType.SIMULATION
-        else (
-            f"{title} in the {track_title} track. "
-            "Use the simulator to test assumptions before journaling your decision. "
-            "A simulation is not a recommendation, prediction, or promised return."
-        )
-    )
+PRACTICE_SETS = [
+    {
+        "title": "Scam red-flag practice",
+        "kind": PracticeSet.Kind.SCAM_RED_FLAG_PRACTICE,
+        "track": "scam-defense",
+        "description": "Spot the red flags in common Kenyan investment pitches.",
+        "questions": [
+            {
+                "prompt": "A message says you must deposit within one hour to lock a 20% weekly return. What is the safest response?",
+                "options": [
+                    "Send a small amount to test it",
+                    "Pause, verify the regulator, and refuse pressure",
+                    "Ask a friend to invest first",
+                    "Share your M-Pesa PIN to confirm identity",
+                ],
+                "correct_answer": "Pause, verify the regulator, and refuse pressure",
+                "explanation": "Urgency plus unrealistic returns is a classic red flag. Verify before moving money.",
+            },
+            {
+                "prompt": "Which request should always be refused?",
+                "options": [
+                    "A public regulator registration number",
+                    "Your M-Pesa PIN or bank password",
+                    "A written explanation of fees",
+                    "Time to think it over",
+                ],
+                "correct_answer": "Your M-Pesa PIN or bank password",
+                "explanation": "PesaRoute and legitimate providers never need your PIN or password.",
+            },
+        ],
+    },
+    {
+        "title": "Liquidity scenario practice",
+        "kind": PracticeSet.Kind.SCENARIO_PRACTICE,
+        "track": "money-foundations",
+        "description": "Decide whether a product fits when money may be needed soon.",
+        "questions": [
+            {
+                "prompt": "You may need school-fee money in 6 weeks. Which factor matters most before choosing a product?",
+                "options": ["Headline yield", "Withdrawal timeline and access", "Brand popularity", "Referral bonus"],
+                "correct_answer": "Withdrawal timeline and access",
+                "explanation": "When money is needed soon, liquidity matters more than the headline return.",
+            },
+        ],
+    },
+    {
+        "title": "Recent review",
+        "kind": PracticeSet.Kind.REVIEW_RECENT,
+        "track": "money-foundations",
+        "description": "Quick review of the core ideas you have seen recently.",
+        "questions": [
+            {
+                "prompt": "Before money moves, what should you list first?",
+                "options": ["Possible upside only", "What can go wrong", "The most exciting product", "A referral target"],
+                "correct_answer": "What can go wrong",
+                "explanation": "Naming downside and exit first keeps decisions grounded.",
+            },
+        ],
+    },
+]
+
+ASSESSMENTS = [
+    {
+        "title": "Money profile quiz",
+        "kind": Assessment.Kind.MONEY_PROFILE,
+        "scoring": Assessment.Scoring.PROFILE,
+        "description": "A short, private profile of how you currently handle money. Not investment advice.",
+        "result_bands": {"33": "Building basics", "66": "Steady saver", "100": "Confident planner"},
+        "questions": [
+            {
+                "prompt": "When you get income, what happens first?",
+                "options": [
+                    {"label": "It is usually spent quickly", "value": "spend", "weight": 0},
+                    {"label": "I cover needs, then see what is left", "value": "needs", "weight": 1},
+                    {"label": "I split needs, buffer, and goals on purpose", "value": "plan", "weight": 2},
+                ],
+            },
+            {
+                "prompt": "Do you keep an emergency buffer?",
+                "options": [
+                    {"label": "No buffer yet", "value": "none", "weight": 0},
+                    {"label": "A small one", "value": "small", "weight": 1},
+                    {"label": "A few months of needs", "value": "solid", "weight": 2},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Risk comfort quiz",
+        "kind": Assessment.Kind.RISK_COMFORT,
+        "scoring": Assessment.Scoring.PROFILE,
+        "description": "Understand your comfort with ups and downs. This does not recommend any product.",
+        "result_bands": {"33": "Prefers stability", "66": "Balanced", "100": "Comfortable with volatility"},
+        "questions": [
+            {
+                "prompt": "If a learning simulation showed a possible short-term loss, you would feel:",
+                "options": [
+                    {"label": "Very uncomfortable", "value": "low", "weight": 0},
+                    {"label": "Cautious but okay learning", "value": "mid", "weight": 1},
+                    {"label": "Fine, I understand it can recover or not", "value": "high", "weight": 2},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Scam awareness quiz",
+        "kind": Assessment.Kind.SCAM_AWARENESS,
+        "scoring": Assessment.Scoring.KNOWLEDGE,
+        "pass_threshold": 50,
+        "description": "Check how well you spot unsafe investment pitches.",
+        "result_bands": {"49": "Keep practicing", "100": "Scam aware"},
+        "questions": [
+            {
+                "prompt": "Guaranteed high weekly returns usually mean:",
+                "options": [
+                    {"label": "A safe opportunity", "value": "safe", "correct": False},
+                    {"label": "A red flag to slow down", "value": "redflag", "correct": True},
+                ],
+            },
+            {
+                "prompt": "A legitimate provider will:",
+                "options": [
+                    {"label": "Need your M-Pesa PIN", "value": "pin", "correct": False},
+                    {"label": "Have verifiable regulator details", "value": "regulated", "correct": True},
+                ],
+            },
+        ],
+    },
+    {
+        "title": "Liquidity needs quiz",
+        "kind": Assessment.Kind.LIQUIDITY_NEEDS,
+        "scoring": Assessment.Scoring.PROFILE,
+        "description": "Estimate how quickly you may need access to money. Educational only.",
+        "result_bands": {"33": "Needs high access", "66": "Some flexibility", "100": "Can lock longer"},
+        "questions": [
+            {
+                "prompt": "How soon might you need this money?",
+                "options": [
+                    {"label": "Within weeks", "value": "weeks", "weight": 0},
+                    {"label": "Within a year", "value": "year", "weight": 1},
+                    {"label": "Several years", "value": "years", "weight": 2},
+                ],
+            },
+        ],
+    },
+]
 
 
 class Command(BaseCommand):
@@ -211,21 +350,49 @@ class Command(BaseCommand):
                 },
             )
 
+            module, _module_created = LearningModule.objects.update_or_create(
+                course=course,
+                slug=f"{track_slug}-core-module",
+                defaults={
+                    "title": f"{track.title}: Core chapter",
+                    "description": "Core chapter grouping the lessons in this course.",
+                    "order": 1,
+                    "estimated_minutes": track.estimated_minutes,
+                    "status": LearningModule.Status.PUBLISHED,
+                },
+            )
+
             for lesson_order, (lesson_title, lesson_type) in enumerate(track_data["lessons"], start=1):
-                lesson, lesson_was_created = LearningLesson.objects.update_or_create(
-                    course=course,
-                    slug=slugify(lesson_title),
-                    defaults={
-                        "title": lesson_title,
-                        "lesson_type": lesson_type,
-                        "body": lesson_body(lesson_title, track.title, lesson_type),
-                        "summary": f"Understand {lesson_title.lower()} before taking the next step.",
-                        "order": lesson_order,
-                        "xp_reward": 10,
-                        "is_premium": track.is_premium,
-                        "status": LearningLesson.Status.PUBLISHED,
-                    },
-                )
+                content = structured_lesson_content(lesson_title, track.title, lesson_type)
+                lesson_slug = slugify(lesson_title)
+                lesson = LearningLesson.objects.filter(course=course, slug=lesson_slug).first()
+                lesson_was_created = False
+                order_conflict = LearningLesson.objects.filter(course=course, order=lesson_order)
+                if lesson:
+                    order_conflict = order_conflict.exclude(pk=lesson.pk)
+                if order_conflict.exists():
+                    continue
+                if not lesson:
+                    lesson = LearningLesson(course=course, slug=lesson_slug, order=lesson_order)
+                    lesson_was_created = True
+                lesson.title = lesson_title
+                lesson.lesson_type = lesson_type
+                lesson.body = content["body"]
+                lesson.summary = content["summary"]
+                lesson.structured_content = content["structured_content"]
+                lesson.estimated_minutes = content["estimated_minutes"]
+                lesson.difficulty = content["difficulty"]
+                lesson.order = lesson_order
+                lesson.xp_reward = 10
+                lesson.is_premium = track.is_premium
+                lesson.status = LearningLesson.Status.PUBLISHED
+                lesson.editorial_status = content["editorial_status"]
+                lesson.last_reviewed_at = content["last_reviewed_at"]
+                lesson.next_review_due_at = content["next_review_due_at"]
+                lesson.reviewer_notes = content["reviewer_notes"]
+                lesson.module = module
+                lesson.save()
+                sync_learning_sources(lesson, content["source_keys"])
                 lessons_created += int(lesson_was_created)
                 if lesson_order == 1:
                     Flashcard.objects.update_or_create(
@@ -268,16 +435,93 @@ class Command(BaseCommand):
                         f"Use this checklist for {track.title}. Verify provider details, fees, liquidity, risks, "
                         "and whether you need professional review. Educational only."
                     ),
+                    "structured_content": [
+                        {"type": "heading", "text": f"{track.title} checklist"},
+                        {
+                            "type": "checklist",
+                            "title": "Before money moves",
+                            "items": [
+                                "Verify provider details and public source references where available.",
+                                "Compare fees, liquidity, documents, and what can go wrong.",
+                                "Use ranges or hidden amounts if exact values feel too private.",
+                                "Ask for licensed professional review when the decision is material.",
+                            ],
+                        },
+                        {"type": "disclaimer", "text": EDUCATIONAL_DISCLAIMER},
+                    ],
                     "related_track": track,
                     "related_product_category": category,
                     "is_premium": track.is_premium,
                     "status": LearningResource.Status.PUBLISHED,
+                    "editorial_status": LearningResource.EditorialStatus.REVIEWED,
                 },
             )
+            resource = LearningResource.objects.get(title=f"{track.title} checklist")
+            sync_learning_sources(resource, ["pesaroute_editorial"])
+
+        self._seed_practice_sets()
+        self._seed_assessments()
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Seeded learning engine: {LearningTrack.objects.count()} tracks, "
-                f"{LearningLesson.objects.count()} lessons. New tracks={tracks_created}, new lessons={lessons_created}."
+                f"{LearningLesson.objects.count()} lessons, {PracticeSet.objects.count()} practice sets, "
+                f"{Assessment.objects.count()} assessments. New tracks={tracks_created}, new lessons={lessons_created}."
             )
         )
+
+    def _seed_practice_sets(self):
+        for order, data in enumerate(PRACTICE_SETS, start=1):
+            track = LearningTrack.objects.filter(slug=data["track"]).first()
+            practice_set, _created = PracticeSet.objects.update_or_create(
+                slug=slugify(data["title"]),
+                defaults={
+                    "title": data["title"],
+                    "description": data["description"],
+                    "kind": data["kind"],
+                    "track": track,
+                    "is_premium": False,
+                    "status": PracticeSet.Status.PUBLISHED,
+                    "order": order,
+                    "xp_reward": 25,
+                },
+            )
+            for question_order, question in enumerate(data["questions"], start=1):
+                PracticeQuestion.objects.update_or_create(
+                    practice_set=practice_set,
+                    prompt=question["prompt"],
+                    defaults={
+                        "options": question["options"],
+                        "correct_answer": question["correct_answer"],
+                        "explanation": question["explanation"],
+                        "order": question_order,
+                    },
+                )
+
+    def _seed_assessments(self):
+        for order, data in enumerate(ASSESSMENTS, start=1):
+            assessment, _created = Assessment.objects.update_or_create(
+                slug=slugify(data["title"]),
+                defaults={
+                    "title": data["title"],
+                    "description": data["description"],
+                    "kind": data["kind"],
+                    "scoring": data["scoring"],
+                    "result_bands": data["result_bands"],
+                    "pass_threshold": data.get("pass_threshold", 0),
+                    "is_premium": False,
+                    "status": Assessment.Status.PUBLISHED,
+                    "order": order,
+                    "xp_reward": 100,
+                },
+            )
+            for question_order, question in enumerate(data["questions"], start=1):
+                AssessmentQuestion.objects.update_or_create(
+                    assessment=assessment,
+                    prompt=question["prompt"],
+                    defaults={
+                        "options": question["options"],
+                        "explanation": question.get("explanation", ""),
+                        "order": question_order,
+                    },
+                )

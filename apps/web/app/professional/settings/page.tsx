@@ -15,7 +15,7 @@ const settings = [
   },
   {
     title: "Privacy-safe responses",
-    body: "Response templates must not ask for M-Pesa PINs, bank passwords, broker credentials, or MMF credentials.",
+    body: "Response templates should stay scoped to the review request and avoid collecting external account access details.",
     icon: LockKeyhole
   }
 ];

@@ -5,41 +5,60 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from learning.models import (
+    Assessment,
     Badge,
     Flashcard,
     LearningCourse,
     LearningLesson,
     LearningResource,
     LearningTrack,
+    PracticeSet,
     QuizQuestion,
+    UserAssessmentResult,
     UserBadge,
     UserCourseProgress,
     UserLessonProgress,
+    UserLibraryItem,
     UserStreak,
     XPEvent,
 )
 from learning.serializers import (
+    AssessmentDetailSerializer,
+    AssessmentListSerializer,
+    AssessmentSubmitSerializer,
     BadgeSerializer,
+    CourseOutlineSerializer,
     LearningCourseDetailSerializer,
+    LearningLessonDetailSerializer,
     LearningLessonSummarySerializer,
     LearningResourceSerializer,
     LearningTrackDetailSerializer,
     LearningTrackListSerializer,
     LessonActionSerializer,
     LessonCompleteWithActionSerializer,
+    LibrarySaveSerializer,
+    PracticeSetDetailSerializer,
+    PracticeSetListSerializer,
+    PracticeSubmitSerializer,
     QuizSubmitSerializer,
+    TrackOutlineSerializer,
+    UserAssessmentResultSerializer,
     UserBadgeSerializer,
     UserCourseProgressSerializer,
     UserLessonProgressSerializer,
+    UserLibraryItemSerializer,
     UserStreakSerializer,
     XPEventSerializer,
 )
 from learning.services import (
+    add_to_library,
     complete_lesson,
     complete_lesson_with_action,
     ensure_default_badges,
     review_flashcard,
     start_lesson,
+    submit_assessment,
+    submit_practice_set,
     submit_quiz_answer,
     total_xp,
 )
@@ -89,7 +108,9 @@ class LearningTrackDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView
     lookup_field = "slug"
 
     def get_queryset(self):
-        return LearningTrack.objects.prefetch_related("courses__lessons").filter(status=LearningTrack.Status.PUBLISHED)
+        return LearningTrack.objects.prefetch_related("courses__lessons__content_sources").filter(
+            status=LearningTrack.Status.PUBLISHED
+        )
 
 
 class LearningCourseDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView):
@@ -100,10 +121,26 @@ class LearningCourseDetailView(PublicLearningCacheMixin, generics.RetrieveAPIVie
     def get_queryset(self):
         return (
             LearningCourse.objects.select_related("track")
-            .prefetch_related("lessons")
+            .prefetch_related("lessons__content_sources")
             .filter(
                 status=LearningCourse.Status.PUBLISHED,
                 track__status=LearningTrack.Status.PUBLISHED,
+            )
+        )
+
+
+class LearningLessonDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView):
+    serializer_class = LearningLessonDetailSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return (
+            LearningLesson.objects.select_related("course", "course__track")
+            .prefetch_related("content_sources")
+            .filter(
+                status=LearningLesson.Status.PUBLISHED,
+                course__status=LearningCourse.Status.PUBLISHED,
+                course__track__status=LearningTrack.Status.PUBLISHED,
             )
         )
 
@@ -113,8 +150,10 @@ class LearningResourceListView(PublicLearningCacheMixin, generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = LearningResource.objects.select_related("related_track", "related_product_category").filter(
-            status=LearningResource.Status.PUBLISHED
+        queryset = (
+            LearningResource.objects.select_related("related_track", "related_product_category")
+            .prefetch_related("content_sources")
+            .filter(status=LearningResource.Status.PUBLISHED)
         )
         resource_type = self.request.query_params.get("resource_type")
         track = self.request.query_params.get("track")
@@ -128,8 +167,10 @@ class LearningResourceListView(PublicLearningCacheMixin, generics.ListAPIView):
 class LearningResourceDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView):
     serializer_class = LearningResourceSerializer
     permission_classes = [AllowAny]
-    queryset = LearningResource.objects.select_related("related_track", "related_product_category").filter(
-        status=LearningResource.Status.PUBLISHED
+    queryset = (
+        LearningResource.objects.select_related("related_track", "related_product_category")
+        .prefetch_related("content_sources")
+        .filter(status=LearningResource.Status.PUBLISHED)
     )
 
 
@@ -304,6 +345,7 @@ def track_list_queryset():
 def first_published_lesson_for_track(track):
     return (
         LearningLesson.objects.select_related("course", "course__track")
+        .prefetch_related("content_sources")
         .filter(
             course__track=track,
             course__status=LearningCourse.Status.PUBLISHED,
@@ -449,3 +491,261 @@ class LearningProgressView(APIView):
                 ).count(),
             }
         )
+
+
+def published_practice_sets():
+    return PracticeSet.objects.filter(status=PracticeSet.Status.PUBLISHED).annotate(
+        question_count=Count("questions", distinct=True)
+    )
+
+
+def published_assessments():
+    return Assessment.objects.filter(status=Assessment.Status.PUBLISHED).annotate(
+        question_count=Count("questions", distinct=True)
+    )
+
+
+class LearningDashboardView(APIView):
+    """Learning operating-system dashboard: Assess -> Learn -> Practice -> Apply -> Review."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        context = {"request": request}
+        user = request.user
+        tracks = track_list_queryset().order_by("order", "title")
+        recommended_track = tracks.first()
+        current_track = recommended_track
+        continue_lesson = None
+        review_count = 0
+        recent_activity = []
+        streak = None
+
+        if user.is_authenticated:
+            course_progress = (
+                UserCourseProgress.objects.select_related("course", "course__track", "last_lesson")
+                .filter(user=user, percent_complete__lt=100)
+                .order_by("-updated_at")
+                .first()
+            )
+            if course_progress:
+                continue_lesson = course_progress.last_lesson
+                current_track = course_progress.course.track
+            review_count = UserLessonProgress.objects.filter(
+                user=user, status=UserLessonProgress.Status.IN_PROGRESS
+            ).count()
+            streak, _created = UserStreak.objects.get_or_create(user=user)
+            recent_activity = [
+                {
+                    "source_type": event.source_type,
+                    "source_id": event.source_id,
+                    "xp_amount": event.xp_amount,
+                    "created_at": event.created_at,
+                }
+                for event in XPEvent.objects.filter(user=user)[:10]
+            ]
+
+        if not continue_lesson and recommended_track:
+            continue_lesson = first_published_lesson_for_track(recommended_track)
+
+        suggested_practice = published_practice_sets().order_by("order", "title").first()
+        username = getattr(user, "first_name", "") or getattr(user, "username", "")
+        greeting = f"Karibu, {username}!" if user.is_authenticated and username else "Karibu! Ready to learn?"
+
+        return Response(
+            {
+                "greeting": greeting,
+                "premium_status": "premium" if can_access_premium_learning_safe(user) else "free",
+                "total_xp": total_xp(user),
+                "daily_streak": UserStreakSerializer(streak).data if streak else None,
+                "review_count": review_count,
+                "current_track": (
+                    LearningTrackListSerializer(current_track, context=context).data if current_track else None
+                ),
+                "continue_learning": learning_item_payload(continue_lesson, context),
+                "suggested_practice": (
+                    PracticeSetListSerializer(suggested_practice, context=context).data if suggested_practice else None
+                ),
+                "suggested_simulator": {"key": "product", "label": "Compare & simulate a product", "route": "/simulate"},
+                "recent_activity": recent_activity,
+                "assessments": AssessmentListSerializer(
+                    published_assessments().order_by("order", "title"), many=True, context=context
+                ).data,
+                "quick_actions": [
+                    {"key": "assess", "label": "Take an assessment"},
+                    {"key": "practice", "label": "Practice"},
+                    {"key": "simulate", "label": "Run simulator"},
+                    {"key": "journal", "label": "Save reflection"},
+                    {"key": "professional_review", "label": "Request professional review"},
+                ],
+            }
+        )
+
+
+def can_access_premium_learning_safe(user) -> bool:
+    from learning.services import can_access_premium_learning
+
+    return can_access_premium_learning(user)
+
+
+class TrackOutlineView(PublicLearningCacheMixin, generics.RetrieveAPIView):
+    serializer_class = TrackOutlineSerializer
+    permission_classes = [AllowAny]
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return LearningTrack.objects.prefetch_related(
+            "courses__modules__lessons__content_sources",
+            "courses__lessons__content_sources",
+        ).filter(status=LearningTrack.Status.PUBLISHED)
+
+
+class CourseOutlineView(PublicLearningCacheMixin, generics.RetrieveAPIView):
+    serializer_class = CourseOutlineSerializer
+    permission_classes = [AllowAny]
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return (
+            LearningCourse.objects.select_related("track")
+            .prefetch_related("modules__lessons__content_sources", "lessons__content_sources")
+            .filter(status=LearningCourse.Status.PUBLISHED, track__status=LearningTrack.Status.PUBLISHED)
+        )
+
+
+class PracticeSetListView(PublicLearningCacheMixin, generics.ListAPIView):
+    serializer_class = PracticeSetListSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = published_practice_sets()
+        kind = self.request.query_params.get("kind")
+        track = self.request.query_params.get("track")
+        if kind:
+            queryset = queryset.filter(kind=kind)
+        if track:
+            queryset = queryset.filter(track__slug=track)
+        return queryset.order_by("order", "title")
+
+
+class PracticeReviewView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        context = {"request": request}
+        review_sets = (
+            published_practice_sets()
+            .filter(kind__in=[PracticeSet.Kind.REVIEW_RECENT, PracticeSet.Kind.WEAK_AREA])
+            .order_by("order", "title")
+        )
+        focus_areas = []
+        if request.user.is_authenticated:
+            focus_areas = list(
+                UserLessonProgress.objects.select_related("lesson", "lesson__course", "lesson__course__track")
+                .filter(user=request.user, status=UserLessonProgress.Status.IN_PROGRESS)
+                .values_list("lesson__course__track__title", flat=True)
+                .distinct()[:5]
+            )
+        return Response(
+            {
+                "review_sets": PracticeSetListSerializer(review_sets, many=True, context=context).data,
+                "focus_areas": focus_areas,
+            }
+        )
+
+
+class PracticeSetDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView):
+    serializer_class = PracticeSetDetailSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return published_practice_sets()
+
+
+class PracticeSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk: int):
+        practice_set = generics.get_object_or_404(
+            PracticeSet.objects.prefetch_related("questions"), pk=pk, status=PracticeSet.Status.PUBLISHED
+        )
+        serializer = PracticeSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = submit_practice_set(request.user, practice_set, serializer.validated_data["answers"])
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class AssessmentListView(PublicLearningCacheMixin, generics.ListAPIView):
+    serializer_class = AssessmentListSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = published_assessments()
+        kind = self.request.query_params.get("kind")
+        if kind:
+            queryset = queryset.filter(kind=kind)
+        return queryset.order_by("order", "title")
+
+
+class AssessmentDetailView(PublicLearningCacheMixin, generics.RetrieveAPIView):
+    serializer_class = AssessmentDetailSerializer
+    permission_classes = [AllowAny]
+    lookup_field = "slug"
+
+    def get_queryset(self):
+        return published_assessments()
+
+
+class AssessmentSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug: str):
+        assessment = generics.get_object_or_404(
+            Assessment.objects.prefetch_related("questions"), slug=slug, status=Assessment.Status.PUBLISHED
+        )
+        serializer = AssessmentSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = submit_assessment(request.user, assessment, serializer.validated_data["answers"])
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class LearningActivityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        events = XPEvent.objects.filter(user=request.user)[:50]
+        completed_lessons = (
+            UserLessonProgress.objects.select_related("lesson", "lesson__course", "lesson__course__track")
+            .filter(user=request.user, status=UserLessonProgress.Status.COMPLETED)
+            .order_by("-completed_at")[:20]
+        )
+        assessment_results = UserAssessmentResult.objects.select_related("assessment").filter(user=request.user)
+        return Response(
+            {
+                "total_xp": total_xp(request.user),
+                "xp_events": XPEventSerializer(events, many=True).data,
+                "recent_completions": UserLessonProgressSerializer(completed_lessons, many=True).data,
+                "assessment_results": UserAssessmentResultSerializer(assessment_results, many=True).data,
+            }
+        )
+
+
+class AssessmentResultsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        results = UserAssessmentResult.objects.select_related("assessment").filter(user=request.user)
+        return Response(UserAssessmentResultSerializer(results, many=True).data)
+
+
+class LibrarySaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = LibrarySaveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        track = generics.get_object_or_404(
+            LearningTrack, pk=serializer.validated_data["track"], status=LearningTrack.Status.PUBLISHED
+        )
+        item = add_to_library(request.user, track)
+        return Response(UserLibraryItemSerializer(item).data, status=status.HTTP_201_CREATED)

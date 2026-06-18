@@ -19,10 +19,10 @@ import {
   AppShell,
   AppleLikeNav,
   EditorialImage,
+  PageBanner,
   PageShell,
   PremiumCard,
   SecondaryButton,
-  SectionHeader,
   TrustBadge
 } from "../../components/maliprime";
 
@@ -103,10 +103,10 @@ export default function ProfessionalDashboardPage() {
       <AppleLikeNav />
       <PageShell>
         <div className="grid gap-6 border-b border-border pb-7 lg:grid-cols-[1fr_360px] lg:items-end">
-          <SectionHeader
+          <PageBanner accent="green" badge="Professional" art="rings"
             eyebrow="Professional portal"
             title="Review qualified requests without exposing private details by default."
-            body="This MVP shows limited lead context, verification status, and response tools for verified professionals."
+            description="This MVP shows limited lead context, verification status, and response tools for verified professionals."
           />
           <div className="grid gap-3">
             <EditorialImage
@@ -206,7 +206,7 @@ export default function ProfessionalDashboardPage() {
               <textarea
                 id="response"
                 className="min-h-32 w-full rounded-lg border border-border bg-surface p-3 text-sm outline-none focus:border-borderStrong"
-                placeholder="Write a scoped, educational response. Do not ask for M-Pesa PINs, bank passwords, or broker credentials."
+                placeholder="Write a scoped response based only on the review request and shared context."
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>

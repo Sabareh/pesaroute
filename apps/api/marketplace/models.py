@@ -221,6 +221,35 @@ class ConsultationOffer(models.Model):
         return f"{self.professional_id}:{self.consultation_request_id}:{self.status}"
 
 
+class WatchedProduct(models.Model):
+    """A product a user is watching, with a snapshot of the rate at watch time so we can
+    surface 'changed since you saved it' without claiming any recommendation."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="watched_products")
+    product = models.ForeignKey(
+        "planning.InvestmentProduct", on_delete=models.CASCADE, related_name="watchers"
+    )
+    note = models.TextField(blank=True)
+    # Snapshot captured when the user added/last reviewed the watch (for change detection).
+    last_seen_rate_value = models.DecimalField(max_digits=9, decimal_places=4, null=True, blank=True)
+    last_seen_snapshot_date = models.DateField(null=True, blank=True)
+    last_seen_source_confidence = models.CharField(max_length=32, blank=True)
+    last_reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = [("user", "product")]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["product", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.product_id}"
+
+
 class ConsultationResponse(models.Model):
     class Status(models.TextChoices):
         SENT = "sent", "Sent"

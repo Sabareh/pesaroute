@@ -27,6 +27,19 @@ function sourceSummary(passport: ProductPassport) {
   return "Editorial educational content";
 }
 
+function learningRouteForCategory(categoryName: string) {
+  const normalized = categoryName.toLowerCase();
+  if (normalized.includes("money market")) return "Money Market Funds";
+  if (normalized.includes("treasury")) return "Treasury Bills and Bonds";
+  if (normalized.includes("sacco")) return "SACCO Smart Member";
+  if (normalized.includes("chama")) return "Chama Investment Basics";
+  if (normalized.includes("land")) return "Land Due Diligence Basics";
+  if (normalized.includes("stock") || normalized.includes("etf") || normalized.includes("nse")) {
+    return normalized.includes("nse") ? "NSE Stocks for Beginners" : "Global Stocks and ETFs";
+  }
+  return "Money Foundations";
+}
+
 function filterLocal(
   passports: ProductPassport[],
   {
@@ -105,6 +118,8 @@ export function ProductPassportsScreen({
   }, [catalog.passports]);
 
   if (selected) {
+    const learningRoute = learningRouteForCategory(selected.category.name);
+
     return (
       <View>
         <Pressable accessibilityRole="button" onPress={() => setSelected(null)} style={styles.backButton}>
@@ -121,7 +136,10 @@ export function ProductPassportsScreen({
           <Fact label="Minimum" value={selected.minimum_amount ? `KES ${selected.minimum_amount}` : "Varies"} />
           <Fact label="Regulator" value={selected.regulator_category || "Verify"} />
           <Fact label="Source" value={sourceSummary(selected)} />
+          <Fact label="Learning route" value={learningRoute} />
+          <Fact label="Freshness" value={label(selected.freshness_status ?? selected.data_freshness ?? "unknown")} />
           <Fact label="Last verified" value={formatVerifiedAt(selected.last_verified_at)} />
+          <Fact label="Next review" value={formatVerifiedAt(selected.next_review_due_at)} />
         </View>
 
         {selected.source_references?.length ? (
@@ -143,6 +161,7 @@ export function ProductPassportsScreen({
           <Text style={styles.cardCopy}>
             {selected.execution_route_external || "Complete any investment directly with the regulated provider."}
           </Text>
+          <Text style={styles.routeHint}>Open Learn to continue with: {learningRoute}</Text>
         </View>
 
         <View style={styles.placeholderRow}>
@@ -162,7 +181,7 @@ export function ProductPassportsScreen({
     <View>
       <Text style={maliPrimeText.title}>Product Passports</Text>
       <Text style={maliPrimeText.subtitle}>
-        Search Kenyan investment categories and generic product passports. Educational only, no execution or promised returns.
+        Search Kenyan investment categories and generic product passports by risk, liquidity, provider, and source notes.
       </Text>
 
       <View style={styles.searchPanel}>
@@ -377,5 +396,12 @@ const styles = StyleSheet.create({
     minHeight: 46
   },
   secondaryText: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700" },
-  notice: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700", lineHeight: 19, marginTop: 10 }
+  notice: { color: maliPrime.colors.textSecondary, fontSize: 13, fontWeight: "700", lineHeight: 19, marginTop: 10 },
+  routeHint: {
+    color: maliPrime.colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "900",
+    lineHeight: 19,
+    marginTop: 12
+  }
 });

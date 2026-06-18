@@ -2,8 +2,24 @@ import { getApiBaseUrl } from "./config";
 import type {
   AmountDisplayMode,
   AuthCredentials,
+  CategoryCompareRequest,
+  CategoryCompareResponse,
+  CompareProductsRequest,
+  InvestmentProduct,
+  LandComparisonInput,
+  LandComparisonResult,
+  LandDueDiligenceItem,
+  LandOpportunity,
+  LandOpportunityInput,
+  LandRiskScoreResult,
+  MarketplaceProduct,
+  ProductSpecificRequest,
   ProductCategory,
-  ProductPassport
+  ProductCompareResponse,
+  ProductPassport,
+  ProductQuery,
+  ProductSimulationRequest,
+  ProductSimulationResult
 } from "../types";
 
 export type ApiStatus = {
@@ -312,6 +328,41 @@ export type LearningLessonType =
   | "checklist"
   | "professional_review_prompt";
 
+export type LearningContentSourceApiResponse = {
+  id: number;
+  title: string;
+  organization: string;
+  source_type: "regulator" | "exchange" | "government" | "provider" | "editorial" | "professional_reviewed";
+  url: string;
+  retrieved_at: string | null;
+  reliability_level: "official" | "provider" | "editorial" | "unknown";
+};
+
+export type LearningStructuredContentBlock = {
+  type:
+    | "heading"
+    | "paragraph"
+    | "example"
+    | "scenario"
+    | "key_takeaway"
+    | "caution"
+    | "checklist"
+    | "definition"
+    | "comparison_table"
+    | "quiz_prompt"
+    | "simulator_cta"
+    | "journal_prompt"
+    | "professional_review_cta"
+    | "source_note"
+    | "disclaimer";
+  title?: string;
+  text?: string;
+  term?: string;
+  items?: string[];
+  columns?: string[];
+  rows?: string[][];
+};
+
 export type LearningLessonApiResponse = {
   id: number;
   title: string;
@@ -319,10 +370,24 @@ export type LearningLessonApiResponse = {
   lesson_type: LearningLessonType;
   body: string;
   summary: string;
+  structured_content: LearningStructuredContentBlock[];
+  estimated_minutes: number;
+  difficulty: LearningLevel;
   order: number;
   xp_reward: number;
   is_premium: boolean;
   status: string;
+  editorial_status: "draft" | "reviewed" | "published" | "archived";
+  last_reviewed_at: string | null;
+  next_review_due_at: string | null;
+  review_frequency_days: number;
+  source_confidence: "official" | "provider" | "editorial" | "mixed" | "unknown";
+  content_quality_score: number;
+  content_warning_flags: string[];
+  needs_review_fallback: boolean;
+  content_sources: LearningContentSourceApiResponse[];
+  source_label: string;
+  disclaimer: string;
   locked: boolean;
 };
 
@@ -375,12 +440,22 @@ export type LearningResourceApiResponse = {
   title: string;
   resource_type: "guide" | "cheat_sheet" | "tutorial" | "glossary" | "market_brief" | "checklist";
   body: string;
+  structured_content: LearningStructuredContentBlock[];
   related_track: number | null;
   related_track_slug: string;
   related_product_category: number | null;
   related_product_category_slug: string;
   is_premium: boolean;
   status: string;
+  editorial_status: "draft" | "reviewed" | "published" | "archived";
+  last_reviewed_at: string | null;
+  next_review_due_at: string | null;
+  source_confidence: "official" | "provider" | "editorial" | "mixed" | "unknown";
+  content_quality_score: number;
+  needs_review_fallback: boolean;
+  content_sources: LearningContentSourceApiResponse[];
+  source_label: string;
+  disclaimer: string;
   locked?: boolean;
   created_at: string;
   updated_at: string;
@@ -489,6 +564,115 @@ export type LearningCompleteWithActionApiResponse = {
   action_xp_awarded: number;
   linked_actions: string[];
   total_xp: number;
+};
+
+export type PracticeKind =
+  | "review_recent"
+  | "weak_area"
+  | "scenario_practice"
+  | "flashcards"
+  | "simulator_practice"
+  | "scam_red_flag_practice";
+
+export type PracticeSetApiResponse = {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  kind: PracticeKind;
+  track: number | null;
+  track_slug: string | null;
+  is_premium: boolean;
+  order: number;
+  xp_reward: number;
+  question_count: number;
+  locked: boolean;
+};
+
+export type PracticeQuestionApiResponse = {
+  id: number;
+  prompt: string;
+  options: string[];
+  explanation: string;
+  difficulty: string;
+  order: number;
+};
+
+export type PracticeSetDetailApiResponse = PracticeSetApiResponse & {
+  questions: PracticeQuestionApiResponse[];
+};
+
+export type PracticeSubmitApiResponse = {
+  practice_set_id: number;
+  total_questions: number;
+  correct_count: number;
+  score: number;
+  results: Array<{ question_id: number; correct: boolean; correct_answer: string; explanation: string }>;
+  xp_awarded: number;
+  total_xp: number;
+};
+
+export type AssessmentApiResponse = {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  kind: "money_profile" | "risk_comfort" | "scam_awareness" | "liquidity_needs";
+  scoring: "knowledge" | "profile";
+  is_premium: boolean;
+  order: number;
+  xp_reward: number;
+  question_count: number;
+  locked: boolean;
+};
+
+export type AssessmentQuestionApiResponse = {
+  id: number;
+  prompt: string;
+  options: Array<{ label: string; value: string }>;
+  order: number;
+};
+
+export type AssessmentDetailApiResponse = AssessmentApiResponse & {
+  questions: AssessmentQuestionApiResponse[];
+};
+
+export type AssessmentSubmitApiResponse = {
+  assessment_id: number;
+  score: number;
+  result_label: string;
+  passed: boolean;
+  xp_awarded: number;
+  total_xp: number;
+};
+
+export type LearningDashboardApiResponse = {
+  greeting: string;
+  premium_status: "premium" | "free";
+  total_xp: number;
+  daily_streak: UserStreakApiResponse | null;
+  review_count: number;
+  current_track: LearningTrackApiResponse | null;
+  continue_learning: LearningHomeApiResponse["continue_learning"];
+  suggested_practice: PracticeSetApiResponse | null;
+  suggested_simulator: { key: string; label: string; route: string };
+  recent_activity: Array<{ source_type: string; source_id: string; xp_amount: number; created_at: string }>;
+  assessments: AssessmentApiResponse[];
+  quick_actions: Array<{ key: string; label: string }>;
+};
+
+export type LearningActivityApiResponse = {
+  total_xp: number;
+  xp_events: Array<{ id: number; source_type: string; source_id: string; xp_amount: number; created_at: string }>;
+  recent_completions: UserLessonProgressApiResponse[];
+  assessment_results: Array<{
+    id: number;
+    assessment_slug: string;
+    assessment_kind: string;
+    score: string;
+    result_label: string;
+    passed: boolean;
+  }>;
 };
 
 type Paginated<T> = {
@@ -728,6 +912,291 @@ export class PesaRouteApiClient {
       withQuery("/api/catalog/product-passports/", query)
     );
     return response.results;
+  }
+
+  async products(query?: ProductQuery) {
+    const normalized = query
+      ? Object.fromEntries(
+          Object.entries(query).map(([key, value]) => [
+            key,
+            typeof value === "boolean" ? String(value) : value
+          ])
+        )
+      : undefined;
+    const response = await this.request<Paginated<InvestmentProduct>>(
+      withQuery("/api/products/", normalized as Record<string, string | undefined>)
+    );
+    return response.results;
+  }
+
+  // Follows pagination so category summaries and pickers see the whole catalogue,
+  // not just the first page (the API paginates at 20).
+  async allProducts(query?: ProductQuery) {
+    const normalized = query
+      ? Object.fromEntries(
+          Object.entries(query).map(([key, value]) => [
+            key,
+            typeof value === "boolean" ? String(value) : value
+          ])
+        )
+      : undefined;
+    return this.listAll<InvestmentProduct>(
+      withQuery("/api/products/", normalized as Record<string, string | undefined>)
+    );
+  }
+
+  product(slug: string) {
+    return this.request<InvestmentProduct>(`/api/products/${slug}/`);
+  }
+
+  compareProducts(productIds: Array<number | string>) {
+    return this.request<ProductCompareResponse>(
+      withQuery("/api/products/compare/", { product_ids: productIds.join(",") })
+    );
+  }
+
+  simulateProduct(body: ProductSimulationRequest, auth?: AuthCredentials | null) {
+    return this.request<ProductSimulationResult>("/api/simulations/product/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  categoryCompareSimulation(body: CategoryCompareRequest, auth?: AuthCredentials | null) {
+    return this.request<CategoryCompareResponse>("/api/simulations/category-compare/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  // Provider-specific simulation engine (Phase 2.10.2).
+  simulateProductSpecific(body: ProductSpecificRequest, auth?: AuthCredentials | null) {
+    return this.request<Record<string, unknown>>("/api/simulations/product-specific/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  compareProductsSimulation(body: CompareProductsRequest, auth?: AuthCredentials | null) {
+    return this.request<Record<string, unknown>>("/api/simulations/compare-products/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  saveSimulationToJournal(runId: number, auth: AuthCredentials, goal?: string) {
+    return this.request<{ journal_entry_id: number; note: string }>(
+      `/api/simulations/${runId}/save-to-journal/`,
+      { method: "POST", body: goal ? { goal } : {}, auth }
+    );
+  }
+
+  requestSimulationReview(runId: number, auth: AuthCredentials) {
+    return this.request<{ consultation_request_id: number; note: string }>(
+      `/api/simulations/${runId}/request-professional-review/`,
+      { method: "POST", body: {}, auth }
+    );
+  }
+
+  // --- Land Decision Safety (Phase 2.12) -------------------------------------
+
+  async listLandOpportunities(auth: AuthCredentials) {
+    const response = await this.request<Paginated<LandOpportunity>>("/api/land/opportunities/", { auth });
+    return response.results;
+  }
+
+  createLandOpportunity(body: LandOpportunityInput, auth: AuthCredentials) {
+    return this.request<LandOpportunity>("/api/land/opportunities/", { method: "POST", body, auth });
+  }
+
+  getLandOpportunity(id: number, auth: AuthCredentials) {
+    return this.request<LandOpportunity>(`/api/land/opportunities/${id}/`, { auth });
+  }
+
+  updateLandOpportunity(id: number, body: Partial<LandOpportunityInput>, auth: AuthCredentials) {
+    return this.request<LandOpportunity>(`/api/land/opportunities/${id}/`, { method: "PATCH", body, auth });
+  }
+
+  ensureLandChecklist(id: number, auth: AuthCredentials) {
+    return this.request<LandDueDiligenceItem[]>(`/api/land/opportunities/${id}/checklist/`, {
+      method: "POST",
+      body: {},
+      auth
+    });
+  }
+
+  updateLandChecklistItem(itemId: number, body: { status: string }, auth: AuthCredentials) {
+    return this.request<LandDueDiligenceItem>(`/api/land/checklist-items/${itemId}/`, {
+      method: "PATCH",
+      body,
+      auth
+    });
+  }
+
+  scoreLandRisk(id: number, signals: Record<string, boolean>, auth: AuthCredentials) {
+    return this.request<LandRiskScoreResult>(`/api/land/opportunities/${id}/risk-score/`, {
+      method: "POST",
+      body: signals,
+      auth
+    });
+  }
+
+  saveLandToJournal(id: number, note: string, auth: AuthCredentials) {
+    return this.request<{ journal_entry_id: number; visibility: string }>(
+      `/api/land/opportunities/${id}/save-to-journal/`,
+      { method: "POST", body: { note }, auth }
+    );
+  }
+
+  requestLandReview(
+    id: number,
+    body: { professional_type: string; share_document_ids?: number[]; share_amount?: boolean; question?: string },
+    auth: AuthCredentials
+  ) {
+    return this.request<Record<string, unknown>>(`/api/land/opportunities/${id}/request-professional-review/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  addLandDocument(
+    id: number,
+    body: { document_type: string; notes?: string },
+    auth: AuthCredentials
+  ) {
+    return this.request<Record<string, unknown>>(`/api/land/opportunities/${id}/documents/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  landDefaultChecklist() {
+    return this.request<{ items: LandDueDiligenceItem[]; disclaimer: string }>("/api/land/default-checklist/");
+  }
+
+  compareLand(body: LandComparisonInput) {
+    return this.request<LandComparisonResult>("/api/land/compare/", { method: "POST", body });
+  }
+
+  // --- Marketplace (Phase 2.13 + 2.15) ---------------------------------------
+
+  async marketplaceProducts(query?: Record<string, string>) {
+    const response = await this.request<Paginated<MarketplaceProduct>>(
+      withQuery("/api/marketplace/products/", { ...query, page_size: "60" })
+    );
+    return response;
+  }
+
+  marketplaceProduct(slug: string) {
+    return this.request<Record<string, unknown>>(`/api/marketplace/products/${slug}/`);
+  }
+
+  marketplaceFinder(body: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>("/api/marketplace/finder/", { method: "POST", body });
+  }
+
+  marketplaceMmfFinder(body: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>("/api/marketplace/mmf-finder/", { method: "POST", body });
+  }
+
+  marketplaceNetAfterTax(body: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>("/api/marketplace/net-after-tax/", { method: "POST", body });
+  }
+
+  marketplaceCompare(slugs: string[], amount?: string) {
+    return this.request<Record<string, unknown>>(
+      withQuery("/api/marketplace/products/compare/", { slugs: slugs.join(","), amount })
+    );
+  }
+
+  marketplaceSaccoScore(slug: string) {
+    return this.request<Record<string, unknown>>(`/api/marketplace/products/${slug}/sacco-score/`);
+  }
+
+  marketplaceQuickScenarios() {
+    return this.request<Record<string, unknown>>("/api/marketplace/quick-scenarios/");
+  }
+
+  marketplaceIntelligence() {
+    return this.request<Record<string, unknown>>("/api/marketplace/intelligence/");
+  }
+
+  async listWatchlist(auth: AuthCredentials) {
+    const response = await this.request<Paginated<Record<string, unknown>>>("/api/marketplace/watchlist/", { auth });
+    return response.results;
+  }
+
+  addToWatchlist(slug: string, note: string, auth: AuthCredentials) {
+    return this.request<Record<string, unknown>>("/api/marketplace/watchlist/", {
+      method: "POST",
+      body: { product_slug: slug, note },
+      auth
+    });
+  }
+
+  removeFromWatchlist(id: number, auth: AuthCredentials) {
+    return this.request<void>(`/api/marketplace/watchlist/${id}/`, { method: "DELETE", auth });
+  }
+
+  personalBrief(auth: AuthCredentials) {
+    return this.request<Record<string, unknown>>("/api/marketplace/personal-brief/", { auth });
+  }
+
+  saveProductToJournal(slug: string, note: string, auth: AuthCredentials) {
+    return this.request<Record<string, unknown>>(`/api/marketplace/products/${slug}/save-to-journal/`, {
+      method: "POST",
+      body: { note },
+      auth
+    });
+  }
+
+  requestProductReview(slug: string, body: Record<string, unknown>, auth: AuthCredentials) {
+    return this.request<Record<string, unknown>>(`/api/marketplace/products/${slug}/request-review/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  createVirtualPortfolio(
+    body: { name?: string; starting_virtual_cash: string; currency?: string; goal?: string },
+    auth: AuthCredentials
+  ) {
+    return this.request<Record<string, unknown>>("/api/simulations/virtual-portfolios/", {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  listVirtualPortfolios(auth: AuthCredentials) {
+    return this.request<Record<string, unknown>[]>("/api/simulations/virtual-portfolios/", { auth });
+  }
+
+  addVirtualPosition(
+    portfolioId: number,
+    body: { product_slug: string; virtual_amount_allocated: string; rate_mode: string; custom_rate?: string; timeline_months: number },
+    auth: AuthCredentials
+  ) {
+    return this.request<Record<string, unknown>>(`/api/simulations/virtual-portfolios/${portfolioId}/positions/`, {
+      method: "POST",
+      body,
+      auth
+    });
+  }
+
+  runVirtualPortfolio(portfolioId: number, auth: AuthCredentials) {
+    return this.request<Record<string, unknown>>(`/api/simulations/virtual-portfolios/${portfolioId}/run/`, {
+      method: "POST",
+      body: {},
+      auth
+    });
   }
 
   async billingPlans() {
@@ -972,5 +1441,63 @@ export class PesaRouteApiClient {
 
   learningStreak(auth: AuthCredentials) {
     return this.request<UserStreakApiResponse>("/api/learning/streak/", { auth });
+  }
+
+  learningDashboard(auth?: AuthCredentials | null) {
+    return this.request<LearningDashboardApiResponse>("/api/learning/dashboard/", { auth });
+  }
+
+  learningTrackOutline(slug: string, auth?: AuthCredentials | null) {
+    return this.request<LearningTrackApiResponse>(`/api/learning/tracks/${slug}/outline/`, { auth });
+  }
+
+  learningLessonDetail(id: number, auth?: AuthCredentials | null) {
+    return this.request<LearningLessonApiResponse>(`/api/learning/lessons/${id}/`, { auth });
+  }
+
+  learningActivity(auth: AuthCredentials) {
+    return this.request<LearningActivityApiResponse>("/api/learning/activity/", { auth });
+  }
+
+  async learningPractice(auth?: AuthCredentials | null) {
+    const response = await this.request<Paginated<PracticeSetApiResponse>>("/api/learning/practice/", { auth });
+    return response.results;
+  }
+
+  learningPracticeDetail(id: number, auth?: AuthCredentials | null) {
+    return this.request<PracticeSetDetailApiResponse>(`/api/learning/practice/${id}/`, { auth });
+  }
+
+  submitPractice(id: number, answers: Record<string, string>, auth: AuthCredentials) {
+    return this.request<PracticeSubmitApiResponse>(`/api/learning/practice/${id}/submit/`, {
+      method: "POST",
+      body: { answers },
+      auth
+    });
+  }
+
+  async learningAssessments(auth?: AuthCredentials | null) {
+    const response = await this.request<Paginated<AssessmentApiResponse>>("/api/learning/assessments/", { auth });
+    return response.results;
+  }
+
+  learningAssessmentDetail(slug: string, auth?: AuthCredentials | null) {
+    return this.request<AssessmentDetailApiResponse>(`/api/learning/assessments/${slug}/`, { auth });
+  }
+
+  submitAssessment(slug: string, answers: Record<string, string>, auth: AuthCredentials) {
+    return this.request<AssessmentSubmitApiResponse>(`/api/learning/assessments/${slug}/submit/`, {
+      method: "POST",
+      body: { answers },
+      auth
+    });
+  }
+
+  saveLearningLibrary(trackId: number, auth: AuthCredentials) {
+    return this.request<{ id: number }>("/api/learning/library/save/", {
+      method: "POST",
+      body: { track: trackId },
+      auth
+    });
   }
 }

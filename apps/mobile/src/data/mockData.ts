@@ -89,7 +89,12 @@ export const mockProductPassports = [
     beginner_mistakes: ["Assuming past returns promise future outcomes.", "Skipping provider and regulator checks."],
     documents_needed: ["National ID", "KRA PIN"],
     execution_route_external: "Complete any investment directly with the regulated provider.",
-    disclosures: "Educational information only. PesaRoute does not hold or execute investments.",
+    disclosures: "",
+    public_source_url: "",
+    last_verified_at: new Date().toISOString(),
+    next_review_due_at: new Date().toISOString(),
+    freshness_status: "acceptable" as const,
+    data_freshness: "acceptable" as const,
     is_sponsored: false,
     status: "published"
   };

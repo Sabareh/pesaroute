@@ -70,11 +70,13 @@ function formatDate(value: string) {
 export function ProfessionalsScreen({
   apiClient,
   auth,
-  onRequestAuth
+  onRequestAuth,
+  prefill
 }: {
   apiClient: PesaRouteApiClient;
   auth: AuthCredentials | null;
   onRequestAuth: () => void;
+  prefill?: { category?: ConsultationRequestApiRequest["category"]; amountRange?: string; question?: string } | null;
 }) {
   const [mode, setMode] = useState<ViewMode>("browse");
   const [professionals, setProfessionals] = useState<ProfessionalApiResponse[]>(sampleProfessionals);
@@ -142,6 +144,20 @@ export function ProfessionalsScreen({
   useEffect(() => {
     if (auth) void loadMyRequests();
   }, [auth?.token]);
+
+  // When a prefill is supplied (e.g. from a product simulation "Request review"
+  // handoff), open the request form with the relevant context. Exact-amount
+  // sharing stays OFF and amount sharing stays range-only by default.
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.category) setCategory(prefill.category);
+    if (prefill.amountRange) setAmountRange(prefill.amountRange);
+    if (prefill.question) setQuestion(prefill.question);
+    setShareExactValues(false);
+    setMode("request");
+    setStatus(null);
+    setError(null);
+  }, [prefill]);
 
   function startRequest(professional: ProfessionalApiResponse) {
     setSelectedProfessional(professional);

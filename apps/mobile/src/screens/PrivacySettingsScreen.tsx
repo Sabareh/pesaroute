@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { DataGrantApiResponse, PesaRouteApiClient, UserApiResponse } from "../api/client";
-import { PrivacyPromiseCard, maliPrime, maliPrimeText } from "../components/maliprime";
+import { maliPrime, maliPrimeText } from "../components/maliprime";
 import type { AuthCredentials } from "../types";
-
-const settings = [
-  "We do not ask for M-Pesa PIN.",
-  "We do not ask for bank passwords.",
-  "We do not ask for broker credentials.",
-  "You can use ranges instead of exact amounts.",
-  "You control what you share with professionals.",
-  "We do not hold or execute investments."
-];
 
 export function PrivacySettingsScreen({
   apiClient,
@@ -104,11 +95,6 @@ export function PrivacySettingsScreen({
           Use ranges instead of exact amounts, keep anonymous learning available, and share with professionals only when
           you explicitly choose scopes.
         </Text>
-      </View>
-      <View style={styles.list}>
-        {settings.map((setting) => (
-          <PrivacyPromiseCard key={setting} text={setting} />
-        ))}
       </View>
       <Text style={styles.sectionTitle}>Data Sharing</Text>
       <View style={styles.card}>
@@ -203,5 +189,4 @@ const styles = StyleSheet.create({
     minHeight: 42
   },
   revokeText: { color: maliPrime.colors.danger, fontSize: 13, fontWeight: "900" },
-  list: { gap: 10, marginTop: 20 }
 });

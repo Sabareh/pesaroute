@@ -1,63 +1,130 @@
 # Mobile Learning Experience
 
-PesaRoute mobile now treats learning as a core tab, not a static explainer.
+PesaRoute mobile treats learning as a core surface using DataCamp-style mechanics, redesigned in
+light-mode MaliPrime Liquid. It borrows mechanics only — no DataCamp branding, assets, screens,
+icons, copy, or layouts. See
+[datacamp-inspired-learning-model.md](datacamp-inspired-learning-model.md) for the model and
+boundaries.
 
-## Navigation
+## Navigation (bottom tabs)
 
-Primary mobile tabs:
+Migrated from `Home · Learn · Simulate · Journal · Profile` to:
 
-- Home
-- Learn
-- Simulate
-- Journal
-- Profile
+**Home · Learn · Practice · Simulate · Profile**
 
-Home still supports amount/goal route discovery. Learn owns XP, tracks, lessons, resources, and progress.
+- **Practice** is the new tab.
+- **Journal** moved into the Profile tab's tools grid and stays reachable from the Learn tab and from
+  "Save to journal" actions — no existing flow was lost.
+- The **Profile** tab renders privacy/settings **plus** a tools grid (Journal, Route, Scam check,
+  Portfolio mirror, Passports, Professional review, Premium, Inbox, Help, API), making every
+  secondary screen reachable from one hub.
 
-## Learn Tab
+Navigation remains the existing `switch`-based shell in `App.tsx` (no React Navigation dependency
+added), preserving auth/onboarding/anonymous flows.
 
-The Learn tab supports:
+## Home tab (learning dashboard)
 
-- Today dashboard with XP, streak, completed lesson count, continue-learning card, daily money challenge, and quick actions.
-- Explore view with search and filters for Beginner, First salary, SACCO/chama, Global investing, Land, Scam defense, Diaspora, and Swahili.
-- Track cards with title, description, level, estimated time, lesson count, progress, and premium badge.
-- Track detail with course and lesson lists.
-- Lesson view for article, quiz, flashcard, simulation, checklist, journal prompt, and professional-review prompt lesson types.
-- Resources view for guides, cheat sheets, glossary items, market briefs, tutorials, and checklists.
-- Library view for synced progress, XP, streaks, courses, and badges.
+`HomeScreen` now consumes `GET /api/learning/dashboard/` and leads with learning:
+- **Top summary** — total XP, day streak, review count.
+- **Continue learning** card — current lesson/track + Continue (→ Learn) and Practice (→ Practice)
+  CTAs; an anonymous note nudges sign-in to sync across web and mobile.
+- **Quick actions** — Flashcards (→ Learn), Practice (→ Practice), Scam check (→ scam), Simulate
+  (→ Simulate).
+- **Assess yourself** — links to the Assessments screen when assessments exist.
+- **Daily money challenge** + suggested track.
+- **Route builder preserved** — the amount/goal selector and "Start with my amount" flow remain
+  below the dashboard, so no existing flow was lost.
+- **Privacy promise** — no M-Pesa PIN, no bank passwords, no execution.
 
-## API Integration
+## Assessments (`src/screens/AssessmentsScreen.tsx`, new)
 
-The mobile app uses these backend endpoints when available:
+The Assess phase: list → intro → player → result, consuming `GET /api/learning/assessments/`,
+`/assessments/{slug}/`, and `POST /api/learning/assessments/{slug}/submit/`. Money-profile, risk
+comfort, scam awareness, and liquidity needs. Profile assessments return a band label; knowledge
+assessments return a percent. Submitting awards XP once and requires sign-in. Reached from the Home
+"Assess yourself" card and the Profile tools grid ("Assess").
 
-- `GET /api/learning/tracks/`
-- `GET /api/learning/tracks/{slug}/`
-- `GET /api/learning/courses/{slug}/`
-- `GET /api/learning/resources/`
-- `GET /api/learning/my-progress/`
-- `POST /api/learning/lessons/{id}/start/`
-- `POST /api/learning/lessons/{id}/complete/`
-- `GET /api/learning/xp/`
-- `GET /api/learning/badges/`
-- `GET /api/learning/streak/`
+## Practice tab (`src/screens/PracticeScreen.tsx`, new)
 
-Anonymous users can browse and complete local interactions. Logged-in users can sync lesson start/completion, XP, streak, badges, and course progress.
+Four phases:
+1. **Home** — practice sets from `GET /api/learning/practice/` with kind label, blurb, question
+   count, XP, premium badge; free-access note + Premium CTA when not entitled.
+2. **Intro** — title, description, number of questions, "no time limit", XP available, Start.
+3. **Player** — one question per screen, large numbered answer cards, progress bar, Back/Next, and
+   Submit on the last question.
+4. **Results** — score, XP-awarded note, and per-question feedback (correct / correct answer +
+   explanation).
 
-## Offline Fallback
+`correct_answer` is hidden from public payloads, so grading is server-side via
+`POST /api/learning/practice/{id}/submit/` and per-question feedback appears after the set.
 
-If the API is unavailable, the Learn tab shows seeded offline tracks and resources from the Expo app. It does not crash, and progress messaging tells users to log in and reconnect to save XP.
+## Learn tab
+
+The Learn tab supports a Today dashboard (XP, streak, completed-lesson count, continue-learning,
+daily money challenge, quick actions), Explore (search + filters), track cards (title, description,
+level, time, lesson count, progress, premium badge), track/course/lesson detail, the full lesson
+type set (concept, article, scenario, quiz, flashcard, simulation, checklist, journal prompt,
+professional-review prompt), resources, and a library/progress view.
+
+## Simulate tab
+
+`ProductSimulationScreen` (category → filters → product list → compare → simulate → results) with
+post-simulation **Save to journal**, **Learn this product**, and **Request professional review**.
+Lesson-linked simulator runs award XP via `complete-with-action`. The legacy MMF/T-bill/SACCO/global
+simulators remain as the generic simulator.
+
+## API integration
+
+Existing: `GET /api/learning/tracks/`, `/tracks/{slug}/`, `/courses/{slug}/`, `/resources/`,
+`/my-progress/`, `/home/`, `/library/`, `/progress/`, lesson `start/complete/complete-with-action`,
+`/xp/`, `/badges/`, `/streak/`.
+
+Added this phase (client methods): `GET /api/learning/dashboard/`, `/tracks/{slug}/outline/`,
+`/lessons/{id}/`, `/activity/`, `/practice/`, `/practice/{id}/`,
+`POST /api/learning/practice/{id}/submit/`, `/assessments/`, `/assessments/{slug}/`,
+`POST /api/learning/assessments/{slug}/submit/`, `POST /api/learning/library/save/`.
+
+Anonymous users can browse; logged-in users sync lesson start/completion, practice submission, XP,
+streak, badges, and progress. Practice/assessment payloads never expose correct answers.
+
+## Offline fallback
+
+The catalog uses an in-memory cache with mock fallback; journal/portfolio use the offline-first sync
+queue (drafts are never lost; XP/progress sync when online). Practice questions and learning content
+are fetched live this phase (no on-device cache yet).
 
 ## Premium
 
-Premium learning uses the existing `premium_learning` entitlement. Locked premium lessons show an upgrade path, while free learning remains available.
+Premium learning uses the existing `premium_learning` entitlement. Locked premium lessons and
+practice sets show a calm upgrade path (no discounts/urgency/get-rich language); free learning
+remains available.
 
-## Product Boundaries
+## XP & privacy boundaries
 
-The mobile learning experience does not:
+XP rewards learning only (lesson 10, quiz 5, practice 25, simulator 30, journal 20, assessment 100,
+streak bonus 25, course 100, track 500); no return/portfolio gamification and no money leaderboard.
+The mobile learning experience does not execute investments, collect money, ask for M-Pesa PINs,
+bank passwords, or broker/MMF credentials, or call AI services.
 
-- execute investments
-- collect investment money
-- ask for M-Pesa PINs
-- ask for bank passwords
-- ask for broker or MMF credentials
-- call AI services
+## QA status
+
+- ✅ Practice tab lists sets; intro → player → results; per-question feedback after submit; XP returned.
+- ✅ Simulate-from-lesson and save-to-journal flows preserved; premium gate appears for locked sets.
+- ✅ Anonymous users browse but cannot submit/save.
+- ✅ `npm run typecheck` passes; `npm run test:logic` 22 tests pass (7 new practice tests).
+- Backend unchanged this phase; suite remains at 146 passing.
+
+## Cross-device sync
+
+Web and mobile authenticate against the same backend with a per-user token, so XP, streak, lesson
+completion, practice/assessment results, and library are the same account on both. A learner can
+start on mobile and continue on web (or vice-versa); web now supports both sign-in and registration.
+
+## Remaining mobile learning debt
+
+- **No "practice this chapter" deep links** from specific lessons/tracks yet.
+- **No standalone My Library / Activity screens** on mobile (they live as Learn-tab panels);
+  `saveLearningLibrary` is wired in the client but not surfaced in UI.
+- **No on-device caching** of practice questions/lessons for offline practice.
+- **No mobile lint script** (eslint is web-only); mobile is verified via `tsc --noEmit` + `tsx --test`.
+- **Practice question types render as multiple choice** (true/false, match-term presented as options).

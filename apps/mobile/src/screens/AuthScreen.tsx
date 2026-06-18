@@ -1,16 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
-import { PrivacyPromiseCard, maliPrime, maliPrimeText } from "../components/maliprime";
-
-const trustPromises = [
-  "We do not ask for M-Pesa PIN.",
-  "We do not ask for bank passwords.",
-  "We do not ask for broker credentials.",
-  "You can use ranges instead of exact amounts.",
-  "You control what you share with professionals.",
-  "We do not hold or execute investments."
-];
+import { maliPrime, maliPrimeText } from "../components/maliprime";
 
 type AuthMode = "welcome" | "register" | "login";
 
@@ -78,12 +69,6 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
           want to sync private journal or portfolio mirror data.
         </Text>
 
-        <View style={styles.promiseList}>
-          {trustPromises.map((promise) => (
-            <PrivacyPromiseCard key={promise} text={promise} />
-          ))}
-        </View>
-
         <Pressable accessibilityRole="button" onPress={handleContinueAnonymously} style={styles.primaryButton}>
           <Text style={styles.primaryText}>Continue anonymously</Text>
         </Pressable>
@@ -105,10 +90,7 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
     <View>
       <Text style={maliPrimeText.eyebrow}>{isRegister ? "Create account" : "Welcome back"}</Text>
       <Text style={[maliPrimeText.title, styles.titleSpacing]}>{isRegister ? "Save privately when ready" : "Log in to sync private notes"}</Text>
-      <Text style={[maliPrimeText.subtitle, styles.copySpacing]}>
-        Use only your PesaRoute password here. Never enter your M-Pesa PIN, bank password, broker login, MMF password,
-        or wallet secret.
-      </Text>
+      <Text style={[maliPrimeText.subtitle, styles.copySpacing]}>Enter your PesaRoute account details to sync private notes.</Text>
 
       <View style={styles.form}>
         <TextInput
@@ -179,7 +161,6 @@ export function AuthScreen({ onDone }: { onDone?: () => void }) {
 const styles = StyleSheet.create({
   titleSpacing: { marginTop: 10 },
   copySpacing: { marginTop: 12 },
-  promiseList: { gap: 10, marginTop: 20 },
   form: { gap: 10, marginTop: 20 },
   input: {
     backgroundColor: maliPrime.colors.surface,

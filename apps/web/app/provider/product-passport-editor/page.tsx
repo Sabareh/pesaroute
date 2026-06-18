@@ -21,7 +21,7 @@ const editorSections = [
   },
   {
     title: "Disclosures",
-    fields: ["No promised returns", "Liquidity warnings", "Tax or regulatory caveats"]
+    fields: ["Return assumptions", "Liquidity warnings", "Tax or regulatory caveats"]
   },
   {
     title: "External route",
@@ -90,7 +90,7 @@ export default function ProviderProductPassportEditorPage() {
               <ul className="mt-4 grid gap-3 text-sm leading-6 text-textSecondary">
                 <li>No guaranteed returns.</li>
                 <li>No execution CTA that looks like investment advice.</li>
-                <li>No request for M-Pesa PINs, bank passwords, broker credentials, or MMF credentials.</li>
+                <li>Provider copy stays within the approved account-access boundaries.</li>
                 <li>External route explains verification before action.</li>
               </ul>
               <SecondaryButton className="mt-5">

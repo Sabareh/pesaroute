@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Filter, Search, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Filter, Search } from "lucide-react";
 import {
   AppShell,
   AppleLikeNav,
@@ -10,7 +10,6 @@ import {
   LoadingState,
   PageShell,
   PremiumCard,
-  PrivacyPromiseCard,
   ProductPassportCard,
   SectionHeader,
   TrustBadge
@@ -65,17 +64,6 @@ export default async function ProductPassportsPage({
             src="/images/route-planning-phone.jpg"
           />
         </header>
-
-        <section className="mt-8 grid gap-3 md:grid-cols-2">
-          <PrivacyPromiseCard
-            icon={ShieldCheck}
-            text="Educational information only. PesaRoute does not execute investments, hold money, or promise returns."
-          />
-          <PrivacyPromiseCard
-            icon={ShieldCheck}
-            text="Verify details with the provider, regulator, and a licensed professional where needed."
-          />
-        </section>
 
         <section className="mt-8 rounded-lg border border-border bg-surface p-5 shadow-card">
           <div className="flex items-center gap-2 text-sm font-semibold text-textPrimary">

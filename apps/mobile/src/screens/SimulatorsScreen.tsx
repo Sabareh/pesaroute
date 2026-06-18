@@ -61,7 +61,6 @@ function DetailedSimulatorCard({
       <Text style={styles.detailCopy}>{beginnerMistake}</Text>
       <Text style={styles.detailLabel}>Next learning step</Text>
       <Text style={styles.detailCopy}>{nextStep}</Text>
-      <Text style={styles.cardDisclaimer}>This is an educational simulation, not investment advice.</Text>
     </PremiumCard>
   );
 }
@@ -161,7 +160,7 @@ export function SimulatorsScreen({
       decision: learningLessonContext?.title ?? "Reviewed simulator output",
       amountDisplayMode: "range",
       amountText: `KES ${amount}`,
-      reason: "For education only. Compare before committing money and speak to a licensed professional when needed."
+      reason: "Compare the result with your goal, timeline, liquidity needs, and the questions you still need answered."
     });
     setLearningStatus("Reflection saved to journal. Use ranges if you do not want exact amounts.");
   }
@@ -169,7 +168,7 @@ export function SimulatorsScreen({
   return (
     <View style={styles.screen}>
       <Text style={maliPrimeText.title}>Simulators</Text>
-      <Text style={maliPrimeText.subtitle}>This is an educational simulation, not investment advice. Local calculations run offline.</Text>
+      <Text style={maliPrimeText.subtitle}>Local calculations run offline so you can compare scenarios before making a decision.</Text>
       {learningLessonContext ? (
         <PremiumCard tone="alt">
           <Text style={styles.contextLabel}>Learning practice</Text>
@@ -248,7 +247,6 @@ export function SimulatorsScreen({
         whatCanGoWrong={`Currency and market volatility can both move against you. Estimated transfer fees: ${formatKes(localResults.global.estimatedFeesKes)}.`}
       />
 
-      <Text style={styles.disclaimer}>Educational simulation only. We do not execute investments or promise returns.</Text>
     </View>
   );
 }
@@ -283,7 +281,5 @@ const styles = StyleSheet.create({
   cardValue: { color: maliPrime.colors.primary, fontSize: 17, fontWeight: "900", lineHeight: 24, marginTop: 8 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   detailLabel: { color: maliPrime.colors.textPrimary, fontSize: 12, fontWeight: "900", marginTop: 12, textTransform: "uppercase" },
-  detailCopy: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 },
-  cardDisclaimer: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "800", lineHeight: 18, marginTop: 12 },
-  disclaimer: { color: maliPrime.colors.textSecondary, fontSize: 12, lineHeight: 18 }
+  detailCopy: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 4 }
 });

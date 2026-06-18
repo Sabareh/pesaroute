@@ -12,10 +12,10 @@ import {
   AppleLikeNav,
   EditorialImage,
   EmptyState,
+  PageBanner,
   PageShell,
   PremiumCard,
   PrimaryButton,
-  SectionHeader,
   TrustBadge
 } from "../../components/maliprime";
 
@@ -47,10 +47,10 @@ export default function ProviderDashboardPage() {
       <AppleLikeNav />
       <PageShell>
         <div className="grid gap-6 border-b border-border pb-7 lg:grid-cols-[1fr_360px] lg:items-end">
-          <SectionHeader
+          <PageBanner accent="green" badge="Provider" art="layers"
             eyebrow="Provider portal"
             title="Manage educational product passports with clear disclosures."
-            body="Providers can prepare public education pages without execution links, paid rankings, or unlabelled sponsorship."
+            description="Providers can prepare public education pages without execution links, paid rankings, or unlabelled sponsorship."
           />
           <div className="grid gap-3">
             <EditorialImage

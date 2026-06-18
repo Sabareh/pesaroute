@@ -1,0 +1,59 @@
+# CBK / DhowCSD government securities routes. Official source. No rates are
+# seeded — rate snapshots come only from source-linked CBK auction results.
+source:
+  slug: cbk-government-securities
+  name: CBK Government Securities (DhowCSD)
+  url: https://www.centralbank.go.ke/securities/
+  authority_level: official
+  source_type: government
+  regulator: CBK
+  regulator_category: Government security
+providers:
+  - name: Central Bank of Kenya (DhowCSD)
+    aliases: [CBK, DhowCSD, Central Bank of Kenya]
+    provider_type: government_platform
+    source_confidence: official
+    website: https://www.centralbank.go.ke/
+    products:
+      - name: 91-Day Treasury Bill
+        product_type: treasury_bill
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Minimum face value is typically KES 100,000; verify with CBK/DhowCSD."
+        tags: [official_source, no_rate_available]
+      - name: 182-Day Treasury Bill
+        product_type: treasury_bill
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Minimum face value is typically KES 100,000; verify with CBK/DhowCSD."
+        tags: [official_source, no_rate_available]
+      - name: 364-Day Treasury Bill
+        product_type: treasury_bill
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Minimum face value is typically KES 100,000; verify with CBK/DhowCSD."
+        tags: [official_source, no_rate_available]
+      - name: Treasury Bond
+        product_type: treasury_bond
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Minimum face value is typically KES 50,000; verify with CBK/DhowCSD."
+        tags: [official_source, no_rate_available]
+      - name: Infrastructure Bond
+        product_type: infrastructure_bond
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Minimum varies by issue; verify the prospectus with CBK/DhowCSD."
+        tags: [official_source, no_rate_available]
+      - name: DhowCSD Government Securities Route
+        product_type: treasury_bill
+        currency: KES
+        risk_level: low
+        liquidity_level: medium
+        minimum_amount_notes: "Retail access via the official DhowCSD platform; per-security minimums apply."
+        tags: [official_source, no_rate_available]

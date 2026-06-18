@@ -15,6 +15,8 @@ urlpatterns = [
     path("api/beta/", include("beta.urls")),
     path("api/billing/", include("billing.urls")),
     path("api/catalog/", include("catalog.urls")),
+    path("api/products/", include("planning.product_urls")),
+    path("api/simulations/", include("planning.simulation_urls")),
     path("api/planning/", include("planning.urls")),
     path("api/risk/", include("risk.urls")),
     path("api/journal/", include("journal.urls")),
@@ -25,4 +27,5 @@ urlpatterns = [
     path("api/privacy/", include("privacy.urls")),
     path("api/payments/", include("payments.urls")),
     path("api/notifications/", include("notifications.urls")),
+    path("api/land/", include("land.urls")),
 ]

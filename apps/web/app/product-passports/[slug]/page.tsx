@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CheckCircle2, FileText, Scale, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileText, Scale } from "lucide-react";
 import {
   AppleLikeNav,
   AppShell,
   EditorialImage,
   PageShell,
   PremiumCard,
-  PrivacyPromiseCard,
   SectionHeader,
   TrustBadge
 } from "../../components/maliprime";
@@ -69,19 +68,6 @@ export default async function ProductPassportPage({ params }: { params: Promise<
           src="/images/private-review-notebook.jpg"
         />
 
-        <section className="mt-6 grid gap-3 md:grid-cols-2">
-          <PrivacyPromiseCard icon={ShieldCheck} text="Educational information only. This page is not an investment recommendation." />
-          <PrivacyPromiseCard
-            icon={ShieldCheck}
-            text="PesaRoute does not execute investments, hold money, collect credentials, or promise returns."
-          />
-          <PrivacyPromiseCard icon={ShieldCheck} text="Verify current terms with the provider and regulator before sending money." />
-          <PrivacyPromiseCard
-            icon={ShieldCheck}
-            text="Consult a licensed professional where legal, tax, or personal suitability questions matter."
-          />
-        </section>
-
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <Fact label="Provider" value={passport.provider} />
           <Fact label="Risk" value={passport.riskLevel} />
@@ -90,14 +76,21 @@ export default async function ProductPassportPage({ params }: { params: Promise<
           <Fact label="Regulator category" value={passport.regulatorCategory} />
           <Fact label="Execution" value="External provider only" />
           <Fact label="Source" value={passport.sourceLabel} />
+          <Fact label="Learning route" value={passport.learningTrackTitle} href={passport.learningTrackHref} />
           <Fact label="Last verified" value={passport.lastVerified} />
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-2">
+          <ListBlock icon="disclosure" title="What it is" items={[passport.description]} />
+          <ListBlock icon="disclosure" title="How it works" items={[passport.externalRoute]} />
+          <ListBlock title="Good for learning about" items={goodFor(passport)} />
+          <ListBlock icon="disclosure" title="Not ideal for" items={notIdealFor(passport)} />
           <ListBlock title="Checks before acting" items={passport.checks} />
+          <ListBlock title="Questions to ask" items={questionsToAsk(passport)} />
           <ListBlock title="Beginner mistakes to avoid" items={passport.beginnerMistakes} />
           <ListBlock icon="document" title="Documents commonly needed" items={passport.documentsNeeded} />
           <ListBlock icon="disclosure" title="Disclosures" items={passport.disclosures} />
+          <ListBlock icon="disclosure" title="Where to verify" items={[`${passport.sourceLabel}: ${passport.sourceUrl}`]} />
         </section>
 
         <PremiumCard className="mt-8">
@@ -114,17 +107,67 @@ export default async function ProductPassportPage({ params }: { params: Promise<
             PesaRoute shows the route explanation only. Any application, transfer, custody, execution, or payment happens outside PesaRoute
             after independent verification.
           </p>
+          <Link
+            href={passport.learningTrackHref}
+            className="mt-5 inline-flex rounded-full border border-border px-4 py-2 text-sm font-semibold text-textPrimary transition hover:border-textTertiary"
+          >
+            Learn this route
+          </Link>
         </PremiumCard>
       </PageShell>
     </AppShell>
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function goodFor(passport: NonNullable<ReturnType<typeof findPublicPassport>>) {
+  const items = [`Understanding ${passport.category.toLowerCase()} before acting outside PesaRoute.`];
+  if (passport.liquidityLevel === "High") {
+    items.push("Comparing liquidity and withdrawal timing for near-term goals.");
+  }
+  if (passport.category.includes("Treasury")) {
+    items.push("Learning auction timing, maturity, face value, and purchase price.");
+  }
+  if (passport.category.includes("SACCO")) {
+    items.push("Learning membership rules, deposits, share capital, and guarantor exposure.");
+  }
+  if (passport.category.includes("Land")) {
+    items.push("Learning slow verification before paying deposits.");
+  }
+  return items;
+}
+
+function notIdealFor(passport: NonNullable<ReturnType<typeof findPublicPassport>>) {
+  const items = ["Anyone looking for PesaRoute to execute, hold money, or recommend a provider."];
+  if (passport.liquidityLevel === "Low" || passport.liquidityLevel === "Medium") {
+    items.push("Money needed urgently before the route's exit timing is clear.");
+  }
+  if (passport.riskLevel === "High") {
+    items.push("Users who have not checked documents, provider status, fees, and loss scenarios.");
+  }
+  return items;
+}
+
+function questionsToAsk(passport: NonNullable<ReturnType<typeof findPublicPassport>>) {
+  return [
+    "Who regulates or supervises this route?",
+    "How do I exit, and how long can withdrawal or transfer take?",
+    "What fees, taxes, penalties, or delays could reduce the outcome?",
+    "What official documents should I read before sending money?",
+    ...passport.checks
+  ];
+}
+
+function Fact({ href, label, value }: { href?: string; label: string; value: string }) {
   return (
     <PremiumCard>
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-textTertiary">{label}</p>
-      <p className="mt-2 text-base font-semibold text-textPrimary">{value}</p>
+      {href ? (
+        <Link className="mt-2 inline-flex text-base font-semibold text-textPrimary underline decoration-border underline-offset-4" href={href}>
+          {value}
+        </Link>
+      ) : (
+        <p className="mt-2 text-base font-semibold text-textPrimary">{value}</p>
+      )}
     </PremiumCard>
   );
 }

@@ -1,41 +1,63 @@
 import type { Config } from "tailwindcss";
 
+// Tokens are backed by CSS variables defined in app/globals.css so the whole UI
+// flips between light and dark with the OS/browser preference. Solid colours use
+// the `rgb(var(--x) / <alpha-value>)` form so Tailwind alpha modifiers still work
+// (e.g. bg-primary/40). Borders carry baked alpha and use the variable directly.
+function channel(name: string) {
+  return `rgb(var(--c-${name}) / <alpha-value>)`;
+}
+
 const config: Config = {
+  // Class-based so the manual light/dark toggle (html.dark) drives theming.
+  darkMode: "class",
   content: ["./app/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        background: "#F6F5F0",
-        surface: "#FFFFFF",
-        surfaceElevated: "#FFFFFF",
-        surfaceAlt: "#F0EFE9",
-        surfaceSubtle: "#ECEAE2",
-        textPrimary: "#11110F",
-        textSecondary: "#5B5A55",
-        textTertiary: "#85827A",
-        border: "rgba(17,17,15,0.10)",
-        borderStrong: "rgba(17,17,15,0.22)",
-        primary: "#11110F",
-        primaryDark: "#000000",
-        emerald: "#2F6B4F",
-        success: "#2F6B4F",
-        amber: "#8D6A2E",
-        warning: "#8D6A2E",
-        danger: "#A33B32",
-        purpleAccent: "#5B5A55",
-        purple: "#5B5A55",
-        teal: "#2F6B4F",
-        ink: "#11110F",
-        leaf: "#2F6B4F",
-        mint: "#E8F0EA",
-        clay: "#5B5A55",
-        sunrise: "#8D6A2E"
+        background: channel("background"),
+        surface: channel("surface"),
+        surfaceElevated: channel("surfaceElevated"),
+        surfaceAlt: channel("surfaceAlt"),
+        surfaceSubtle: channel("surfaceSubtle"),
+        textPrimary: channel("textPrimary"),
+        textSecondary: channel("textSecondary"),
+        textTertiary: channel("textTertiary"),
+        primary: channel("primary"),
+        primaryDark: channel("primaryDark"),
+        emerald: channel("emerald"),
+        success: channel("success"),
+        accent: channel("accent"),
+        accentSoft: channel("accentSoft"),
+        amber: channel("amber"),
+        warning: channel("warning"),
+        danger: channel("danger"),
+        purpleAccent: channel("purpleAccent"),
+        purple: channel("purple"),
+        violet: channel("violet"),
+        sky: channel("sky"),
+        teal: channel("teal"),
+        ink: channel("ink"),
+        leaf: channel("leaf"),
+        mint: channel("mint"),
+        clay: channel("clay"),
+        sunrise: channel("sunrise"),
+        border: "var(--c-border)",
+        borderStrong: "var(--c-borderStrong)",
+        sidebar: channel("sidebarBg"),
+        sidebarText: channel("sidebarText"),
+        sidebarMuted: channel("sidebarMuted"),
+        sidebarActive: channel("sidebarActive"),
+        sidebarBorder: "var(--c-sidebarBorder)",
+        bannerBg: channel("bannerBg"),
+        bannerText: channel("bannerText"),
+        bannerMuted: channel("bannerMuted")
       },
       boxShadow: {
-        card: "0 1px 0 rgba(17, 17, 15, 0.04)",
+        card: "var(--shadow-card)",
         button: "none",
-        soft: "0 16px 40px rgba(17, 17, 15, 0.08)",
-        subtle: "0 1px 0 rgba(17, 17, 15, 0.04)"
+        soft: "var(--shadow-soft)",
+        subtle: "var(--shadow-subtle)"
       }
     }
   },

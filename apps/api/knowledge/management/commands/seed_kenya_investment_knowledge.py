@@ -21,15 +21,12 @@ from knowledge.models import (
     SourceRecord,
     SourceReference,
 )
+from learning.content import EDUCATIONAL_DISCLAIMER, structured_lesson_content, sync_learning_sources
 from learning.models import Flashcard, LearningCourse, LearningLesson, LearningResource, LearningTrack, QuizQuestion
 from learning.services import ensure_default_badges
 
 SEED_MARKER = "seed_kenya_investment_knowledge"
-DISCLAIMER = (
-    "Educational information only. PesaRoute does not hold money, execute investments, promise returns, or ask for "
-    "M-Pesa PINs, bank passwords, broker credentials, or MMF credentials. Verify current details with official sources "
-    "and licensed professionals where needed."
-)
+DISCLAIMER = EDUCATIONAL_DISCLAIMER
 
 
 @dataclass(frozen=True)
@@ -607,7 +604,7 @@ LEARNING_TRACKS = [
             "Emergency fund basics",
             "Risk vs return",
             "Liquidity explained",
-            "Why guaranteed high returns are dangerous",
+            "Why promised high payouts are dangerous",
         ],
     ),
     (
@@ -720,7 +717,7 @@ LEARNING_TRACKS = [
         40,
         False,
         [
-            "Guaranteed returns",
+            "Promised high payouts",
             "Recruitment schemes",
             "Fake forex/crypto bots",
             "Pressure to send deposit",
@@ -1188,15 +1185,14 @@ class Command(BaseCommand):
                     "status": LearningCourse.Status.PUBLISHED,
                 },
             )
+            if LearningLesson.objects.filter(
+                course=course,
+                reviewer_notes__startswith="content-pack:kenya-investment-lessons",
+            ).exists():
+                continue
             for lesson_order, lesson_title in enumerate(lessons, start=1):
                 lesson_type = lesson_type_for(lesson_title)
-                body = (
-                    f"Educational content: {lesson_title}. Learn first, compare clearly, understand risks and liquidity, "
-                    "use ranges when you do not want to enter exact amounts, and speak to a licensed professional when needed. "
-                    f"{DISCLAIMER}"
-                )
-                if lesson_type == LearningLesson.LessonType.SIMULATION:
-                    body = f"Educational content: {lesson_title}. Run the matching simulator to test assumptions. A simulation is not a recommendation, prediction, or promised return."
+                content = structured_lesson_content(lesson_title, track.title, lesson_type)
                 lesson, created = LearningLesson.objects.update_or_create(
                     course=course,
                     order=lesson_order,
@@ -1204,8 +1200,11 @@ class Command(BaseCommand):
                         "title": lesson_title,
                         "slug": slugify(lesson_title),
                         "lesson_type": lesson_type,
-                        "body": body,
-                        "summary": f"Learn {lesson_title.lower()} before moving money.",
+                        "body": content["body"],
+                        "summary": content["summary"],
+                        "structured_content": content["structured_content"],
+                        "estimated_minutes": content["estimated_minutes"],
+                        "difficulty": content["difficulty"],
                         "xp_reward": (
                             15
                             if lesson_type in {LearningLesson.LessonType.QUIZ, LearningLesson.LessonType.SIMULATION}
@@ -1213,8 +1212,13 @@ class Command(BaseCommand):
                         ),
                         "is_premium": is_premium,
                         "status": LearningLesson.Status.PUBLISHED,
+                        "editorial_status": content["editorial_status"],
+                        "last_reviewed_at": content["last_reviewed_at"],
+                        "next_review_due_at": content["next_review_due_at"],
+                        "reviewer_notes": content["reviewer_notes"],
                     },
                 )
+                sync_learning_sources(lesson, content["source_keys"])
                 counters["lessons"] += int(created)
                 if lesson_type == LearningLesson.LessonType.QUIZ:
                     QuizQuestion.objects.update_or_create(
@@ -1249,15 +1253,31 @@ class Command(BaseCommand):
                 defaults={
                     "resource_type": LearningResource.ResourceType.CHECKLIST,
                     "body": (
-                        f"Educational content. Use official source links where available, compare risks and liquidity, keep private notes, "
-                        f"and do not treat this checklist as investment advice. {DISCLAIMER}"
+                        "Use this checklist before money moves. Confirm official or provider source links, compare fees, "
+                        f"liquidity, documents, and downside scenarios, then keep private notes. {DISCLAIMER}"
                     ),
+                    "structured_content": [
+                        {"type": "heading", "text": f"{track_title} source-aware checklist"},
+                        {
+                            "type": "checklist",
+                            "title": "Before money moves",
+                            "items": [
+                                "Check whether an official regulator, exchange, government, or provider source exists.",
+                                "Write the liquidity rule in plain language.",
+                                "List fees, tax questions, documents, and what can go wrong.",
+                                "Use a private journal entry before sharing exact amounts.",
+                            ],
+                        },
+                        {"type": "disclaimer", "text": DISCLAIMER},
+                    ],
                     "related_track": track,
                     "related_product_category": matching_category,
                     "is_premium": is_premium,
                     "status": LearningResource.Status.PUBLISHED,
+                    "editorial_status": LearningResource.EditorialStatus.REVIEWED,
                 },
             )
+            sync_learning_sources(resource, ["pesaroute_editorial"])
             counters["resources"] += int(created)
 
         editorial_source = sources["cma-licensee-register"]
@@ -1267,10 +1287,21 @@ class Command(BaseCommand):
                 defaults={
                     "resource_type": LearningResource.ResourceType.GLOSSARY,
                     "body": f"{definition} Editorial educational content. {DISCLAIMER}",
+                    "structured_content": [
+                        {"type": "definition", "term": term, "text": definition},
+                        {
+                            "type": "scenario",
+                            "title": "Kenyan example",
+                            "text": f"A PesaRoute learner sees '{term}' while comparing a route and writes what it means before money moves.",
+                        },
+                        {"type": "disclaimer", "text": DISCLAIMER},
+                    ],
                     "is_premium": False,
                     "status": LearningResource.Status.PUBLISHED,
+                    "editorial_status": LearningResource.EditorialStatus.REVIEWED,
                 },
             )
+            sync_learning_sources(resource, ["pesaroute_editorial"])
             counters["resources"] += int(created)
             payload = {"term": term, "definition": definition}
             _record, created = SourceRecord.objects.update_or_create(

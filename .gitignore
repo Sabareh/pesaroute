@@ -42,3 +42,8 @@ google-services.json
 
 # Android profiling
 *.hprof
+
+# Local dev tooling and scratch (kept out of prod)
+.claude/
+/*.txt
+apps/mobile/*-current.png

@@ -55,8 +55,7 @@ export function RouteResultScreen({
         <TrustBadge>Educational path</TrustBadge>
         <Text style={[maliPrimeText.title, styles.heroTitle]}>{profile.goalLabel}</Text>
         <Text style={[maliPrimeText.subtitle, styles.heroCopy]}>
-          {profile.amountLabel}. Before you invest, understand the route. PesaRoute does not hold money or execute
-          investments.
+          {profile.amountLabel}. Understand the route, compare the tradeoffs, and save the decision before money moves.
         </Text>
       </HeroCard>
 
@@ -127,7 +126,6 @@ export function RouteResultScreen({
       </PremiumCard>
 
       <PrimaryButton onPress={saveDraft}>{saved ? "Saved locally" : "Save to journal"}</PrimaryButton>
-      <Text style={styles.disclaimer}>Educational simulation only. Speak to a licensed professional before acting.</Text>
     </View>
   );
 }
@@ -164,5 +162,4 @@ const styles = StyleSheet.create({
   passportRow: { borderTopColor: maliPrime.colors.border, borderTopWidth: 1, marginTop: 10, paddingTop: 10 },
   passportName: { color: maliPrime.colors.textPrimary, fontSize: 14, fontWeight: "900" },
   passportMeta: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "800", marginTop: 4 },
-  disclaimer: { color: maliPrime.colors.textSecondary, fontSize: 12, lineHeight: 18 }
 });

@@ -50,8 +50,38 @@ class Provider(TimestampedModel):
         PUBLISHED = "published", "Published"
         ARCHIVED = "archived", "Archived"
 
+    class ProviderType(models.TextChoices):
+        FUND_MANAGER = "fund_manager", "Fund manager"
+        INVESTMENT_BANK = "investment_bank", "Investment bank"
+        STOCKBROKER = "stockbroker", "Stockbroker"
+        INVESTMENT_ADVISER = "investment_adviser", "Investment adviser"
+        BANK = "bank", "Bank"
+        INSURER = "insurer", "Insurer"
+        PENSION_PROVIDER = "pension_provider", "Pension provider"
+        SACCO = "sacco", "SACCO"
+        GOVERNMENT_PLATFORM = "government_platform", "Government platform"
+        EXCHANGE = "exchange", "Exchange"
+        DEPOSITORY = "depository", "Depository"
+        WEALTH_PLATFORM = "wealth_platform", "Wealth platform"
+        REIT_MANAGER = "reit_manager", "REIT manager"
+        TRUSTEE = "trustee", "Trustee"
+        CUSTODIAN = "custodian", "Custodian"
+        OTHER = "other", "Other"
+
+    class SourceConfidence(models.TextChoices):
+        OFFICIAL = "official", "Official"
+        PROVIDER_REPORTED = "provider_reported", "Provider reported"
+        EDITORIAL = "editorial", "Editorial"
+        THIRD_PARTY = "third_party", "Third party"
+        UNKNOWN = "unknown", "Unknown"
+
     name = models.CharField(max_length=160, unique=True)
     slug = models.SlugField(max_length=200, blank=True, db_index=True)
+    provider_type = models.CharField(max_length=40, choices=ProviderType.choices, default=ProviderType.OTHER)
+    source_confidence = models.CharField(
+        max_length=32, choices=SourceConfidence.choices, default=SourceConfidence.UNKNOWN
+    )
+    scheme_name = models.CharField(max_length=200, blank=True)
     regulator_category = models.CharField(max_length=160, blank=True)
     regulator_license_number = models.CharField(max_length=120, blank=True)
     regulator_status = models.CharField(max_length=120, blank=True)
@@ -108,11 +138,22 @@ class ProductPassport(TimestampedModel):
         STALE = "stale", "Stale"
         UNKNOWN = "unknown", "Unknown"
 
+    class FreshnessStatus(models.TextChoices):
+        FRESH = "fresh", "Fresh"
+        ACCEPTABLE = "acceptable", "Acceptable"
+        STALE = "stale", "Stale"
+        UNKNOWN = "unknown", "Unknown"
+
     class VerificationStatus(models.TextChoices):
         UNVERIFIED = "unverified", "Unverified"
         SOURCE_VERIFIED = "source_verified", "Source verified"
         MANUALLY_REVIEWED = "manually_reviewed", "Manually reviewed"
         PROVIDER_CLAIMED = "provider_claimed", "Provider claimed"
+
+    class Audience(models.TextChoices):
+        ALL = "all", "All users"
+        FREE = "free", "Free tier"
+        PREMIUM = "premium", "Premium tier"
 
     category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT, related_name="product_passports")
     provider = models.ForeignKey(
@@ -136,6 +177,12 @@ class ProductPassport(TimestampedModel):
     disclosures = models.TextField(blank=True)
     public_source_url = models.URLField(blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
+    next_review_due_at = models.DateTimeField(null=True, blank=True)
+    freshness_status = models.CharField(
+        max_length=32,
+        choices=FreshnessStatus.choices,
+        default=FreshnessStatus.UNKNOWN,
+    )
     data_freshness = models.CharField(max_length=32, choices=DataFreshness.choices, default=DataFreshness.UNKNOWN)
     verification_status = models.CharField(
         max_length=40, choices=VerificationStatus.choices, default=VerificationStatus.UNVERIFIED
@@ -146,6 +193,9 @@ class ProductPassport(TimestampedModel):
     )
     editorial_notes = models.TextField(blank=True)
     is_sponsored = models.BooleanField(default=False)
+    # Which tier this educational passport is aimed at. FREE = part of the free-tier
+    # baseline (still visible to everyone); used so clients can label/group content.
+    audience = models.CharField(max_length=16, choices=Audience.choices, default=Audience.ALL)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.DRAFT)
 
     class Meta:
@@ -154,9 +204,12 @@ class ProductPassport(TimestampedModel):
             models.Index(fields=["category"]),
             models.Index(fields=["category", "status"]),
             models.Index(fields=["category", "published_status"]),
+            models.Index(fields=["audience"]),
             models.Index(fields=["status"]),
             models.Index(fields=["published_status"]),
             models.Index(fields=["verification_status"]),
+            models.Index(fields=["freshness_status"]),
+            models.Index(fields=["next_review_due_at"]),
             models.Index(fields=["data_freshness"]),
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["risk_level"]),

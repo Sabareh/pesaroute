@@ -15,6 +15,8 @@ export type PublicPassport = {
   externalRoute: string;
   sourceLabel: string;
   sourceUrl: string;
+  learningTrackTitle: string;
+  learningTrackHref: string;
   lastVerified: string;
 };
 
@@ -36,6 +38,8 @@ export const publicPassports: PublicPassport[] = [
     externalRoute: "Compare here, then verify directly with a licensed provider before opening externally.",
     sourceLabel: "Capital Markets Authority licensee register",
     sourceUrl: "https://licensees.cma.or.ke/",
+    learningTrackTitle: "Money Market Funds",
+    learningTrackHref: "/learning",
     lastVerified: "15 Jun 2026"
   },
   {
@@ -55,6 +59,8 @@ export const publicPassports: PublicPassport[] = [
     externalRoute: "Use official channels and verify current CBK/DhowCSD instructions before acting.",
     sourceLabel: "CBK government securities and DhowCSD",
     sourceUrl: "https://www.centralbank.go.ke/securities/",
+    learningTrackTitle: "Treasury Bills and Bonds",
+    learningTrackHref: "/learning",
     lastVerified: "15 Jun 2026"
   },
   {
@@ -74,6 +80,8 @@ export const publicPassports: PublicPassport[] = [
     externalRoute: "Review documents and speak directly with the SACCO before joining externally.",
     sourceLabel: "SASRA licensed SACCO lists",
     sourceUrl: "https://www.sasra.go.ke/licensed-dt-saccos/",
+    learningTrackTitle: "SACCO Smart Member",
+    learningTrackHref: "/learning",
     lastVerified: "15 Jun 2026"
   },
   {
@@ -93,6 +101,8 @@ export const publicPassports: PublicPassport[] = [
     externalRoute: "Verify broker status, tax obligations, and transfer costs independently before acting.",
     sourceLabel: "KRA tax education reference",
     sourceUrl: "https://www.kra.go.ke/",
+    learningTrackTitle: "Global Stocks and ETFs",
+    learningTrackHref: "/learning",
     lastVerified: "15 Jun 2026"
   },
   {
@@ -110,8 +120,10 @@ export const publicPassports: PublicPassport[] = [
     documentsNeeded: ["Title documents", "Seller identity documents", "Survey map", "Official search results"],
     disclosures: ["Fraud risk can be high", "Liquidity is low", "Independent legal review is important"],
     externalRoute: "Use independent legal and official registry checks before any external transaction.",
-    sourceLabel: "KRA tax education reference",
-    sourceUrl: "https://www.kra.go.ke/",
+    sourceLabel: "Ardhisasa land services",
+    sourceUrl: "https://ardhisasa.lands.go.ke/",
+    learningTrackTitle: "Land Due Diligence Basics",
+    learningTrackHref: "/learning",
     lastVerified: "15 Jun 2026"
   }
 ];

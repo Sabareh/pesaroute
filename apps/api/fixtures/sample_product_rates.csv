@@ -1,0 +1,4 @@
+provider_name,product_name,product_type,currency,rate_value,rate_type,rate_period,snapshot_date,source_url,confidence,notes
+CIC Asset Management,CIC Money Market Fund,money_market_fund,KES,11.85,annual_yield,annual,2026-01-15,https://www.cicgroup.com/asset-management/unit-trusts/,editorial,Educational reference rate. Verify with provider before investing.
+Sanlam Investments,Sanlam Money Market Fund,money_market_fund,KES,12.10,annual_yield,annual,2026-01-15,https://www.sanlam.co.ke/investments/unit-trusts/,editorial,Educational reference rate. Verify with provider before investing.
+CBK,91-Day T-Bill,treasury_bill,KES,13.20,t_bill_average_rate,auction,2026-01-10,https://www.centralbank.go.ke/securities/treasury-bills/,official,CBK published auction average rate. Subject to change at next auction.

@@ -116,7 +116,7 @@ export function PortfolioMirrorScreen({
   return (
     <View>
       <Text style={styles.title}>Portfolio Mirror</Text>
-      <Text style={styles.copy}>Manual mirror only. No account links, no broker credentials, and no execution. Exact amounts are optional.</Text>
+      <Text style={styles.copy}>Track your portfolio manually. Exact amounts are optional, and range or hidden modes stay respected.</Text>
 
       {!premiumEnabled ? (
         <View style={styles.lockCard}>

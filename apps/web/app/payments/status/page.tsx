@@ -5,9 +5,9 @@ import {
   AppShell,
   EditorialImage,
   HeroCard,
+  PageBanner,
   PageShell,
   PremiumCard,
-  SectionHeader,
   TrustBadge
 } from "../../components/maliprime";
 
@@ -32,14 +32,13 @@ export default function PaymentStatusPage() {
         <HeroCard className="mt-8">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.82fr] lg:items-end">
             <div>
-              <SectionHeader
+              <PageBanner accent="green" badge="Payments" art="rings"
                 eyebrow="Payments"
                 title="M-Pesa payment status foundation"
-                body="PesaRoute payments are only for subscriptions, learning packs, and future professional review fees. They are never for investment execution."
-              />
-              <div className="mt-5">
+                description="PesaRoute payments are only for subscriptions, learning packs, and future professional review fees. They are never for investment execution."
+              >
                 <TrustBadge tone="emerald">Backend confirmation only</TrustBadge>
-              </div>
+              </PageBanner>
             </div>
             <EditorialImage
               alt="A phone on a desk beside Kenyan shillings, representing M-Pesa payment prompts handled outside PesaRoute."
@@ -60,9 +59,10 @@ export default function PaymentStatusPage() {
           </PremiumCard>
           <PremiumCard>
             <LockKeyhole className="h-5 w-5 text-textTertiary" aria-hidden />
-            <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em]">No PIN in PesaRoute</h2>
+            <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em]">Server-side credentials</h2>
             <p className="mt-2 text-sm leading-6 text-textSecondary">
-              The app never asks for M-Pesa PINs, passkeys, consumer secrets, bank passwords, or broker credentials.
+              Payment credentials stay on the backend, and the mobile app only tracks the payment status returned by
+              PesaRoute.
             </p>
           </PremiumCard>
           <PremiumCard>

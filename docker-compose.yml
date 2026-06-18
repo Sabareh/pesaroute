@@ -44,11 +44,32 @@ services:
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,10.0.2.2,api
       DATABASE_URL: postgres://pesaroute:pesaroute@postgres:5432/pesaroute
       REDIS_URL: redis://redis:6379/0
+      CELERY_TIMEZONE: Africa/Nairobi
     volumes:
       - ./apps/api:/app
     depends_on:
       - postgres
       - redis
+
+  # Scheduler: fires the daily off-peak (EAT) catalog-refresh tasks defined in
+  # CELERY_BEAT_SCHEDULE. The worker above executes them.
+  beat:
+    build:
+      context: ./apps/api
+    command: celery -A config beat --loglevel=info
+    environment:
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY before running docker compose}
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,10.0.2.2,api
+      DATABASE_URL: postgres://pesaroute:pesaroute@postgres:5432/pesaroute
+      REDIS_URL: redis://redis:6379/0
+      CELERY_TIMEZONE: Africa/Nairobi
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      - postgres
+      - redis
+      - worker
 
 volumes:
   postgres_data:

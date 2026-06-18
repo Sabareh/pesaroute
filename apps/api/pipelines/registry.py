@@ -4,17 +4,22 @@ from pipelines.connectors import (
     CbkTreasuryBillsConnector,
     CbkTreasuryBondsConnector,
     CmaApprovedCisConnector,
+    CmaApprovedCollectiveInvestmentSchemesConnector,
     CmaFundManagersConnector,
     CmaInvestmentAdvisersConnector,
     CmaStockbrokersConnector,
     IraLicensedEntitiesConnector,
     NseListedCompaniesConnector,
+    ProviderCalculatorPageConnector,
+    ProviderPageHtmlConnector,
+    ProviderPdfFactsheetConnector,
     RbaRegisteredServiceProvidersConnector,
     SasraRegulatedSaccosConnector,
 )
 
 CONNECTOR_CLASSES = {
     "cma-approved-cis": CmaApprovedCisConnector,
+    "cma-approved-collective-investment-schemes": CmaApprovedCollectiveInvestmentSchemesConnector,
     "cma-fund-managers": CmaFundManagersConnector,
     "cma-investment-advisers": CmaInvestmentAdvisersConnector,
     "cma-stockbrokers": CmaStockbrokersConnector,
@@ -24,6 +29,15 @@ CONNECTOR_CLASSES = {
     "sasra-regulated-saccos": SasraRegulatedSaccosConnector,
     "rba-registered-service-providers": RbaRegisteredServiceProvidersConnector,
     "ira-licensed-entities": IraLicensedEntitiesConnector,
+    "provider-page-html": ProviderPageHtmlConnector,
+    "provider-pdf-factsheet": ProviderPdfFactsheetConnector,
+    "provider-calculator-page": ProviderCalculatorPageConnector,
+}
+
+INACTIVE_STUB_SLUGS = {
+    "provider-page-html",
+    "provider-pdf-factsheet",
+    "provider-calculator-page",
 }
 
 

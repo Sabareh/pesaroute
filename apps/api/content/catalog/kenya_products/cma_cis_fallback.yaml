@@ -1,0 +1,482 @@
+# CMA Approved Collective Investment Schemes — fallback/verification seed list.
+# Source of truth for the catalog until the live CMA parser is enabled.
+# The importer infers product_type and currency from each fund name; no rates,
+# minimums, or yields are invented here. Provider type defaults to fund_manager.
+source:
+  slug: cma-approved-collective-investment-schemes
+  name: CMA Approved Collective Investment Schemes
+  url: https://www.cma.or.ke/regulated-entities/
+  authority_level: official
+  source_type: regulator
+  regulator: CMA
+  regulator_category: Approved Collective Investment Scheme
+schemes:
+  - provider: African Alliance Kenya Unit Trust Scheme
+    aliases: [African Alliance]
+    products:
+      - African Alliance Kenya Money Market Fund
+      - African Alliance Kenya Fixed Income Fund
+      - African Alliance Kenya Balanced Fund
+      - African Alliance Kenya Equity Fund
+      - African Alliance Kenya Enhanced Yield Fund
+  - provider: British-American Unit Trust Scheme
+    aliases: [Britam, British-American, British American]
+    products:
+      - Britam Money Market Fund
+      - Britam Income Fund
+      - Britam Balanced Fund
+      - Britam Equity Fund
+      - Britam Special Fixed Income Fund
+      - Britam Money Market Fund (USD)
+  - provider: NCBA Unit Trust Funds
+    aliases: [NCBA]
+    products:
+      - NCBA Fixed Income Fund
+      - NCBA Equity Fund
+      - NCBA Dollar Fixed Income Fund
+      - NCBA Fixed Income Basket Note (KES Fund)
+      - NCBA Fixed Income Basket Note (USD Fund)
+      - NCBA Global Special Equity Fund
+      - NCBA Global Special Fixed Income Fund
+      - NCBA Money Market Fund (KES)
+      - NCBA Money Market Fund (USD)
+  - provider: Zimele Unit Trust Scheme
+    aliases: [Zimele]
+    products:
+      - Zimele Balanced Fund
+      - Zimele Money Market Fund
+      - Zimele Fixed Income Fund
+  - provider: ICEA Lion Unit Trust Scheme
+    aliases: [ICEA, ICEA Lion, ICEA LION]
+    products:
+      - ICEA Money Market Fund
+      - ICEA Equity Fund
+      - ICEA Balanced Fund
+      - ICEA Bond Fund
+      - ICEA Fixed Income Fund (USD)
+      - ICEA LION Money Market Fund
+      - ICEA LION Equity Fund
+      - ICEA LION Balanced Fund
+      - ICEA LION Bond Fund
+      - ICEA LION USD Fixed Income Fund
+      - ICEA Fixed Income Fund KES
+      - ICEA LION Multi Strategy Bond Fund
+      - ICEA LION Multi Strategy Bond Fund - Alternative Investment Fund
+  - provider: CIC Unit Trust Scheme
+    aliases: [CIC]
+    products:
+      - CIC Money Market Fund
+      - CIC Balanced Fund
+      - CIC Fixed Income Fund
+      - CIC Equity Fund
+      - CIC Wealth Fund
+      - CIC Dollar Fund
+      - CIC Global Special Fund
+  - provider: Madison Unit Trust Fund
+    aliases: [Madison]
+    products:
+      - Madison Money Market Fund
+      - Madison Fixed Income Fund
+      - Madison Wealth Fund
+  - provider: Dyer and Blair Unit Trust Scheme
+    aliases: [Dyer & Blair, Dyer and Blair]
+    products:
+      - Dyer & Blair Fixed Income Fund (USD)
+      - Dyer & Blair Special Global Strategies Fund (KES)
+      - Dyer & Blair Special Global Strategies Fund (USD)
+  - provider: Amana Unit Trust Funds Scheme
+    aliases: [Amana]
+    products:
+      - Amana Money Market Fund
+      - Amana Balanced Fund
+      - Amana Equity Fund
+  - provider: Diaspora Unit Trust Scheme
+    aliases: [Diaspora]
+    products:
+      - Diaspora Money Market Fund
+      - Diaspora Bond Fund
+      - Diaspora Equity Fund
+  - provider: Genghis Unit Trust Funds
+    aliases: [Genghis, GenCap]
+    products:
+      - GenCap Hazina Fund
+      - GenCap Eneza Fund
+      - GenCap Hela Fund
+      - GenCap Iman Fund
+      - GenCap Hisa Fund
+      - GenCap Hela Imara Fund
+      - GenCap Eneza Imara Fund
+      - GenCap Hisa Imara Fund
+      - GenCap Iman Imara Fund
+      - GenCap Fixed Income Fund
+      - Gencap NSE25 Index Tracker
+      - Gencap Financial Services Fund
+  - provider: Mali Unit Trust
+    aliases: [Mali]
+    products:
+      - Mali Money Market Fund
+  - provider: Sanlam Unit Trust Scheme
+    aliases: [Sanlam]
+    products:
+      - Sanlam Money Market Fund
+      - Sanlam Balanced Fund
+      - Sanlam Fixed Income Fund
+      - Sanlam USD Fixed Income Fund
+      - Sanlam Special GBP Fixed Income Fund
+      - Sanlam Special Fund (KES)
+  - provider: Nabo Africa Funds
+    aliases: [Nabo, Nabo Africa, Nabo Capital]
+    products:
+      - Nabo Africa Money Market Fund
+      - Nabo Africa Balanced Fund
+      - Nabo Africa Fixed Income Fund
+      - Nabo Africa Equity Fund
+      - Nabo Capital Money Market Fund (USD)
+      - Nabo Ubuntu Multi Asset Strategy Special Fund
+  - provider: Old Mutual Unit Trust Scheme
+    aliases: [Old Mutual, Faulu]
+    products:
+      - Old Mutual Equity Fund
+      - Old Mutual Money Market Fund
+      - Old Mutual Balanced Fund
+      - Old Mutual East Africa Fund
+      - Old Mutual Bond Fund
+      - Old Mutual Faulu Money Market Fund
+      - Old Mutual Dollar Money Market Fund
+      - Old Mutual Special Fixed Income Fund
+  - provider: Equity Investment Bank Collective Investment Scheme
+    aliases: [Equity Investment Bank]
+    provider_type: investment_bank
+    products:
+      - Equity Investment Bank Money Market Fund
+      - Equity Investment Bank Balanced Fund
+  - provider: Dry Associates Unit Trust Scheme
+    aliases: [Dry Associates]
+    products:
+      - Dry Associates Money Market Fund (KES)
+      - Dry Associates Money Market Fund (USD)
+      - Dry Associates Special High Yield Fund
+      - Dry Associates SME Impact Debt Fund
+  - provider: Co-op Trust Fund
+    aliases: [Co-op, Co-operative, Coop]
+    products:
+      - Co-op Balanced Fund
+      - Co-op Equity Fund
+      - Co-op Bond Fund
+      - Co-op Money Market Fund
+      - Co-op Fixed Income Gratuity Fund
+  - provider: Apollo Unit Trust Scheme
+    aliases: [Apollo]
+    products:
+      - Apollo Money Market Fund
+      - Apollo Balanced Fund
+      - Apollo Aggressive Growth Fund
+      - Apollo Equity Fund
+      - Apollo East Africa Fund
+      - Apollo Bond Fund
+  - provider: Cytonn Unit Trust Scheme
+    aliases: [Cytonn]
+    products:
+      - Cytonn Money Market Fund
+      - Cytonn Balanced Fund
+      - Cytonn Equity Fund
+      - Cytonn Africa Financial Services Fund
+      - Cytonn Money Market Fund (USD)
+      - Cytonn High Yield Fund
+  - provider: Orient Umbrella Collective Investment Scheme
+    aliases: [Orient, Alphafrica]
+    products:
+      - Orient Hifadhi Fixed Income Fund
+      - Orient Kasha Money Market Fund
+      - Orient Dollar Money Market Fund
+  - provider: Absa Unit Trust Funds
+    aliases: [Absa]
+    products:
+      - Absa Balanced Fund
+      - Absa Bond Fund
+      - Absa Dollar Money Market Fund
+      - Absa Equity Fund
+      - Absa Shilling Money Market Fund
+  - provider: Jaza Unit Trust Fund
+    aliases: [Jaza]
+    products:
+      - Jaza Premier Money Market Fund
+  - provider: Masaru Unit Trust Scheme
+    aliases: [Masaru]
+    products:
+      - Masaru Wealth Management Fund
+      - Masaru Money Market Fund
+  - provider: ADAM Unit Trust Scheme
+    aliases: [ADAM]
+    products:
+      - ADAM Balanced Fund
+      - ADAM Equities Fund
+      - ADAM Fixed Income Fund
+      - ADAM Money Market Fund
+  - provider: KCB Unit Trust Scheme
+    aliases: [KCB, Natbank]
+    products:
+      - KCB Money Market Fund (KES)
+      - KCB Fixed Income Fund
+      - KCB Balanced Fund
+      - KCB Equity Fund
+      - KCB Money Market Fund (USD)
+  - provider: GenAfrica Unit Trust Scheme
+    aliases: [GenAfrica]
+    products:
+      - GenAfrica Money Market Fund
+      - GenAfrica Equity Fund
+      - GenAfrica Fixed Income Fund
+  - provider: Amaka Unit Trust Scheme
+    aliases: [Amaka]
+    products:
+      - Amaka HOSP Fixed Income Fund
+      - Amaka Qualified Investor Tenant Purchase Scheme Fund
+  - provider: Jubilee Unit Trust Collective Investment Scheme
+    aliases: [Jubilee]
+    products:
+      - Jubilee Balanced Fund
+      - Jubilee Equity Fund
+      - Jubilee Fixed Income (KES) Fund
+      - Jubilee Fixed Income (USD) Fund
+      - Jubilee Money Market Fund
+      - Jubilee Money Market Fund (KES)
+      - Jubilee Money Market Fund (USD)
+      - Jubilee Enhanced Fixed Income Special Fund
+  - provider: Enwealth Capital Unit Trust Scheme
+    aliases: [Enwealth]
+    products:
+      - Enwealth Balanced Fund
+      - Enwealth Equity Fund
+      - Enwealth Money Market Fund
+      - Enwealth Dollar Money Market Fund
+      - Enwealth Fixed Income Fund
+      - Enwealth Impact Debt Fund - Alternative Investment Fund
+  - provider: Kuza Asset Management Unit Trust Scheme
+    aliases: [Kuza]
+    products:
+      - Kuza Fixed Income Fund
+      - Kuza Money Market Fund (KES)
+      - Kuza Money Market Fund (USD)
+      - Kuza Momentum Fund
+      - Kuza Shariah Momentum Fund
+  - provider: Etica Unit Trust Funds
+    aliases: [Etica, Etica Capital]
+    products:
+      - Etica Money Market Fund
+      - Etica Money Market Fund (USD)
+      - Etica Fixed Income Fund
+      - Etica Fixed Income Fund (USD)
+      - Etica Shariah Fund
+      - Etica Shariah Fund (USD)
+      - Etica Wealth Fund
+      - Etica Wealth Fund (USD)
+      - Etica Special Multi Asset Special Fund
+  - provider: Lofty Corban Unit Trust Scheme
+    aliases: [Lofty Corban, Lofty-Corban]
+    products:
+      - Lofty Corban Equity Fund
+      - Lofty Corban Money Market Fund (KES)
+      - Lofty Corban Money Market Fund (USD)
+      - Lofty Corban Bond Fund (USD)
+      - Lofty Corban Bond Fund (KES)
+      - Lofty-Corban Private Debt Special Fund
+      - Lofty-Corban Global Asset Special Fund
+      - Lofty-Corban Special Money Market Fund
+  - provider: Standard Investment Trust Funds
+    aliases: [Standard Investment Bank, Standard Investment Trust, Mansa X, Mansa-X, SIB]
+    provider_type: investment_bank
+    products:
+      - Standard Investment Equity Growth Fund
+      - Standard Investment Fixed Income Fund
+      - Standard Investment Balanced Fund
+      - Mansa X Special Fund (KES)
+      - Mansa X Special Fund (USD)
+      - Mansa X Shariah Special Fund (KES)
+      - Mansa X Shariah Special Fund (USD)
+  - provider: Faida Unit Trust Funds
+    aliases: [Faida, Faida Investment Bank]
+    products:
+      - Hazina Bond Fund
+      - Angaza Money Market Fund
+      - Oak Multi Asset Special Fund
+      - Oak Multi Assets Special USD Fund
+  - provider: Taifa Unit Trust Funds
+    aliases: [Taifa]
+    products:
+      - Taifa Money Market Fund (KES)
+      - Taifa Money Market Fund (USD)
+  - provider: Stanbic Unit Trust Funds
+    aliases: [Stanbic, Stanbic Asset Management, Stanbic Unit Trust]
+    products:
+      - Stanbic Money Market Fund
+      - Stanbic Fixed Income Fund
+      - Stanbic Fixed Income Fund (USD)
+      - Stanbic Balanced Fund
+      - Stanbic Equity Fund
+  - provider: Spearhead Africa
+    aliases: [Spearhead]
+    products:
+      - Spearhead Africa Infrastructure Special Fund
+  - provider: Rencap Unit Trust Scheme
+    aliases: [Rencap]
+    products:
+      - Rencap Money Market Fund (KES)
+      - Rencap Money Market Fund (USD)
+      - Rencap Balanced Fund (KES)
+      - Rencap Fixed Income Fund (KES)
+      - Rencap Fixed Income Fund (USD)
+  - provider: Mayfair Umbrella Collective Investment Scheme
+    aliases: [Mayfair]
+    products:
+      - Mayfair Money Market Fund
+      - Mayfair Fixed Income Fund
+      - Mayfair Balanced Fund
+      - Mayfair Equity Fund
+  - provider: Investcent Partners Trust Fund
+    aliases: [Investcent]
+    products:
+      - Investcent Multi Asset Special Fund (KES)
+      - Investcent Multi Asset Special Fund (USD)
+      - Investcent Shariah Multi Asset Special Fund (KES)
+      - Investcent Shariah Multi Asset Special Fund (USD)
+      - Investcent Green Special Fund (KES)
+      - Investcent Green Special Fund (USD)
+      - Investcent Money Market Fund (KES)
+      - Investcent Money Market Fund (USD)
+      - Investcent Hedge Fund (KES)
+      - Investcent Hedge Fund (USD)
+  - provider: GulfCap Unit Trust Funds
+    aliases: [GCIB, GulfCap]
+    products:
+      - GCIB Money Market Fund
+      - GCIB Fixed Income Fund
+      - GCIB Multi-Asset Special Fund
+      - GCIB Shariah Multi-Asset Special Fund
+      - GCIB Shariah Fixed Income Fund
+      - GulfCap Fixed Income Fund
+      - GulfCap Money Market Fund
+  - provider: CPF Unit Trust Funds
+    aliases: [CPF]
+    products:
+      - CPF Money Market Fund
+      - CPF Bond Fund
+      - CPF USD Money Market Fund
+      - CPF Balanced Fund
+      - CPF Multi-Asset Special Fund (KES)
+  - provider: Arvocap Unit Trust Scheme
+    aliases: [Arvocap]
+    products:
+      - Arvocap Money Market Fund
+      - Arvocap Ngao Fixed Income Distribution Fund
+      - Arvocap Almasi Fixed Income Accumulation Fund
+      - Arvocap Eurofix Fixed Income Special Fund
+      - Arvocap Thamani Equity Fund
+      - Arvocap Africa Equity Special Fund
+      - Arvocap Global Equity Special Fund
+      - Arvocap Multi Asset Strategy Special Fund (USD)
+      - Arvocap Global Sharia Equity Special Fund (USD)
+      - Arvocap Mabruk Sharia Special Fund (KES)
+  - provider: MyXENO Unit Trust Scheme
+    aliases: [MyXENO, Xeno]
+    products:
+      - Xeno Kenya Money Market Fund
+      - Xeno Kenya Bond Fund
+      - Xeno Kenya Regional East Africa Equity Fund
+      - Xeno Kenya East Africa Equity Fund (KES)
+      - Xeno Kenya Money Market Fund (USD)
+      - Xeno Kenya Fixed Income Fund (USD)
+      - Xeno Kenya International Equity Special Fund (USD)
+  - provider: VCG Offshore Opportunities Special Fund
+    aliases: [VCG]
+    products:
+      - Offshore Equities Megatrends Special Fund (USD)
+      - Offshore Diversified Special Fund of Funds (USD)
+      - Offshore Fixed Income Special Fund (USD)
+      - Offshore Technology Revolution Special Fund (USD)
+      - Diversified Commodities Special Fund (USD)
+      - Offshore Multi-Asset Special Fund (USD)
+      - Managed Oil Special Fund (USD)
+      - Managed Agriculture Special Fund (USD)
+  - provider: Octagon Unit Trust Scheme
+    aliases: [Octagon]
+    products:
+      - Octagon Money Market Fund
+      - Octagon Balanced Fund
+      - Octagon Equity Fund
+      - Octagon Fixed Income Fund
+      - Octagon USD Dollar Money Market Fund
+  - provider: Ziidi Collective Investment Scheme
+    aliases: [Ziidi]
+    products:
+      - Ziidi Money Market Fund
+      - Ziidi Shariah Money Market Fund
+  - provider: Capital A Unit Trust Scheme
+    aliases: [Capital A]
+    products:
+      - Capital A Rejesha Money Market Fund (KES)
+      - Capital A Rejesha Money Market Fund (USD)
+      - Capital A Rejesha Fixed Income Fund (KES)
+      - Capital A Rejesha Fixed Income Fund (USD)
+      - Capital A Rejesha Balanced Fund (KES)
+      - Capital A Rejesha Balanced Fund (USD)
+      - Capital A Rejesha Equity Fund (KES)
+      - Capital A Rejesha Equity Fund (USD)
+      - Capital A Multi Asset Strategy Special Fund (KES)
+      - Capital A Multi Asset Strategy Special Fund (USD)
+  - provider: Swala Capital Unit Trust Fund
+    aliases: [Swala]
+    products:
+      - Swala Money Market Fund
+      - Swala Balanced Fund
+      - Swala Equity Fund
+  - provider: Globetec Unit Trust Scheme
+    aliases: [Globetec]
+    products:
+      - Globetec Money Market Fund
+      - Globetec Equity Fund
+      - Globetec Fixed Income Fund
+      - Globetec Dollar Fixed Income Fund
+      - Globetec Multi-Asset Special Fund
+      - Globetec Dollar Multi-Asset Special Fund
+  - provider: Tradiam Collective Investment Scheme
+    aliases: [Tradiam, Wekeza]
+    products:
+      - Wekeza Money Market Fund
+  - provider: Zamara Unit Trust Scheme
+    aliases: [Zamara]
+    products:
+      - Zamara Money Market Fund (KES)
+      - Zamara Money Market Fund (USD)
+      - Zamara Global Balanced Special Fund (USD)
+      - Zamara Fixed Income Fund (KES)
+  - provider: Ziidi Biashara Unit Trust
+    aliases: [Ziidi Biashara]
+    products:
+      - Ziidi Biashara Money Market Fund
+  - provider: Kibaba Unit Trust Funds
+    aliases: [Kibaba]
+    products:
+      - Kibaba Multi-Asset Special Fund (KES)
+      - Kibaba Multi-Asset Special Fund (USD)
+  - provider: Pergamon Unit Trust Scheme
+    aliases: [Pergamon]
+    products:
+      - Pergamon Money Market Fund (KES)
+      - Pergamon Money Market Fund (USD)
+      - Pergamon Equity Fund
+      - Pergamon Fixed Income Fund
+      - Pergamon Balanced Fund
+      - Pergamon Special Diversified Income Fund (KES)
+  - provider: Meridian Asset Management Scheme
+    aliases: [Meridian]
+    products:
+      - Selective Alpha Multi Asset Special Fund
+  - provider: EDC Kenya Unit Trust Funds
+    aliases: [EDC, EDC Kenya]
+    products:
+      - EDC Kenya Balanced Fund
+      - EDC Kenya KES Fixed Income Fund
+      - EDC Kenya Dollar Fixed Income Fund
+      - EDC Kenya Equity Fund
+      - EDC Kenya Money Market Fund

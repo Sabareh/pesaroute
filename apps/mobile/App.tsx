@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PesaRouteApiClient } from "./src/api/client";
 import type { BillingEntitlementSnapshot } from "./src/api/client";
+import { AssessmentsScreen } from "./src/screens/AssessmentsScreen";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import { maliPrime } from "./src/components/maliprime";
 import { mockProductCategories, mockProductPassports } from "./src/data/mockData";
@@ -13,10 +14,14 @@ import { BetaSupportScreen } from "./src/screens/BetaSupportScreen";
 import { HealthDebugScreen } from "./src/screens/HealthDebugScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { JournalScreen } from "./src/screens/JournalScreen";
+import { LandDecisionSafetyScreen } from "./src/screens/LandDecisionSafetyScreen";
 import { LearnScreen } from "./src/screens/LearnScreen";
+import { MarketplaceScreen } from "./src/screens/MarketplaceScreen";
 import { NotificationsScreen } from "./src/screens/NotificationsScreen";
 import { PortfolioMirrorScreen } from "./src/screens/PortfolioMirrorScreen";
+import { PracticeScreen } from "./src/screens/PracticeScreen";
 import { ProductPassportsScreen } from "./src/screens/ProductPassportsScreen";
+import { ProductSimulationScreen } from "./src/screens/ProductSimulationScreen";
 import { ProfessionalsScreen } from "./src/screens/ProfessionalsScreen";
 import { PricingScreen } from "./src/screens/PricingScreen";
 import { PrivacyOnboardingScreen } from "./src/screens/PrivacyOnboardingScreen";
@@ -24,23 +29,29 @@ import { PrivacySettingsScreen } from "./src/screens/PrivacySettingsScreen";
 import { RouteResultScreen } from "./src/screens/RouteResultScreen";
 import { ScamCheckerScreen } from "./src/screens/ScamCheckerScreen";
 import { SimulatorsScreen } from "./src/screens/SimulatorsScreen";
+import { TermsScreen } from "./src/screens/TermsScreen";
 import { useCloudSync } from "./src/sync/useCloudSync";
-import type { AmountRangeId, CatalogState, GoalId, JournalEntryDraft, RouteProfile } from "./src/types";
+import type { AmountRangeId, CatalogState, GoalId, JournalEntryDraft, ReviewPrefill, RouteProfile } from "./src/types";
 import { buildRouteProfile } from "./src/utils/routePlanner";
 
 type ScreenKey =
   | "home"
   | "learn"
+  | "practice"
+  | "assessments"
   | "route"
   | "simulators"
   | "scam"
   | "journal"
   | "portfolio"
+  | "land"
+  | "marketplace"
   | "passports"
   | "professionals"
   | "pricing"
   | "notifications"
   | "support"
+  | "terms"
   | "privacy"
   | "more"
   | "debug"
@@ -51,38 +62,48 @@ const apiClient = new PesaRouteApiClient();
 const primaryTabs: Array<{ key: ScreenKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: "home", label: "Home", icon: "navigate" },
   { key: "learn", label: "Learn", icon: "book" },
+  { key: "practice", label: "Practice", icon: "barbell" },
   { key: "simulators", label: "Simulate", icon: "calculator" },
-  { key: "journal", label: "Journal", icon: "create" },
   { key: "privacy", label: "Profile", icon: "person-circle" }
 ];
 
-type MoreScreenKey = Exclude<ScreenKey, "home" | "learn" | "simulators" | "journal" | "privacy" | "more" | "auth">;
+type MoreScreenKey = Exclude<ScreenKey, "home" | "learn" | "practice" | "simulators" | "privacy" | "more" | "auth">;
 
 const secondaryTabs: Array<{ key: MoreScreenKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+  { key: "assessments", label: "Assess", icon: "clipboard" },
+  { key: "journal", label: "Journal", icon: "create" },
   { key: "route", label: "Route", icon: "map" },
   { key: "scam", label: "Scam check", icon: "shield-checkmark" },
   { key: "portfolio", label: "Mirror", icon: "pie-chart" },
+  { key: "marketplace", label: "Market", icon: "storefront" },
+  { key: "land", label: "Land", icon: "map" },
   { key: "passports", label: "Passports", icon: "document-text" },
   { key: "professionals", label: "Review", icon: "people" },
   { key: "pricing", label: "Premium", icon: "diamond" },
   { key: "notifications", label: "Inbox", icon: "notifications" },
   { key: "support", label: "Help", icon: "help-circle" },
+  { key: "terms", label: "Terms", icon: "document" },
   { key: "debug", label: "API", icon: "pulse" }
 ];
 
 const screenLabels: Record<ScreenKey, string> = {
   home: "Home",
   learn: "Learn",
+  practice: "Practice",
+  assessments: "Assessments",
   route: "Route",
   simulators: "Simulators",
   scam: "Scam checker",
   journal: "Journal",
   portfolio: "Portfolio mirror",
+  land: "Land decision safety",
+  marketplace: "Marketplace",
   passports: "Product passports",
   professionals: "Professional review",
   pricing: "Premium",
   notifications: "Inbox",
   support: "Help",
+  terms: "Terms",
   privacy: "Profile",
   more: "More",
   debug: "API",
@@ -90,14 +111,19 @@ const screenLabels: Record<ScreenKey, string> = {
 };
 
 const moreDescriptions: Record<MoreScreenKey, string> = {
+  assessments: "Money profile, risk, scam, and liquidity self-checks.",
+  journal: "Private investment decision journal.",
   route: "Learning route from amount and goal.",
   scam: "Check investment red flags.",
   portfolio: "Manual portfolio mirror and summary.",
+  land: "Check a land deal before you pay a deposit.",
+  marketplace: "Search, compare, and simulate products.",
   passports: "Search public product passports.",
   professionals: "Request scoped professional review.",
   pricing: "Premium and paid pack placeholders.",
   notifications: "Payment and review updates.",
   support: "Private beta feedback and support.",
+  terms: "Service boundaries and privacy notices.",
   debug: "Backend health and catalog checks."
 };
 
@@ -121,7 +147,11 @@ function Screen({
   onRefreshEntitlements,
   onSaveJournal,
   learningSimulatorContext,
+  forceGenericSimulator,
   onOpenLearningSimulator,
+  onOpenGenericSimulator,
+  onRequestReview,
+  reviewPrefill,
   onNavigateScreen,
   onOpenPricing,
   routeProfile,
@@ -132,9 +162,13 @@ function Screen({
   catalog: CatalogState;
   entitlements: BillingEntitlementSnapshot | null;
   learningSimulatorContext: { id: number; title: string } | null;
+  forceGenericSimulator: boolean;
   onAuthDone: () => void;
   onChooseRoute: (amountRangeId: AmountRangeId, goalId: GoalId) => void;
   onOpenLearningSimulator: (lesson?: { id: number; title: string } | null) => void;
+  onOpenGenericSimulator: () => void;
+  onRequestReview: (prefill: ReviewPrefill) => void;
+  reviewPrefill: ReviewPrefill | null;
   onOpenAuth: () => void;
   onOpenPricing: () => void;
   onNavigateScreen: (screen: ScreenKey) => void;
@@ -169,22 +203,56 @@ function Screen({
         />
       );
     case "simulators":
+      if (learningSimulatorContext || forceGenericSimulator) {
+        return (
+          <SimulatorsScreen
+            apiClient={apiClient}
+            auth={auth}
+            entitlements={entitlements}
+            learningLessonContext={learningSimulatorContext}
+            onLearningSimulationComplete={async (simulationRunId) => {
+              if (!auth || !learningSimulatorContext) return;
+              await apiClient.completeLearningLessonWithAction(
+                learningSimulatorContext.id,
+                { simulation_run_id: simulationRunId },
+                auth
+              );
+            }}
+            onOpenPricing={onOpenPricing}
+            onSaveJournal={onSaveJournal}
+          />
+        );
+      }
       return (
-        <SimulatorsScreen
+        <ProductSimulationScreen
           apiClient={apiClient}
           auth={auth}
           entitlements={entitlements}
-          learningLessonContext={learningSimulatorContext}
-          onLearningSimulationComplete={async (simulationRunId) => {
-            if (!auth || !learningSimulatorContext) return;
-            await apiClient.completeLearningLessonWithAction(
-              learningSimulatorContext.id,
-              { simulation_run_id: simulationRunId },
-              auth
-            );
-          }}
-          onOpenPricing={onOpenPricing}
           onSaveJournal={onSaveJournal}
+          onOpenPricing={onOpenPricing}
+          onOpenProfessionals={onRequestReview}
+          onOpenGenericSimulator={onOpenGenericSimulator}
+          onOpenPassports={() => onNavigateScreen("passports")}
+        />
+      );
+    case "practice":
+      return (
+        <PracticeScreen
+          apiClient={apiClient}
+          auth={auth}
+          entitlements={entitlements}
+          onOpenPricing={onOpenPricing}
+          onRequestAuth={onOpenAuth}
+        />
+      );
+    case "assessments":
+      return (
+        <AssessmentsScreen
+          apiClient={apiClient}
+          auth={auth}
+          entitlements={entitlements}
+          onOpenPricing={onOpenPricing}
+          onRequestAuth={onOpenAuth}
         />
       );
     case "scam":
@@ -222,10 +290,14 @@ function Screen({
           syncSummary={sync.syncSummary}
         />
       );
+    case "land":
+      return <LandDecisionSafetyScreen apiClient={apiClient} auth={auth} onRequestAuth={onOpenAuth} />;
+    case "marketplace":
+      return <MarketplaceScreen apiClient={apiClient} auth={auth} onRequestAuth={onOpenAuth} />;
     case "passports":
       return <ProductPassportsScreen apiClient={apiClient} catalog={catalog} />;
     case "professionals":
-      return <ProfessionalsScreen apiClient={apiClient} auth={auth} onRequestAuth={onOpenAuth} />;
+      return <ProfessionalsScreen apiClient={apiClient} auth={auth} onRequestAuth={onOpenAuth} prefill={reviewPrefill} />;
     case "pricing":
       return (
         <PricingScreen
@@ -241,18 +313,23 @@ function Screen({
       return <NotificationsScreen apiClient={apiClient} auth={auth} onRequestAuth={onOpenAuth} />;
     case "support":
       return <BetaSupportScreen apiClient={apiClient} auth={auth} />;
+    case "terms":
+      return <TermsScreen />;
     case "privacy":
       return (
-        <PrivacySettingsScreen
-          apiClient={apiClient}
-          auth={auth}
-          isAnonymous={isAnonymous}
-          isAuthenticated={isAuthenticated}
-          loading={loading}
-          onLogout={logout}
-          onOpenAuth={onOpenAuth}
-          user={user}
-        />
+        <View style={styles.profileTab}>
+          <PrivacySettingsScreen
+            apiClient={apiClient}
+            auth={auth}
+            isAnonymous={isAnonymous}
+            isAuthenticated={isAuthenticated}
+            loading={loading}
+            onLogout={logout}
+            onOpenAuth={onOpenAuth}
+            user={user}
+          />
+          <MoreScreen onNavigate={onNavigateScreen} />
+        </View>
       );
     case "more":
       return <MoreScreen onNavigate={onNavigateScreen} />;
@@ -276,6 +353,9 @@ function Screen({
           onChooseRoute={onChooseRoute}
           onOpenLearn={() => onNavigateScreen("learn")}
           onOpenScam={onOpenScam}
+          onOpenPractice={() => onNavigateScreen("practice")}
+          onOpenSimulate={() => onNavigateScreen("simulators")}
+          onOpenAssessments={() => onNavigateScreen("assessments")}
           onRefreshCatalog={onRefreshCatalog}
           selectedGoalId={routeProfile.goalId}
         />
@@ -315,6 +395,8 @@ function AppShell() {
   const [catalog, setCatalog] = useState<CatalogState>(initialCatalogState);
   const [entitlements, setEntitlements] = useState<BillingEntitlementSnapshot | null>(null);
   const [learningSimulatorContext, setLearningSimulatorContext] = useState<{ id: number; title: string } | null>(null);
+  const [forceGenericSimulator, setForceGenericSimulator] = useState(false);
+  const [reviewPrefill, setReviewPrefill] = useState<ReviewPrefill | null>(null);
   const sync = useCloudSync({ apiClient, auth, isAuthenticated });
   const catalogCacheRef = useRef({
     categories: initialCatalogState.categories,
@@ -383,13 +465,25 @@ function AppShell() {
   function navigateScreen(screen: ScreenKey) {
     if (screen !== "simulators") {
       setLearningSimulatorContext(null);
+    } else {
+      // Tapping the Simulate tab always returns to the product-aware flow.
+      setForceGenericSimulator(false);
+    }
+    if (screen !== "professionals") {
+      setReviewPrefill(null);
     }
     setActive(screen);
   }
 
   function openLearningSimulator(lesson?: { id: number; title: string } | null) {
     setLearningSimulatorContext(lesson ?? null);
+    setForceGenericSimulator(false);
     setActive("simulators");
+  }
+
+  function requestReview(prefill: ReviewPrefill) {
+    setReviewPrefill(prefill);
+    setActive("professionals");
   }
 
   function mainContent() {
@@ -413,11 +507,15 @@ function AppShell() {
         catalog={catalog}
         entitlements={entitlements}
         learningSimulatorContext={learningSimulatorContext}
+        forceGenericSimulator={forceGenericSimulator}
+        reviewPrefill={reviewPrefill}
         routeProfile={routeProfile}
         onAuthDone={() => setActive("privacy")}
         onChooseRoute={chooseRoute}
         onOpenAuth={() => setActive("auth")}
         onOpenLearningSimulator={openLearningSimulator}
+        onOpenGenericSimulator={() => setForceGenericSimulator(true)}
+        onRequestReview={requestReview}
         onNavigateScreen={navigateScreen}
         onOpenPricing={() => setActive("pricing")}
         onOpenScam={() => setActive("scam")}
@@ -542,6 +640,7 @@ const styles = StyleSheet.create({
   tabLabel: { color: maliPrime.colors.textTertiary, fontSize: 10, fontWeight: "700" },
   tabLabelActive: { color: maliPrime.colors.textPrimary },
   pressed: { opacity: 0.72 },
+  profileTab: { gap: maliPrime.spacing.xl },
   moreScreen: { gap: maliPrime.spacing.lg },
   moreTitle: { color: maliPrime.colors.textPrimary, fontSize: 30, fontWeight: "700", lineHeight: 36 },
   moreCopy: { color: maliPrime.colors.textSecondary, fontSize: 15, lineHeight: 22 },

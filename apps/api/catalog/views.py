@@ -68,6 +68,12 @@ class ProductPassportListView(PublicCatalogCacheMixin, generics.ListAPIView):
         if regulator_category:
             queryset = queryset.filter(regulator_category__iexact=regulator_category)
 
+        # Free-tier education passports are visible to everyone; clients can still
+        # filter explicitly (e.g. ?audience=free) to show the free-tier baseline.
+        audience = self.request.query_params.get("audience")
+        if audience:
+            queryset = queryset.filter(audience=audience)
+
         minimum_amount_lte = self.request.query_params.get("minimum_amount_lte")
         if minimum_amount_lte:
             try:

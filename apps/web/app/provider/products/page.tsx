@@ -17,7 +17,7 @@ export default function ProviderProductsPage() {
           <SectionHeader
             eyebrow="Product list"
             title="Provider passport inventory"
-            body="Each passport is an educational page. Public cards must avoid paid rankings, promised returns, or execution-style recommendations."
+            body="Each passport is reviewed for clear category, risk, liquidity, source, and external verification context."
           />
           <TrustBadge tone="emerald">Educational pages</TrustBadge>
         </div>
