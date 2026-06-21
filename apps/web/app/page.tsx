@@ -292,19 +292,21 @@ export default function HomePage() {
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-bottom opacity-80"
         />
-        {/* scrim keeps the centred copy legible over the skyline */}
-        <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,24,43,0.45) 0%, rgba(16,24,43,0.15) 50%, rgba(16,24,43,0.45) 100%)" }} aria-hidden />
-        <div className="relative mx-auto max-w-[1200px] px-5 py-[76px] text-center sm:px-8">
-          <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-white/50">Practice today · Invest tomorrow</p>
-          <h2 className="mt-3.5 text-[34px] font-extrabold tracking-[-0.03em] text-white sm:text-[48px]">
-            Learn<span style={{ color: ACCENT }}>.</span> Simulate<span style={{ color: ACCENT }}>.</span> Invest<span style={{ color: ACCENT }}>.</span> Grow<span style={{ color: ACCENT }}>.</span>
-          </h2>
-          <p className="mx-auto mt-4 max-w-[560px] text-[17px] leading-[1.6] text-white/70">
-            Build your investment knowledge and confidence through real market simulation — risk-free.
-          </p>
-          <Link href="/simulate" className={`${greenBtn} mt-7 px-7 py-[15px] text-[16px]`}>
-            Start Simulating <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
-          </Link>
+        {/* scrim darkens the left (copy) and stays clear on the right (skyline) */}
+        <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(16,24,43,0.78) 0%, rgba(16,24,43,0.5) 38%, rgba(16,24,43,0.08) 68%, rgba(16,24,43,0) 100%)" }} aria-hidden />
+        <div className="relative mx-auto max-w-[1200px] px-5 py-[76px] sm:px-8">
+          <div className="max-w-[600px] text-left">
+            <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-white/50">Practice today · Invest tomorrow</p>
+            <h2 className="mt-3.5 text-[34px] font-extrabold tracking-[-0.03em] text-white sm:text-[48px]">
+              Learn<span style={{ color: ACCENT }}>.</span> Simulate<span style={{ color: ACCENT }}>.</span> Invest<span style={{ color: ACCENT }}>.</span> Grow<span style={{ color: ACCENT }}>.</span>
+            </h2>
+            <p className="mt-4 max-w-[520px] text-[17px] leading-[1.6] text-white/70">
+              Build your investment knowledge and confidence through real market simulation — risk-free.
+            </p>
+            <Link href="/simulate" className={`${greenBtn} mt-7 px-7 py-[15px] text-[16px]`}>
+              Start Simulating <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
+            </Link>
+          </div>
         </div>
       </section>
 
