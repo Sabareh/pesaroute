@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PesaRouteApiClient } from "./src/api/client";
 import type { BillingEntitlementSnapshot } from "./src/api/client";
@@ -126,6 +126,51 @@ const moreDescriptions: Record<MoreScreenKey, string> = {
   terms: "Service boundaries and privacy notices.",
   debug: "Backend health and catalog checks."
 };
+
+const DRAWER_WIDTH = Math.min(312, Math.round(Dimensions.get("window").width * 0.84));
+
+// Left navigation drawer: 13 destinations grouped, replacing the bottom tab bar.
+const drawerGroups: Array<{ group: string; items: Array<{ key: ScreenKey; label: string; icon: keyof typeof Ionicons.glyphMap }> }> = [
+  {
+    group: "Main",
+    items: [
+      { key: "home", label: "Home", icon: "home-outline" },
+      { key: "learn", label: "Learn", icon: "book-outline" },
+      { key: "practice", label: "Practice", icon: "barbell-outline" },
+      { key: "simulators", label: "Simulate", icon: "calculator-outline" },
+      { key: "assessments", label: "Assessments", icon: "clipboard-outline" }
+    ]
+  },
+  {
+    group: "Money",
+    items: [
+      { key: "marketplace", label: "Marketplace", icon: "storefront-outline" },
+      { key: "passports", label: "Passports", icon: "document-text-outline" },
+      { key: "route", label: "Route planner", icon: "map-outline" },
+      { key: "portfolio", label: "Portfolio mirror", icon: "pie-chart-outline" },
+      { key: "journal", label: "Journal", icon: "create-outline" }
+    ]
+  },
+  {
+    group: "Safety & account",
+    items: [
+      { key: "scam", label: "Scam checker", icon: "shield-checkmark-outline" },
+      { key: "land", label: "Land safety", icon: "leaf-outline" },
+      { key: "professionals", label: "Professional review", icon: "people-outline" },
+      { key: "privacy", label: "Settings", icon: "settings-outline" }
+    ]
+  },
+  {
+    group: "More",
+    items: [
+      { key: "pricing", label: "Premium", icon: "diamond-outline" },
+      { key: "notifications", label: "Inbox", icon: "notifications-outline" },
+      { key: "support", label: "Help", icon: "help-circle-outline" },
+      { key: "terms", label: "Terms", icon: "document-outline" },
+      { key: "debug", label: "API", icon: "pulse-outline" }
+    ]
+  }
+];
 
 const initialCatalogState: CatalogState = {
   categories: mockProductCategories,
@@ -388,9 +433,80 @@ function MoreScreen({ onNavigate }: { onNavigate: (screen: ScreenKey) => void })
   );
 }
 
+function NavDrawer({
+  active,
+  user,
+  isAuthenticated,
+  onNavigate,
+  onSignOut,
+  onOpenAuth
+}: {
+  active: ScreenKey;
+  user: { first_name?: string | null; username?: string | null } | null;
+  isAuthenticated: boolean;
+  onNavigate: (screen: ScreenKey) => void;
+  onSignOut: () => void;
+  onOpenAuth: () => void;
+}) {
+  const name = user?.first_name || user?.username || "Guest";
+  const initials = name.slice(0, 2).toUpperCase();
+  return (
+    <View style={styles.drawerInner}>
+      <View style={styles.drawerUser}>
+        <View style={styles.drawerAvatar}>
+          <Text style={styles.drawerAvatarText}>{initials}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text numberOfLines={1} style={styles.drawerName}>
+            {name}
+          </Text>
+          {isAuthenticated ? (
+            <View style={styles.drawerBadge}>
+              <Text style={styles.drawerBadgeText}>Member</Text>
+            </View>
+          ) : (
+            <Text style={styles.drawerGuest}>Anonymous mode</Text>
+          )}
+        </View>
+      </View>
+
+      <ScrollView style={styles.drawerScrollView} contentContainerStyle={styles.drawerScroll} showsVerticalScrollIndicator={false}>
+        {drawerGroups.map((group) => (
+          <View key={group.group} style={styles.drawerGroup}>
+            <Text style={styles.drawerGroupLabel}>{group.group.toUpperCase()}</Text>
+            {group.items.map((item) => {
+              const selected = item.key === active;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  key={item.key}
+                  onPress={() => onNavigate(item.key)}
+                  style={({ pressed }) => [styles.drawerItem, selected && styles.drawerItemActive, pressed && styles.pressed]}
+                >
+                  <Ionicons name={item.icon} size={20} color={selected ? "#38C772" : "rgba(237,241,248,0.66)"} />
+                  <Text style={[styles.drawerItemText, selected && styles.drawerItemTextActive]}>{item.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </ScrollView>
+
+      <Pressable accessibilityRole="button" onPress={isAuthenticated ? onSignOut : onOpenAuth} style={({ pressed }) => [styles.drawerSignOut, pressed && styles.pressed]}>
+        <Ionicons name={isAuthenticated ? "log-out-outline" : "log-in-outline"} size={18} color="#E2685E" />
+        <Text style={styles.drawerSignOutText}>{isAuthenticated ? "Sign out" : "Sign in"}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 function AppShell() {
-  const { auth, initializing, isAnonymous, isAuthenticated, needsPrivacyOnboarding } = useAuth();
+  const { auth, initializing, isAnonymous, isAuthenticated, logout, needsPrivacyOnboarding, user } = useAuth();
   const [active, setActive] = useState<ScreenKey>("home");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const scrimOpacity = useRef(new Animated.Value(0)).current;
   const [routeProfile, setRouteProfile] = useState<RouteProfile>(() => buildRouteProfile("5k-20k", "first-investment"));
   const [catalog, setCatalog] = useState<CatalogState>(initialCatalogState);
   const [entitlements, setEntitlements] = useState<BillingEntitlementSnapshot | null>(null);
@@ -462,6 +578,23 @@ function AppShell() {
     setActive("route");
   }
 
+  function openDrawer() {
+    setDrawerOpen(true);
+    Animated.parallel([
+      Animated.timing(drawerX, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(scrimOpacity, { toValue: 1, duration: 220, useNativeDriver: true })
+    ]).start();
+  }
+
+  function closeDrawer() {
+    Animated.parallel([
+      Animated.timing(drawerX, { toValue: -DRAWER_WIDTH, duration: 200, useNativeDriver: true }),
+      Animated.timing(scrimOpacity, { toValue: 0, duration: 200, useNativeDriver: true })
+    ]).start(({ finished }) => {
+      if (finished) setDrawerOpen(false);
+    });
+  }
+
   function navigateScreen(screen: ScreenKey) {
     if (screen !== "simulators") {
       setLearningSimulatorContext(null);
@@ -473,6 +606,7 @@ function AppShell() {
       setReviewPrefill(null);
     }
     setActive(screen);
+    closeDrawer();
   }
 
   function openLearningSimulator(lesson?: { id: number; title: string } | null) {
@@ -528,17 +662,28 @@ function AppShell() {
   }
 
   const showTabs = !initializing && (isAnonymous || isAuthenticated) && !needsPrivacyOnboarding && active !== "auth";
-  const primaryTabKeys = primaryTabs.map((tab) => tab.key);
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <View>
-          <Text style={styles.brand}>PesaRoute</Text>
-          <Text style={styles.headerScreen}>{needsPrivacyOnboarding ? "Privacy setup" : title}</Text>
+        <View style={styles.headerLeft}>
+          {showTabs ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Open menu" onPress={openDrawer} style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
+              <Ionicons name="menu" size={24} color={maliPrime.colors.textPrimary} />
+            </Pressable>
+          ) : null}
+          <View>
+            <Text style={styles.brand}>PesaRoute</Text>
+            <Text style={styles.headerScreen}>{needsPrivacyOnboarding ? "Privacy setup" : title}</Text>
+          </View>
         </View>
         <View style={styles.headerRight}>
+          {showTabs ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Inbox" onPress={() => navigateScreen("notifications")} style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
+              <Ionicons name="notifications-outline" size={20} color={maliPrime.colors.textSecondary} />
+            </Pressable>
+          ) : null}
           <Text style={styles.mode}>{catalog.source.toUpperCase()}</Text>
         </View>
       </View>
@@ -550,26 +695,25 @@ function AppShell() {
           {mainContent()}
         </ScrollView>
       </KeyboardAvoidingView>
-      {showTabs ? (
-        <View style={styles.tabBar}>
-          <View style={styles.tabContent}>
-            {primaryTabs.map((tab) => {
-              const selected = tab.key === active || (tab.key === "more" && !primaryTabKeys.includes(active));
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  key={tab.key}
-                  onPress={() => navigateScreen(tab.key)}
-                  style={({ pressed }) => [styles.tab, selected && styles.tabActive, pressed && styles.pressed]}
-                >
-                  <Ionicons name={tab.icon} size={20} color={selected ? maliPrime.colors.textPrimary : maliPrime.colors.textTertiary} />
-                  <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>{tab.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+      {showTabs && drawerOpen ? (
+        <>
+          <Animated.View style={[styles.scrim, { opacity: scrimOpacity }]} pointerEvents="auto">
+            <Pressable style={styles.scrimFill} onPress={closeDrawer} accessibilityRole="button" accessibilityLabel="Close menu" />
+          </Animated.View>
+          <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerX }] }]}>
+            <NavDrawer
+              active={active}
+              user={user}
+              isAuthenticated={isAuthenticated}
+              onNavigate={navigateScreen}
+              onSignOut={() => {
+                closeDrawer();
+                logout();
+              }}
+              onOpenAuth={() => navigateScreen("auth")}
+            />
+          </Animated.View>
+        </>
       ) : null}
     </SafeAreaView>
   );
@@ -657,5 +801,54 @@ const styles = StyleSheet.create({
   },
   moreItemText: { flex: 1 },
   moreItemTitle: { color: maliPrime.colors.textPrimary, fontSize: 15, fontWeight: "700" },
-  moreItemMeta: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 3 }
+  moreItemMeta: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 3 },
+  headerLeft: { alignItems: "center", flexDirection: "row", gap: 10 },
+  iconBtn: { alignItems: "center", borderRadius: 999, height: 40, justifyContent: "center", width: 40 },
+  scrim: { backgroundColor: "rgba(17,17,15,0.45)", bottom: 0, left: 0, position: "absolute", right: 0, top: 0, zIndex: 40 },
+  scrimFill: { flex: 1 },
+  drawer: { backgroundColor: "#10182B", bottom: 0, left: 0, position: "absolute", top: 0, width: DRAWER_WIDTH, zIndex: 50 },
+  drawerInner: { flex: 1 },
+  drawerUser: {
+    alignItems: "center",
+    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 18
+  },
+  drawerAvatar: { alignItems: "center", backgroundColor: "rgba(56,199,114,0.18)", borderRadius: 999, height: 44, justifyContent: "center", width: 44 },
+  drawerAvatarText: { color: "#38C772", fontSize: 16, fontWeight: "800" },
+  drawerName: { color: "#EDF1F8", fontSize: 16, fontWeight: "700" },
+  drawerBadge: { alignSelf: "flex-start", backgroundColor: "rgba(56,199,114,0.18)", borderRadius: 999, marginTop: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  drawerBadgeText: { color: "#38C772", fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
+  drawerGuest: { color: "rgba(237,241,248,0.5)", fontSize: 12, marginTop: 3 },
+  drawerScrollView: { flex: 1 },
+  drawerScroll: { paddingBottom: 12, paddingHorizontal: 12 },
+  drawerGroup: { marginTop: 10 },
+  drawerGroupLabel: { color: "rgba(237,241,248,0.42)", fontSize: 11, fontWeight: "700", letterSpacing: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  drawerItem: {
+    alignItems: "center",
+    borderLeftColor: "transparent",
+    borderLeftWidth: 3,
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12
+  },
+  drawerItemActive: { backgroundColor: "rgba(26,107,69,0.22)", borderLeftColor: "#38C772" },
+  drawerItemText: { color: "rgba(237,241,248,0.66)", fontSize: 14, fontWeight: "500" },
+  drawerItemTextActive: { color: "#38C772", fontWeight: "700" },
+  drawerSignOut: {
+    alignItems: "center",
+    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 16
+  },
+  drawerSignOutText: { color: "#E2685E", fontSize: 14, fontWeight: "700" }
 });
