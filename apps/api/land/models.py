@@ -270,3 +270,32 @@ class LandSubcountyMarket(models.Model):
 
     def __str__(self) -> str:
         return f"{self.county.name} / {self.name}"
+
+
+class LandListing(models.Model):
+    """A sponsored land/property development advertised in a county.
+
+    Always clearly labelled Sponsored. PesaRoute does NOT endorse listings; this
+    is an advertising surface kept separate from neutral county market data and it
+    never reorders the map.
+    """
+
+    county = models.ForeignKey(LandCountyMarket, related_name="listings", on_delete=models.CASCADE)
+    name = models.CharField(max_length=160)
+    kind = models.CharField(max_length=80)  # e.g. "Serviced plots", "Apartments"
+    place = models.CharField(max_length=160)
+    price_kes = models.DecimalField(max_digits=14, decimal_places=2)
+    tag1 = models.CharField(max_length=60, blank=True)
+    tag2 = models.CharField(max_length=60, blank=True)
+    advertiser = models.CharField(max_length=160, blank=True)
+    listing_url = models.URLField(blank=True)
+    is_sponsored = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["county", "is_active"])]
+
+    def __str__(self) -> str:
+        return f"{self.county.name} / {self.name}"

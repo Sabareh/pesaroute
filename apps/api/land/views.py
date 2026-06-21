@@ -300,4 +300,4 @@ class LandCountyMarketListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = LandCountyMarketSerializer
     pagination_class = None
-    queryset = LandCountyMarket.objects.prefetch_related("subcounties").all()
+    queryset = LandCountyMarket.objects.prefetch_related("subcounties", "listings").all()

@@ -22,17 +22,10 @@ const TIER_CLS: Record<string, string> = {
   Emerging: "bg-primary/10 text-primary"
 };
 
-type Listing = { name: string; kind: string; place: string; price: string; tag1: string; tag2: string; img: string };
-const LISTINGS: Record<string, Listing[]> = {
-  Kiambu: [
-    { name: "Tilisi Gardens", kind: "Serviced plots", place: "Limuru, Kiambu", price: "KES 4.9M", tag1: "Title ready", tag2: "1/8 acre", img: "linear-gradient(135deg,#3E5A47,#6B8E76)" },
-    { name: "Tatu City Residences", kind: "Apartments", place: "Ruiru, Kiambu", price: "KES 6.8M", tag1: "8% est. yield", tag2: "2-bed", img: "linear-gradient(135deg,#42566E,#7188A3)" }
-  ],
-  _default: [
-    { name: "Greenpark Estate", kind: "Serviced plots", place: "Eastern bypass", price: "KES 2.4M", tag1: "Title ready", tag2: "50×100", img: "linear-gradient(135deg,#3E5A47,#6B8E76)" },
-    { name: "Coastline Apartments", kind: "Apartments", place: "Beachfront", price: "KES 9.5M", tag1: "9% est. yield", tag2: "Furnished", img: "linear-gradient(135deg,#42566E,#7188A3)" }
-  ]
-};
+const listingGradient = (kind: string) =>
+  /apartment|residence|flat|house|home/i.test(kind) ? "linear-gradient(135deg,#42566E,#7188A3)" : "linear-gradient(135deg,#3E5A47,#6B8E76)";
+const fmtKesM = (full: number) =>
+  full >= 1_000_000 ? `KES ${(full / 1_000_000).toFixed(full % 1_000_000 === 0 ? 0 : 1)}M` : full >= 1000 ? `KES ${Math.round(full / 1000)}k` : `KES ${Math.round(full)}`;
 
 type Metric = "price" | "apprec" | "yield";
 type Tab = "insights" | "listings" | "advertise";
@@ -125,7 +118,7 @@ export default function LandExplorePage() {
   const landTotal = Math.round((apprec + yld) * 10) / 10;
   const maxBar = 28;
   const barW = (v: number) => `${Math.min(100, (v / maxBar) * 100)}%`;
-  const listings = LISTINGS[selectedName] ?? LISTINGS._default;
+  const listings = sel?.listings ?? [];
 
   const legend =
     metric === "price"
@@ -278,28 +271,48 @@ export default function LandExplorePage() {
               <p className="mb-3.5 text-[12.5px] leading-[1.5] text-textSecondary">
                 Developments advertised in <strong className="text-textPrimary">{selectedName}</strong>. Sponsored, PesaRoute does not endorse listings; verify independently.
               </p>
-              {listings.map((l) => (
-                <div key={l.name} className="pr-card-hover mb-3 overflow-hidden rounded-2xl border border-border">
-                  <div className="relative flex h-[118px] items-center justify-center" style={{ background: l.img }}>
-                    <Home />
-                    <span className="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2.5 py-[3px] text-[10px] font-bold uppercase tracking-[0.04em] text-white">Sponsored</span>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2.5">
-                      <div>
-                        <p className="text-[15px] font-semibold text-textPrimary">{l.name}</p>
-                        <p className="mt-0.5 text-xs text-textSecondary">{l.kind} · {l.place}</p>
-                      </div>
-                      <p className="flex-none text-sm font-bold text-textPrimary">{l.price}</p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <span className="rounded-full bg-primary/10 px-2.5 py-[3px] text-[11px] font-semibold text-primary">{l.tag1}</span>
-                      <span className="rounded-full border border-border bg-surfaceSubtle px-2.5 py-[3px] text-[11px] font-semibold text-textSecondary">{l.tag2}</span>
-                    </div>
-                  </div>
+              {listings.length === 0 ? (
+                <div className="rounded-2xl border border-border bg-surfaceSubtle p-6 text-center">
+                  <p className="text-sm font-semibold text-textPrimary">No sponsored listings in {selectedName} yet</p>
+                  <p className="mt-1.5 text-[13px] leading-[1.5] text-textSecondary">When a verified developer advertises here, it appears, clearly tagged Sponsored.</p>
                 </div>
-              ))}
-              <p className="mt-1.5 text-[11.5px] leading-[1.5] text-textTertiary">{/* TODO(api): sponsored land listings endpoint. */}Listings are clearly separated from neutral county data and never reorder the map.</p>
+              ) : (
+                listings.map((l) => (
+                  <div key={l.id} className="pr-card-hover mb-3 overflow-hidden rounded-2xl border border-border">
+                    <div className="relative flex h-[118px] items-center justify-center" style={{ background: listingGradient(l.kind) }}>
+                      <Home />
+                      <span className="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2.5 py-[3px] text-[10px] font-bold uppercase tracking-[0.04em] text-white">Sponsored</span>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div>
+                          <p className="text-[15px] font-semibold text-textPrimary">{l.name}</p>
+                          <p className="mt-0.5 text-xs text-textSecondary">{l.kind} · {l.place}</p>
+                        </div>
+                        <p className="flex-none text-sm font-bold text-textPrimary">{fmtKesM(Number(l.price_kes))}</p>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {l.tag1 ? <span className="rounded-full bg-primary/10 px-2.5 py-[3px] text-[11px] font-semibold text-primary">{l.tag1}</span> : null}
+                        {l.tag2 ? <span className="rounded-full border border-border bg-surfaceSubtle px-2.5 py-[3px] text-[11px] font-semibold text-textSecondary">{l.tag2}</span> : null}
+                        {l.advertiser ? <span className="rounded-full border border-border bg-surfaceSubtle px-2.5 py-[3px] text-[11px] font-semibold text-textSecondary">{l.advertiser}</span> : null}
+                      </div>
+                      <div className="mt-3.5 flex gap-2">
+                        {l.listing_url ? (
+                          <a href={l.listing_url} target="_blank" rel="noreferrer" className="flex-1 rounded-full bg-primary py-2.5 text-center text-[13px] font-semibold text-white transition hover:bg-primaryDark">
+                            View listing
+                          </a>
+                        ) : (
+                          <span className="flex-1 cursor-default rounded-full bg-primary py-2.5 text-center text-[13px] font-semibold text-white">View listing</span>
+                        )}
+                        <Link href="/land/compare" className="flex-none rounded-full border border-border bg-surface px-3.5 py-2.5 text-center text-[13px] font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
+                          Compare
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <p className="mt-1.5 text-[11.5px] leading-[1.5] text-textTertiary">Listings are clearly separated from neutral county data and never reorder the map.</p>
             </>
           ) : (
             <>

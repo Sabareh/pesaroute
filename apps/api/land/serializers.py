@@ -4,6 +4,7 @@ from land.models import (
     LandCountyMarket,
     LandDocumentRecord,
     LandDueDiligenceItem,
+    LandListing,
     LandOpportunity,
     LandRiskFlag,
     LandSubcountyMarket,
@@ -155,8 +156,16 @@ class LandSubcountyMarketSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class LandListingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandListing
+        fields = ["id", "name", "kind", "place", "price_kes", "tag1", "tag2", "advertiser", "listing_url", "is_sponsored"]
+        read_only_fields = fields
+
+
 class LandCountyMarketSerializer(serializers.ModelSerializer):
     subcounties = LandSubcountyMarketSerializer(many=True, read_only=True)
+    listings = serializers.SerializerMethodField()
 
     class Meta:
         model = LandCountyMarket
@@ -169,6 +178,11 @@ class LandCountyMarketSerializer(serializers.ModelSerializer):
             "appreciation_pct",
             "rental_yield_pct",
             "subcounties",
+            "listings",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_listings(self, obj):
+        active = [listing for listing in obj.listings.all() if listing.is_active]
+        return LandListingSerializer(active, many=True).data

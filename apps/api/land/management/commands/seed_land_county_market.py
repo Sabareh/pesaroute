@@ -14,7 +14,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from land.models import LandCountyMarket, LandSubcountyMarket
+from land.models import LandCountyMarket, LandListing, LandSubcountyMarket
 
 # (name, region, tier, avg_price_per_acre[KES millions], appreciation %, rental yield %)
 COUNTY_DATA = [
@@ -66,6 +66,39 @@ COUNTY_DATA = [
     ("Busia", "Western", "Emerging", 2.5, 8.0, 6.0),
     ("Vihiga", "Western", "Emerging", 3.0, 8.0, 5.5),
 ]
+
+# Sponsored listings per county: (name, kind, place, price KES, tag1, tag2, advertiser)
+LISTINGS_DATA: dict[str, list[tuple]] = {
+    "Kiambu": [
+        ("Tilisi Gardens", "Serviced plots", "Limuru, Kiambu", 4_900_000, "Title ready", "1/8 acre", "Tilisi Developments"),
+        ("Tatu City Residences", "Apartments", "Ruiru, Kiambu", 6_800_000, "8% est. yield", "2-bed", "Tatu City"),
+    ],
+    "Nairobi": [
+        ("Karen Greens", "Serviced plots", "Karen, Nairobi", 28_000_000, "Title ready", "1/4 acre", "Karen Estates"),
+        ("Kilimani Heights", "Apartments", "Kilimani, Nairobi", 14_000_000, "6% est. yield", "2-bed", "Heights Ltd"),
+    ],
+    "Kajiado": [
+        ("Kitengela Acacia", "Serviced plots", "Kitengela, Kajiado", 1_400_000, "Title ready", "50x100", "Acacia Homes"),
+        ("Ngong Hills View", "Apartments", "Ngong, Kajiado", 5_200_000, "7% est. yield", "3-bed", "Hillside Devs"),
+    ],
+    "Mombasa": [
+        ("Nyali Beach Apartments", "Apartments", "Nyali, Mombasa", 12_500_000, "8% est. yield", "Furnished", "Coast Living"),
+        ("Mtwapa Plots", "Serviced plots", "Mtwapa, Mombasa", 2_800_000, "Title ready", "1/8 acre", "Mtwapa Realty"),
+    ],
+    "Kilifi": [
+        ("Watamu Beachfront", "Apartments", "Watamu, Kilifi", 9_500_000, "9% est. yield", "Furnished", "Watamu Homes"),
+        ("Kilifi Gardens", "Serviced plots", "Kilifi town, Kilifi", 1_900_000, "Title ready", "50x100", "Kilifi Realty"),
+    ],
+    "Nakuru": [
+        ("Naivasha Springs", "Serviced plots", "Naivasha, Nakuru", 2_200_000, "Title ready", "1/8 acre", "Springs Devs"),
+    ],
+    "Machakos": [
+        ("Malaa Ridge", "Serviced plots", "Malaa, Machakos", 900_000, "Title ready", "1/8 acre", "Ridge Properties"),
+    ],
+    "Uasin Gishu": [
+        ("Eldoret Pinnacle", "Serviced plots", "Eldoret, Uasin Gishu", 1_600_000, "Title ready", "50x100", "Pinnacle Homes"),
+    ],
+}
 
 
 def _slug(name: str) -> str:
@@ -124,4 +157,29 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING(f"Subcounty GeoJSON not found at {geo}; skipped subcounties."))
 
-        self.stdout.write(self.style.SUCCESS(f"Done. {len(counties)} counties, {sub_count} subcounties."))
+        # Sponsored listings (clearly labelled; kept separate from neutral data).
+        LandListing.objects.all().delete()
+        listing_rows: list[LandListing] = []
+        for cname, items in LISTINGS_DATA.items():
+            county = counties.get(cname)
+            if county is None:
+                continue
+            for name, kind, place, price, tag1, tag2, advertiser in items:
+                listing_rows.append(
+                    LandListing(
+                        county=county,
+                        name=name,
+                        kind=kind,
+                        place=place,
+                        price_kes=Decimal(str(price)),
+                        tag1=tag1,
+                        tag2=tag2,
+                        advertiser=advertiser,
+                    )
+                )
+        LandListing.objects.bulk_create(listing_rows)
+        self.stdout.write(f"Listings seeded: {len(listing_rows)}")
+
+        self.stdout.write(
+            self.style.SUCCESS(f"Done. {len(counties)} counties, {sub_count} subcounties, {len(listing_rows)} listings.")
+        )

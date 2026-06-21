@@ -681,6 +681,18 @@ export async function respondToLead(
 
 // --- Land county market (indicative averages joined to real county boundaries) ---
 export type CountyMarketSub = { name: string; avg_price_per_acre: string; appreciation_pct: string };
+export type CountyListing = {
+  id: number;
+  name: string;
+  kind: string;
+  place: string;
+  price_kes: string;
+  tag1: string;
+  tag2: string;
+  advertiser: string;
+  listing_url: string;
+  is_sponsored: boolean;
+};
 export type CountyMarket = {
   code: string;
   name: string;
@@ -690,6 +702,7 @@ export type CountyMarket = {
   appreciation_pct: string;
   rental_yield_pct: string;
   subcounties: CountyMarketSub[];
+  listings: CountyListing[];
 };
 
 export async function getLandCountyMarket(): Promise<CountyMarket[]> {
