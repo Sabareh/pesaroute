@@ -581,3 +581,100 @@ export async function requestProductReview(slug: string, body: Record<string, un
   if (!res.ok) throw new Error(`Review request failed (${res.status})`);
   return (await res.json()) as Record<string, unknown>;
 }
+
+// --- Professional portal: leads, scoped context, consultations ---------------
+// Scope keys a user can grant a professional. The portal redacts any field whose
+// scope is not present in a lead context's `allowed_scopes`.
+export type DataGrantScope =
+  | "consultation_context"
+  | "portfolio_summary"
+  | "portfolio_exact_values"
+  | "journal_entries"
+  | "contact_info"
+  | "selected_documents";
+
+export type ConsultationLead = {
+  id: number;
+  category: string;
+  amount_display_mode: "exact" | "rounded" | "range" | "hidden";
+  amount_range_min: string | null;
+  amount_range_max: string | null;
+  user_question: string; // "" until the professional is selected on this lead
+  timeline: string;
+  risk_preference: string;
+  preferred_language: string;
+  status: string;
+  selected_professional: number | null;
+  selected_professional_name: string;
+  created_at: string;
+  response_count: number;
+  offer_count: number;
+};
+
+export type ConsultationContext = {
+  consultation: {
+    id: number;
+    category: string;
+    topic: string;
+    user_question: string;
+    timeline: string;
+    risk_preference: string;
+    preferred_language: string;
+    status: string;
+    created_at: string;
+  };
+  allowed_scopes: DataGrantScope[];
+  contact_info?: { username: string; email: string; first_name: string; last_name: string } | null;
+  portfolio_summary?: {
+    asset_categories?: Record<string, number>;
+    asset_allocation?: Record<string, string>;
+    liquidity_score: number;
+    risk_concentration_note: string;
+    items_count: number;
+  } | null;
+  portfolio_exact_values?: Array<{ asset_type: string; provider_name: string; amount_exact: string | null }> | null;
+  journal_entries?: Array<{ id: number; goal: string; decision: string; reason: string; created_at: string }> | null;
+};
+
+export type ConsultationListItem = {
+  id: number;
+  category: string;
+  status: string;
+  platform_fee_amount: string | null;
+  scheduled_at: string | null;
+  created_at: string;
+};
+
+export async function getProfessionalLeads(token: string): Promise<ConsultationLead[]> {
+  const res = await fetch(`${mpBase()}/professional/leads/`, { headers: authHeaders(token), cache: "no-store" });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (Array.isArray(data) ? data : (data.results ?? [])) as ConsultationLead[];
+}
+
+export async function getProfessionalConsultations(token: string): Promise<ConsultationListItem[]> {
+  const res = await fetch(`${mpBase()}/professional/consultations/`, { headers: authHeaders(token), cache: "no-store" });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (Array.isArray(data) ? data : (data.results ?? [])) as ConsultationListItem[];
+}
+
+export async function getConsultationContext(leadId: number, token: string): Promise<ConsultationContext | null> {
+  const res = await fetch(`${mpBase()}/consultation-requests/${leadId}/context/`, { headers: authHeaders(token), cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as ConsultationContext;
+}
+
+export async function respondToLead(
+  leadId: number,
+  body: { response_text: string; next_steps?: string; proposed_fee?: string; estimated_duration?: string; available_slots_text?: string },
+  token: string
+): Promise<{ response: Record<string, unknown>; offer: Record<string, unknown> | null }> {
+  const res = await fetch(`${mpBase()}/professional/leads/${leadId}/respond/`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Could not send offer (${res.status})`);
+  return (await res.json()) as { response: Record<string, unknown>; offer: Record<string, unknown> | null };
+}

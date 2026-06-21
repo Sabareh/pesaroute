@@ -150,7 +150,7 @@ const SECTIONS: Section[] = [
   {
     key: "account",
     label: "Professionals",
-    href: "/professional/dashboard",
+    href: "/professional",
     prefixes: ["/professional", "/provider", "/payments", "/terms"],
     sidebar: [
       {
@@ -240,10 +240,11 @@ export function AppFrame({ children }: { children: ReactNode }) {
     setOpen(false);
   }, [pathname]);
 
-  // The landing page ("/") is a fully standalone marketing page: it ships its own
-  // emerald nav, FX ticker, and footer, so it does NOT use the app chrome at all.
+  // Standalone shells that ship their own chrome and must NOT use the app frame:
+  //  - "/"            the emerald marketing landing page
+  //  - "/professional" the verified-professional portal (its own pro top-nav + sidebar)
   // (Hooks above run unconditionally before this early return.)
-  if (pathname === "/") {
+  if (pathname === "/" || pathname === "/professional" || pathname.startsWith("/professional/")) {
     return <>{children}</>;
   }
 
