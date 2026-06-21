@@ -268,13 +268,17 @@ export function AppFrame({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-textPrimary">
       {/* Top navbar: primary sections. Stays the same on every page. */}
-      <header className="sticky top-0 z-50 h-14 border-b border-border bg-surface">
-        <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
+      <header className="sticky top-0 z-50 h-16 border-b border-border bg-surface">
+        <div className="flex h-16 items-center gap-3 px-3 sm:px-4">
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-textSecondary transition hover:bg-surfaceSubtle hover:text-textPrimary lg:hidden">
             <MenuIcon />
           </button>
           <Link href="/" className="flex shrink-0 items-center lg:w-[13rem]" aria-label="PesaRoute home">
-            <BrandLockup markSize={24} textClassName="text-[16px]" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-8 w-auto dark:hidden" />
+            <span className="hidden dark:inline-flex">
+              <BrandLockup markSize={24} textClassName="text-[16px]" />
+            </span>
           </Link>
           <nav className="hidden items-center gap-1 rounded-full border border-border bg-surfaceSubtle p-1 md:flex">
             {SECTIONS.map((s) => {
@@ -310,10 +314,10 @@ export function AppFrame({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {open ? <div onClick={() => setOpen(false)} className="fixed inset-0 top-14 z-30 bg-black/40 lg:hidden" aria-hidden="true" /> : null}
+      {open ? <div onClick={() => setOpen(false)} className="fixed inset-0 top-16 z-30 bg-black/40 lg:hidden" aria-hidden="true" /> : null}
 
       {/* Contextual sidebar: changes with the active top-nav section. */}
-      <aside className={`fixed bottom-0 left-0 top-14 z-40 flex w-60 flex-col border-r border-sidebarBorder bg-sidebar transition-transform duration-200 ${fullWidth ? "" : "lg:translate-x-0"} ${open ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed bottom-0 left-0 top-16 z-40 flex w-60 flex-col border-r border-sidebarBorder bg-sidebar transition-transform duration-200 ${fullWidth ? "" : "lg:translate-x-0"} ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between px-5 py-3 lg:hidden">
           <span className="text-xs font-semibold uppercase tracking-wider text-sidebarMuted">{section.label}</span>
           <button type="button" onClick={() => setOpen(false)} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-md text-sidebarMuted hover:bg-sidebarActive">

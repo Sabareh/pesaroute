@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ChevronDown, LineChart, Lock, Play, ShieldCheck, UserRound } from "lucide-react";
 
 import { useAuth } from "./lib/auth";
 import { SignInModal } from "./learn/ui";
-import { BrandLockup } from "./components/BrandLockup";
 
 // The homepage is a fixed-light marketing surface — it renders standalone (AppFrame
 // chrome is suppressed on "/"), so it uses the design's literal palette rather than
@@ -96,6 +95,27 @@ export default function HomePage() {
   const { ready, isAuthenticated } = useAuth();
   const [signInOpen, setSignInOpen] = useState(false);
 
+  // Reveal sections as they scroll into view. CSS forces them visible under
+  // prefers-reduced-motion, so this is purely additive.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".pr-reveal"));
+    if (els.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            io.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
   const greenBtn =
     "inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#1A6B45] font-bold text-white transition-colors hover:bg-[#125436]";
 
@@ -112,9 +132,10 @@ export default function HomePage() {
 
       {/* ===================== NAV ===================== */}
       <header className="sticky top-0 z-50 border-b border-[rgba(17,17,15,0.08)] bg-white/[0.92] backdrop-blur-md backdrop-saturate-150">
-        <div className="mx-auto flex h-[70px] max-w-[1200px] items-center gap-5 px-5 sm:px-8">
+        <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-5 sm:px-8">
           <Link href="/" className="flex items-center" aria-label="PesaRoute home">
-            <BrandLockup markSize={30} textClassName="text-[22px]" fixedLight />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-9 w-auto" />
           </Link>
           <nav className="ml-4 hidden items-center gap-[26px] lg:flex">
             {NAV_LINKS.map(([label, href, caret]) => (
@@ -158,21 +179,21 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-5 pb-20 pt-[60px] sm:px-8 lg:grid-cols-2 lg:gap-14 lg:pt-[72px]">
           <div>
             <span
-              className="inline-flex items-center gap-2 rounded-full px-3.5 py-[7px] text-[12.5px] font-bold uppercase tracking-[0.04em]"
+              className="pr-anim inline-flex items-center gap-2 rounded-full px-3.5 py-[7px] text-[12.5px] font-bold uppercase tracking-[0.04em]"
               style={{ color: ACCENT, background: "rgba(26,107,69,0.10)" }}
             >
               Kenya-first investing, risk-free
             </span>
-            <h1 className="mt-5 text-[40px] font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-[56px]">
+            <h1 className="pr-anim pr-anim-d1 mt-5 text-[40px] font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-[56px]">
               Practice today.
               <br />
               <span style={{ color: ACCENT }}>Invest better</span> tomorrow.
             </h1>
-            <p className="mt-5 max-w-[480px] text-[17px] leading-[1.6]" style={{ color: INK2 }}>
+            <p className="pr-anim pr-anim-d2 mt-5 max-w-[480px] text-[17px] leading-[1.6]" style={{ color: INK2 }}>
               Learn investing in a risk-free environment built for the Kenyan investor — simulate real products, compare
               routes, and grow your confidence before your money is on the line.
             </p>
-            <div className="mt-[30px] flex flex-wrap items-center gap-3.5">
+            <div className="pr-anim pr-anim-d3 mt-[30px] flex flex-wrap items-center gap-3.5">
               <Link href="/learn" className={`${greenBtn} px-[26px] py-[15px] text-[16px]`}>
                 Start Learning Free <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
               </Link>
@@ -185,7 +206,7 @@ export default function HomePage() {
                 Watch demo
               </Link>
             </div>
-            <div className="mt-[34px] flex flex-wrap gap-[22px]">
+            <div className="pr-anim pr-anim-d4 mt-[34px] flex flex-wrap gap-[22px]">
               <span className="inline-flex items-center gap-2 text-[13.5px] font-semibold" style={{ color: "#3C4858" }}>
                 <span className="flex h-4 w-6 flex-col overflow-hidden rounded-[3px]" aria-hidden>
                   <span className="flex-1 bg-black" />
@@ -206,7 +227,7 @@ export default function HomePage() {
           </div>
 
           {/* simulation card (illustrative) */}
-          <div className="pr-card-hover rounded-[20px] border border-[rgba(17,17,15,0.08)] bg-white p-[26px] shadow-[0_24px_60px_rgba(17,17,15,0.12)]">
+          <div className="pr-anim-card pr-card-hover rounded-[20px] border border-[rgba(17,17,15,0.08)] bg-white p-[26px] shadow-[0_24px_60px_rgba(17,17,15,0.12)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[15px] font-bold">Portfolio Simulation</p>
@@ -218,7 +239,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] text-[12px] font-bold"
                 style={{ color: ACCENT, background: "rgba(26,107,69,0.10)" }}
               >
-                <span className="h-[7px] w-[7px] rounded-full" style={{ background: ACCENT }} />
+                <span className="pr-pulse h-[7px] w-[7px] rounded-full" style={{ background: ACCENT }} />
                 Live
               </span>
             </div>
@@ -271,7 +292,7 @@ export default function HomePage() {
 
       {/* ===================== STAT STRIP ===================== */}
       <section className="border-y border-[rgba(17,17,15,0.07)] bg-white">
-        <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-6 px-5 py-[34px] sm:px-8 md:grid-cols-4">
+        <div className="pr-reveal mx-auto grid max-w-[1200px] grid-cols-2 gap-6 px-5 py-[34px] sm:px-8 md:grid-cols-4">
           {STATS.map(([big, small]) => (
             <div key={small}>
               <p className="text-[30px] font-extrabold tracking-[-0.02em]">{big}</p>
@@ -294,7 +315,7 @@ export default function HomePage() {
         />
         {/* scrim darkens the left (copy) and stays clear on the right (skyline) */}
         <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(16,24,43,0.78) 0%, rgba(16,24,43,0.5) 38%, rgba(16,24,43,0.08) 68%, rgba(16,24,43,0) 100%)" }} aria-hidden />
-        <div className="relative mx-auto max-w-[1200px] px-5 py-[76px] sm:px-8">
+        <div className="pr-reveal relative mx-auto max-w-[1200px] px-5 py-[76px] sm:px-8">
           <div className="max-w-[600px] text-left">
             <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-white/50">Practice today · Invest tomorrow</p>
             <h2 className="mt-3.5 text-[34px] font-extrabold tracking-[-0.03em] text-white sm:text-[48px]">
@@ -312,7 +333,7 @@ export default function HomePage() {
 
       {/* ===================== PILLARS ===================== */}
       <section className="mx-auto max-w-[1200px] px-5 py-[84px] sm:px-8">
-        <div className="mx-auto max-w-[640px] text-center">
+        <div className="pr-reveal mx-auto max-w-[640px] text-center">
           <p className="text-[12.5px] font-bold uppercase tracking-[0.1em]" style={{ color: ACCENT }}>
             Why PesaRoute
           </p>
@@ -321,7 +342,7 @@ export default function HomePage() {
             Built on four promises — so you can practice with total confidence and no pressure.
           </p>
         </div>
-        <div className="mt-[46px] grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="pr-reveal mt-[46px] grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map(({ Icon, title, body }) => (
             <div key={title} className="pr-card-hover rounded-[18px] border border-[rgba(17,17,15,0.1)] bg-white p-[26px]">
               <span className="flex h-12 w-12 items-center justify-center rounded-[13px]" style={{ background: "rgba(26,107,69,0.10)", color: ACCENT }}>
@@ -350,7 +371,7 @@ export default function HomePage() {
               A guided path that turns “where do I even start?” into a concrete plan you understand.
             </p>
           </div>
-          <div className="mt-[46px] grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="pr-reveal mt-[46px] grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map(([num, title, body]) => (
               <div key={num} className="rounded-[18px] border border-[rgba(17,17,15,0.1)] bg-white p-6">
                 <span className="text-[13px] font-extrabold" style={{ color: ACCENT }}>
@@ -379,7 +400,7 @@ export default function HomePage() {
             Explore all products →
           </Link>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
+        <div className="pr-reveal mt-10 grid gap-5 md:grid-cols-3">
           {MARKETS.map((m) => (
             <div key={m.name} className="pr-card-hover rounded-[18px] border border-[rgba(17,17,15,0.1)] bg-white p-6">
               <div className="flex items-start justify-between">
@@ -423,7 +444,7 @@ export default function HomePage() {
 
       {/* ===================== FINAL CTA ===================== */}
       <section style={{ background: ACCENT }}>
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-[30px] px-5 py-[60px] sm:px-8">
+        <div className="pr-reveal mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-[30px] px-5 py-[60px] sm:px-8">
           <div>
             <h2 className="text-[28px] font-extrabold tracking-[-0.025em] text-white sm:text-[34px]">Start your route today — free.</h2>
             <p className="mt-2.5 max-w-[520px] text-[16px] leading-[1.6] text-white/[0.85]">

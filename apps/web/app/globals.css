@@ -222,3 +222,81 @@ select {
   background-clip: text;
   color: transparent;
 }
+
+/* Homepage entrance + scroll-reveal animations (disabled under reduced motion). */
+@keyframes pr-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pr-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pr-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.65);
+  }
+}
+.pr-anim {
+  opacity: 0;
+  animation: pr-fade-up 0.62s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.pr-anim-d1 {
+  animation-delay: 0.06s;
+}
+.pr-anim-d2 {
+  animation-delay: 0.13s;
+}
+.pr-anim-d3 {
+  animation-delay: 0.2s;
+}
+.pr-anim-d4 {
+  animation-delay: 0.27s;
+}
+.pr-anim-card {
+  opacity: 0;
+  animation: pr-slide-right 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.16s both;
+}
+.pr-pulse {
+  animation: pr-pulse-dot 1.8s ease-in-out infinite;
+}
+.pr-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pr-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-anim,
+  .pr-anim-card,
+  .pr-pulse,
+  .pr-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
