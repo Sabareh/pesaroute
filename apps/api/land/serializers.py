@@ -1,10 +1,12 @@
 from rest_framework import serializers
 
 from land.models import (
+    LandCountyMarket,
     LandDocumentRecord,
     LandDueDiligenceItem,
     LandOpportunity,
     LandRiskFlag,
+    LandSubcountyMarket,
 )
 
 
@@ -144,3 +146,29 @@ class LandComparisonInputSerializer(serializers.Serializer):
         max_digits=16, decimal_places=2, required=False, allow_null=True
     )
     liquidity_need = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class LandSubcountyMarketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandSubcountyMarket
+        fields = ["name", "avg_price_per_acre", "appreciation_pct"]
+        read_only_fields = fields
+
+
+class LandCountyMarketSerializer(serializers.ModelSerializer):
+    subcounties = LandSubcountyMarketSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LandCountyMarket
+        fields = [
+            "code",
+            "name",
+            "region",
+            "tier",
+            "avg_price_per_acre",
+            "appreciation_pct",
+            "rental_yield_pct",
+            "subcounties",
+            "updated_at",
+        ]
+        read_only_fields = fields

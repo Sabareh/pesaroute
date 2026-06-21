@@ -1,0 +1,14 @@
+Kenya administrative boundaries
+================================
+
+kenya-counties.geojson   - ADM1 (47 counties)
+kenya-subcounties.geojson - ADM2 (290 sub-counties), each tagged with its parent
+                            county via centroid point-in-polygon.
+
+Source : geoBoundaries (Open release, gbOpen) - https://www.geoboundaries.org
+License: CC BY 4.0 - https://creativecommons.org/licenses/by/4.0/
+Citation: Runfola, D. et al. (2020) geoBoundaries: A global database of political
+          administrative boundaries. PLoS ONE 15(4): e0231866.
+
+Processing: coordinates rounded to 4 decimals and properties slimmed to
+{name, iso} / {name, county} to reduce file size for the web map.

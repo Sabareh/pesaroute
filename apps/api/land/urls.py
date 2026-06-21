@@ -4,6 +4,7 @@ from land.views import (
     LandChecklistItemUpdateView,
     LandChecklistView,
     LandCompareView,
+    LandCountyMarketListView,
     LandDefaultChecklistView,
     LandDocumentCreateView,
     LandOpportunityDetailView,
@@ -28,4 +29,5 @@ urlpatterns = [
     path("checklist-items/<int:pk>/", LandChecklistItemUpdateView.as_view(), name="land-checklist-item"),
     path("default-checklist/", LandDefaultChecklistView.as_view(), name="land-default-checklist"),
     path("compare/", LandCompareView.as_view(), name="land-compare"),
+    path("county-market/", LandCountyMarketListView.as_view(), name="land-county-market"),
 ]

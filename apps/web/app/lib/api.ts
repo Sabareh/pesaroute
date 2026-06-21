@@ -678,3 +678,23 @@ export async function respondToLead(
   if (!res.ok) throw new Error(`Could not send offer (${res.status})`);
   return (await res.json()) as { response: Record<string, unknown>; offer: Record<string, unknown> | null };
 }
+
+// --- Land county market (indicative averages joined to real county boundaries) ---
+export type CountyMarketSub = { name: string; avg_price_per_acre: string; appreciation_pct: string };
+export type CountyMarket = {
+  code: string;
+  name: string;
+  region: string;
+  tier: string;
+  avg_price_per_acre: string;
+  appreciation_pct: string;
+  rental_yield_pct: string;
+  subcounties: CountyMarketSub[];
+};
+
+export async function getLandCountyMarket(): Promise<CountyMarket[]> {
+  const res = await fetch(`${apiBaseUrl()}/api/land/county-market/`, { cache: "no-store", headers: { Accept: "application/json" } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (Array.isArray(data) ? data : (data.results ?? [])) as CountyMarket[];
+}

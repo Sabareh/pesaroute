@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from journal.models import JournalEntry
 from land.models import (
+    LandCountyMarket,
     LandDecisionJournalLink,
     LandDocumentRecord,
     LandDueDiligenceItem,
@@ -16,6 +17,7 @@ from land.models import (
 )
 from land.serializers import (
     LandComparisonInputSerializer,
+    LandCountyMarketSerializer,
     LandDocumentRecordSerializer,
     LandDueDiligenceItemSerializer,
     LandOpportunityListSerializer,
@@ -286,3 +288,16 @@ class LandCompareView(APIView):
             liquidity_need=data["liquidity_need"],
         )
         return Response(result)
+
+
+class LandCountyMarketListView(generics.ListAPIView):
+    """All 47 counties with indicative land-market averages + subcounties.
+
+    Educational learning data only. The web joins this to the real Kenya county
+    boundaries (geoBoundaries ADM1) by `name`/`code`.
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = LandCountyMarketSerializer
+    pagination_class = None
+    queryset = LandCountyMarket.objects.prefetch_related("subcounties").all()

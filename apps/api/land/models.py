@@ -224,3 +224,49 @@ class LandDecisionJournalLink(models.Model):
 
     def __str__(self) -> str:
         return f"{self.land_opportunity_id}:{self.journal_entry_id}"
+
+
+class LandCountyMarket(models.Model):
+    """Indicative county-level land-market averages for the Explore map.
+
+    Educational learning data only - NOT a valuation. Joined to the real Kenya
+    county boundaries (geoBoundaries ADM1) on the web by `name`/`code`.
+    """
+
+    class Tier(models.TextChoices):
+        PRIME = "Prime", "Prime"
+        HOTSPOT = "Hotspot", "Hotspot"
+        STABLE = "Stable", "Stable"
+        EMERGING = "Emerging", "Emerging"
+
+    code = models.CharField(max_length=12, unique=True)  # ISO 3166-2, e.g. KE-22
+    name = models.CharField(max_length=80, unique=True)
+    region = models.CharField(max_length=60)
+    tier = models.CharField(max_length=12, choices=Tier.choices, default=Tier.STABLE)
+    # KES millions per acre (indicative average).
+    avg_price_per_acre = models.DecimalField(max_digits=8, decimal_places=2)
+    appreciation_pct = models.DecimalField(max_digits=5, decimal_places=2)
+    rental_yield_pct = models.DecimalField(max_digits=5, decimal_places=2)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class LandSubcountyMarket(models.Model):
+    """Indicative subcounty averages within a county (geoBoundaries ADM2 names)."""
+
+    county = models.ForeignKey(LandCountyMarket, related_name="subcounties", on_delete=models.CASCADE)
+    name = models.CharField(max_length=80)
+    avg_price_per_acre = models.DecimalField(max_digits=8, decimal_places=2)
+    appreciation_pct = models.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        ordering = ["-avg_price_per_acre"]
+        unique_together = [("county", "name")]
+
+    def __str__(self) -> str:
+        return f"{self.county.name} / {self.name}"
