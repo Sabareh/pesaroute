@@ -415,6 +415,31 @@ export type LandDecisionStage =
 
 export type LandRiskLevel = "low" | "medium" | "high" | "very_high" | "unknown";
 
+export type LandListingRow = {
+  id: number;
+  name: string;
+  kind: string;
+  place: string;
+  price_kes: string;
+  tag1: string;
+  tag2: string;
+  advertiser: string;
+  listing_url: string;
+  is_sponsored: boolean;
+};
+
+export type LandCountyMarketRow = {
+  code: string;
+  name: string;
+  region: string;
+  tier: string;
+  avg_price_per_acre: string;
+  appreciation_pct: string;
+  rental_yield_pct: string;
+  subcounties: Array<{ name: string; avg_price_per_acre: string; appreciation_pct: string }>;
+  listings: LandListingRow[];
+};
+
 export type LandItemStatus =
   | "not_started"
   | "requested"

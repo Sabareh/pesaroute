@@ -8,6 +8,7 @@ import type {
   InvestmentProduct,
   LandComparisonInput,
   LandComparisonResult,
+  LandCountyMarketRow,
   LandDueDiligenceItem,
   LandOpportunity,
   LandOpportunityInput,
@@ -1007,6 +1008,11 @@ export class PesaRouteApiClient {
   async listLandOpportunities(auth: AuthCredentials) {
     const response = await this.request<Paginated<LandOpportunity>>("/api/land/opportunities/", { auth });
     return response.results;
+  }
+
+  // Indicative county land-market data (public; joins to the real boundaries on web).
+  landCountyMarket() {
+    return this.request<LandCountyMarketRow[]>("/api/land/county-market/");
   }
 
   createLandOpportunity(body: LandOpportunityInput, auth: AuthCredentials) {

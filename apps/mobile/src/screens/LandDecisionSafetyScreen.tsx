@@ -19,6 +19,7 @@ import {
 import type {
   AuthCredentials,
   LandComparisonResult,
+  LandCountyMarketRow,
   LandDueDiligenceItem,
   LandOpportunity,
   LandRiskScoreResult
@@ -68,6 +69,38 @@ type CountyMarket = {
   totalReturn: { land: number; mmf: number; tbill: number };
   sponsored: { name: string; meta: string; price: string };
 };
+
+// When the real backend data loads, the selected county's sponsored card may be absent.
+type DisplayCounty = Omit<CountyMarket, "sponsored"> & { sponsored?: CountyMarket["sponsored"] };
+
+function fmtMillions(v: string): string {
+  const m = Number(v);
+  return m >= 1 ? `KES ${m % 1 === 0 ? m : m.toFixed(1)}M` : `KES ${Math.round(m * 1000)}k`;
+}
+function fmtKesFull(v: string): string {
+  const full = Number(v);
+  if (full >= 1_000_000) return `KES ${(full / 1_000_000).toFixed(full % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (full >= 1000) return `KES ${Math.round(full / 1000)}k`;
+  return `KES ${Math.round(full)}`;
+}
+// Overlay real API metrics + sponsored listing onto a positioned county; falls
+// back to the static placeholder when the backend is unreachable.
+function mergeCounty(base: CountyMarket, api?: LandCountyMarketRow): DisplayCounty {
+  if (!api) return base;
+  const apprec = Number(api.appreciation_pct);
+  const yld = Number(api.rental_yield_pct);
+  const listing = api.listings[0];
+  return {
+    ...base,
+    region: api.region || base.region,
+    hotspot: api.tier === "Hotspot",
+    avgAcre: fmtMillions(api.avg_price_per_acre),
+    appreciation: `+${apprec}%`,
+    yieldPct: `${yld}%`,
+    totalReturn: { land: Math.round((apprec + yld) * 10) / 10, mmf: 11.8, tbill: 16 },
+    sponsored: listing ? { name: listing.name, meta: `${listing.kind} · ${listing.place}`, price: fmtKesFull(listing.price_kes) } : undefined
+  };
+}
 
 // Placeholder county market data. Structured so it can be swapped for a backend
 // feed (e.g. apiClient.landCountyMarket()) without touching the UI.
@@ -207,8 +240,10 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
   const [countyId, setCountyId] = useState<string>(COUNTIES[0].id);
   const [metric, setMetric] = useState<MetricKey>("price");
   const [expanded, setExpanded] = useState(false);
+  const [marketByName, setMarketByName] = useState<Map<string, LandCountyMarketRow>>(new Map());
   const sheetH = useRef(new Animated.Value(PEEK_H)).current;
-  const county = COUNTIES.find((c) => c.id === countyId) ?? COUNTIES[0];
+  const baseCounty = COUNTIES.find((c) => c.id === countyId) ?? COUNTIES[0];
+  const county = mergeCounty(baseCounty, marketByName.get(baseCounty.name));
 
   // Create form
   const [form, setForm] = useState({
@@ -241,6 +276,14 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
       useNativeDriver: false
     }).start();
   }, [expanded, sheetH]);
+
+  // Pull the real indicative county market data (public endpoint).
+  useEffect(() => {
+    void apiClient
+      .landCountyMarket()
+      .then((rows) => setMarketByName(new Map(rows.map((r) => [r.name, r]))))
+      .catch(() => {});
+  }, [apiClient]);
 
   const loadList = useCallback(async () => {
     if (!auth) return;
@@ -527,7 +570,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.sheetScroll}>
                 <Text style={s.sheetSection}>Total return vs alternatives</Text>
                 <View style={{ gap: 10, marginTop: 11 }}>
-                  <ReturnBar name="Kiambu land" value={`~${county.totalReturn.land}%`} pct={Math.min(100, county.totalReturn.land * 3.6)} tone={ACCENT} strong />
+                  <ReturnBar name={`${county.name} land`} value={`~${county.totalReturn.land}%`} pct={Math.min(100, county.totalReturn.land * 3.6)} tone={ACCENT} strong />
                   <ReturnBar name="MMF" value={`${county.totalReturn.mmf}%`} pct={Math.min(100, county.totalReturn.mmf * 3.6)} tone="#9FCBB0" />
                   <ReturnBar name="T-bill" value={`${county.totalReturn.tbill}%`} pct={Math.min(100, county.totalReturn.tbill * 3.6)} tone="#9FCBB0" />
                 </View>
@@ -549,22 +592,26 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
                   </Pressable>
                 </View>
 
-                <Text style={[s.sheetSection, { marginTop: 18 }]}>Sponsored in {county.name}</Text>
-                <View style={s.sponsorCard}>
-                  <View style={s.sponsorThumb}>
-                    <Ionicons name="home-outline" size={30} color="rgba(255,255,255,0.85)" />
-                    <View style={s.sponsorTag}>
-                      <Text style={s.sponsorTagText}>Sponsored</Text>
+                {county.sponsored ? (
+                  <>
+                    <Text style={[s.sheetSection, { marginTop: 18 }]}>Sponsored in {county.name}</Text>
+                    <View style={s.sponsorCard}>
+                      <View style={s.sponsorThumb}>
+                        <Ionicons name="home-outline" size={30} color="rgba(255,255,255,0.85)" />
+                        <View style={s.sponsorTag}>
+                          <Text style={s.sponsorTagText}>Sponsored</Text>
+                        </View>
+                      </View>
+                      <View style={s.sponsorBody}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.sponsorName}>{county.sponsored.name}</Text>
+                          <Text style={s.sponsorMeta}>{county.sponsored.meta}</Text>
+                        </View>
+                        <Text style={s.sponsorPrice}>{county.sponsored.price}</Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={s.sponsorBody}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.sponsorName}>{county.sponsored.name}</Text>
-                      <Text style={s.sponsorMeta}>{county.sponsored.meta}</Text>
-                    </View>
-                    <Text style={s.sponsorPrice}>{county.sponsored.price}</Text>
-                  </View>
-                </View>
+                  </>
+                ) : null}
               </ScrollView>
             ) : (
               <View>
