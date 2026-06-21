@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Path as SvgPath, Text as SvgText } from "react-native-svg";
+
+import countiesGeo from "../data/kenya-counties.json";
 
 import type { PesaRouteApiClient } from "../api/client";
 import {
@@ -51,6 +54,55 @@ const BREAKOUT = OUTER_PAD + maliPrime.spacing.lg;
 const PEEK_H = 250;
 const EXPANDED_H = Math.max(360, MAP_H - 96);
 
+const SCALE = ["#D6E7DC", "#9FCBB0", "#5FAE81", "#2E8659", "#1A6B45"];
+
+// Real Kenya county boundaries (geoBoundaries ADM1, slimmed) projected once with a
+// plain cos-lat equirectangular fit so the mobile map matches the web choropleth.
+type Geom = { type: string; coordinates: number[][][] | number[][][][] };
+const GEO = countiesGeo as { features: Array<{ properties: { name: string }; geometry: Geom }> };
+
+function ringsOf(g: Geom): number[][][] {
+  if (g.type === "Polygon") return g.coordinates as number[][][];
+  if (g.type === "MultiPolygon") return (g.coordinates as number[][][][]).flat();
+  return [];
+}
+function buildCountyPaths() {
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  for (const f of GEO.features) for (const ring of ringsOf(f.geometry)) for (const pt of ring) {
+    if (pt[0] < minLng) minLng = pt[0];
+    if (pt[0] > maxLng) maxLng = pt[0];
+    if (pt[1] < minLat) minLat = pt[1];
+    if (pt[1] > maxLat) maxLat = pt[1];
+  }
+  const cosL = Math.cos(((minLat + maxLat) / 2) * (Math.PI / 180));
+  const lngSpan = (maxLng - minLng) * cosL || 1;
+  const latSpan = maxLat - minLat || 1;
+  const H = 760;
+  const W = Math.round(H * (lngSpan / latSpan));
+  const px = (lng: number) => ((lng - minLng) * cosL) / lngSpan * W;
+  const py = (lat: number) => ((maxLat - lat) / latSpan) * H;
+  const paths = GEO.features.map((f) => {
+    let d = "";
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (const ring of ringsOf(f.geometry)) {
+      d += "M" + ring.map((pt) => `${px(pt[0]).toFixed(1)},${py(pt[1]).toFixed(1)}`).join("L") + "Z";
+      for (const pt of ring) {
+        sx += px(pt[0]);
+        sy += py(pt[1]);
+        n += 1;
+      }
+    }
+    return { name: f.properties.name, d, cx: n ? sx / n : 0, cy: n ? sy / n : 0 };
+  });
+  return { paths, W, H };
+}
+const MAP_PROJ = buildCountyPaths();
+
 type LandView = "map" | "checklist" | "compare" | "guide" | "create" | "detail" | "list";
 
 type CountyMarket = {
@@ -99,6 +151,24 @@ function mergeCounty(base: CountyMarket, api?: LandCountyMarketRow): DisplayCoun
     yieldPct: `${yld}%`,
     totalReturn: { land: Math.round((apprec + yld) * 10) / 10, mmf: 11.8, tbill: 16 },
     sponsored: listing ? { name: listing.name, meta: `${listing.kind} · ${listing.place}`, price: fmtKesFull(listing.price_kes) } : undefined
+  };
+}
+
+function placeholderCounty(name: string): CountyMarket {
+  return {
+    id: name,
+    name,
+    region: "Kenya",
+    hotspot: false,
+    avgAcre: "-",
+    appreciation: "-",
+    yieldPct: "-",
+    mx: 0,
+    my: 0,
+    r: 0,
+    tone: "#9FCBB0",
+    totalReturn: { land: 0, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "", meta: "", price: "" }
   };
 }
 
@@ -237,13 +307,26 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
   const [notice, setNotice] = useState<string | null>(null);
 
   // Map state
-  const [countyId, setCountyId] = useState<string>(COUNTIES[0].id);
+  const [selectedName, setSelectedName] = useState<string>("Kiambu");
   const [metric, setMetric] = useState<MetricKey>("price");
   const [expanded, setExpanded] = useState(false);
   const [marketByName, setMarketByName] = useState<Map<string, LandCountyMarketRow>>(new Map());
   const sheetH = useRef(new Animated.Value(PEEK_H)).current;
-  const baseCounty = COUNTIES.find((c) => c.id === countyId) ?? COUNTIES[0];
-  const county = mergeCounty(baseCounty, marketByName.get(baseCounty.name));
+  const apiRow = marketByName.get(selectedName);
+  const fallbackCounty = COUNTIES.find((c) => c.name === selectedName) ?? placeholderCounty(selectedName);
+  const county = apiRow ? mergeCounty(fallbackCounty, apiRow) : fallbackCounty;
+  const metricNum = (api: LandCountyMarketRow) =>
+    metric === "appreciation" ? Number(api.appreciation_pct) : metric === "yield" ? Number(api.rental_yield_pct) : Number(api.avg_price_per_acre);
+  const metricVals = [...marketByName.values()].map(metricNum);
+  const metricLo = metricVals.length ? Math.min(...metricVals) : 0;
+  const metricHi = metricVals.length ? Math.max(...metricVals) : 1;
+  const colorForCounty = (name: string) => {
+    const api = marketByName.get(name);
+    if (!api) return "#DDE6DD";
+    const t = metricHi === metricLo ? 1 : (metricNum(api) - metricLo) / (metricHi - metricLo);
+    return SCALE[Math.min(SCALE.length - 1, Math.floor(t * SCALE.length))];
+  };
+  const selPath = MAP_PROJ.paths.find((p) => p.name === selectedName);
 
   // Create form
   const [form, setForm] = useState({
@@ -468,8 +551,8 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     }
   }
 
-  function selectCounty(id: string) {
-    setCountyId(id);
+  function selectCounty(name: string) {
+    setSelectedName(name);
     setExpanded(true);
   }
 
@@ -492,35 +575,27 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     return (
       <View style={s.mapBreakout}>
         <View style={[s.mapArea, { height: MAP_H }]}>
-          {/* stylised landmass + markers */}
-          <View style={s.landmass} pointerEvents="none" />
-          {COUNTIES.map((c) => {
-            const active = c.id === countyId;
-            return (
-              <Pressable
-                key={c.id}
-                accessibilityRole="button"
-                onPress={() => selectCounty(c.id)}
-                style={[
-                  s.marker,
-                  {
-                    left: `${c.mx}%`,
-                    top: `${c.my}%`,
-                    width: c.r * 2,
-                    height: c.r * 2,
-                    borderRadius: c.r,
-                    marginLeft: -c.r,
-                    marginTop: -c.r,
-                    backgroundColor: c.tone,
-                    borderColor: active ? INK : "#FFFFFF",
-                    borderWidth: active ? 3 : 2
-                  }
-                ]}
-              >
-                {active ? <Text style={s.markerLabel}>{c.name}</Text> : null}
-              </Pressable>
-            );
-          })}
+          {/* real Kenya county boundaries (choropleth by the selected metric) */}
+          <Svg width="100%" height="100%" viewBox={`0 0 ${MAP_PROJ.W} ${MAP_PROJ.H}`} style={s.mapSvg}>
+            {MAP_PROJ.paths.map((p) => {
+              const active = p.name === selectedName;
+              return (
+                <SvgPath
+                  key={p.name}
+                  d={p.d}
+                  fill={colorForCounty(p.name)}
+                  stroke={active ? "#11110F" : "#ffffff"}
+                  strokeWidth={active ? 1.6 : 0.4}
+                  onPress={() => selectCounty(p.name)}
+                />
+              );
+            })}
+            {selPath ? (
+              <SvgText x={selPath.cx} y={selPath.cy} fontSize={11} fontWeight="700" fill="#11110F" textAnchor="middle">
+                {selectedName}
+              </SvgText>
+            ) : null}
+          </Svg>
 
           {/* floating search bar */}
           <View style={s.mapTopBar} pointerEvents="box-none">
@@ -592,7 +667,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
                   </Pressable>
                 </View>
 
-                {county.sponsored ? (
+                {county.sponsored?.name ? (
                   <>
                     <Text style={[s.sheetSection, { marginTop: 18 }]}>Sponsored in {county.name}</Text>
                     <View style={s.sponsorCard}>
@@ -1138,6 +1213,7 @@ const s = StyleSheet.create({
   // --- MAP ---
   mapBreakout: { marginHorizontal: -BREAKOUT, marginTop: -BREAKOUT },
   mapArea: { backgroundColor: MAP_BG, overflow: "hidden", position: "relative" },
+  mapSvg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   landmass: {
     position: "absolute",
     left: "14%",
