@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { useAuth } from "../lib/auth";
+import { BrandLockup } from "../components/BrandLockup";
 
 /* Monochrome line icons (stroke = currentColor). */
 function Icon({ children, size = 18 }: { children: ReactNode; size?: number }) {
@@ -50,7 +51,7 @@ export default function ProfessionalLayout({ children }: { children: ReactNode }
       {/* top nav (professional context) */}
       <header className="sticky top-0 z-50 flex h-[60px] items-center gap-4 border-b border-border bg-surface pr-4 sm:pr-6">
         <Link href="/" className="flex h-[60px] flex-none items-center gap-2.5 border-r border-border pl-5 sm:w-[248px] sm:pl-6">
-          <span className="text-lg font-semibold tracking-[-0.015em] text-textPrimary">PesaRoute</span>
+          <BrandLockup markSize={24} textClassName="text-[16px]" />
           <span className="rounded-full border border-accent/30 bg-accent/[0.12] px-2.5 py-0.5 text-[11px] font-semibold text-primary">Pro</span>
         </Link>
         <span className="hidden items-center gap-1.5 rounded-full bg-accent/[0.12] px-3 py-1.5 text-xs font-semibold text-primary sm:inline-flex">

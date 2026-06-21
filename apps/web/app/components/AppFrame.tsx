@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { useAuth } from "../lib/auth";
 import { SignInModal } from "../learn/ui";
+import { BrandLockup } from "./BrandLockup";
 
 /* Monochrome line icons (stroke = currentColor). No fills, no colour. */
 type IconProps = { className?: string };
@@ -272,8 +273,8 @@ export function AppFrame({ children }: { children: ReactNode }) {
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu" className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-textSecondary transition hover:bg-surfaceSubtle hover:text-textPrimary lg:hidden">
             <MenuIcon />
           </button>
-          <Link href="/" className="shrink-0 text-base font-semibold tracking-[-0.01em] text-textPrimary lg:w-[13rem]">
-            PesaRoute
+          <Link href="/" className="flex shrink-0 items-center lg:w-[13rem]" aria-label="PesaRoute home">
+            <BrandLockup markSize={24} textClassName="text-[16px]" />
           </Link>
           <nav className="hidden items-center gap-1 rounded-full border border-border bg-surfaceSubtle p-1 md:flex">
             {SECTIONS.map((s) => {

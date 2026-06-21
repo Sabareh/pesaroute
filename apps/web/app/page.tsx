@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, LineChart, Lock, Play, ShieldCheck, UserRound 
 
 import { useAuth } from "./lib/auth";
 import { SignInModal } from "./learn/ui";
+import { BrandLockup } from "./components/BrandLockup";
 
 // The homepage is a fixed-light marketing surface — it renders standalone (AppFrame
 // chrome is suppressed on "/"), so it uses the design's literal palette rather than
@@ -112,9 +113,8 @@ export default function HomePage() {
       {/* ===================== NAV ===================== */}
       <header className="sticky top-0 z-50 border-b border-[rgba(17,17,15,0.08)] bg-white/[0.92] backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto flex h-[70px] max-w-[1200px] items-center gap-5 px-5 sm:px-8">
-          <Link href="/" className="flex items-center" aria-label="PesaRoute — Learn. Simulate. Invest better.">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-9 w-auto" />
+          <Link href="/" className="flex items-center" aria-label="PesaRoute home">
+            <BrandLockup markSize={30} textClassName="text-[22px]" fixedLight />
           </Link>
           <nav className="ml-4 hidden items-center gap-[26px] lg:flex">
             {NAV_LINKS.map(([label, href, caret]) => (
