@@ -240,11 +240,16 @@ export function AppFrame({ children }: { children: ReactNode }) {
     setOpen(false);
   }, [pathname]);
 
+  // The landing page ("/") is a fully standalone marketing page: it ships its own
+  // emerald nav, FX ticker, and footer, so it does NOT use the app chrome at all.
+  // (Hooks above run unconditionally before this early return.)
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
   const section = activeSection(pathname);
   const activeHref = activeItemHref(pathname, section);
-  // The landing page is a clean full-width marketing page: no persistent desktop
-  // sidebar (the top nav covers navigation). Mobile still gets the hamburger drawer.
-  const fullWidth = pathname === "/";
+  const fullWidth = false;
 
   function onSearch(event: FormEvent) {
     event.preventDefault();
@@ -270,7 +275,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
             {SECTIONS.map((s) => {
               const active = s.key === section.key;
               return (
-                <Link key={s.key} href={s.href} className={`rounded-full px-3 py-1.5 text-sm transition ${active ? "bg-textPrimary font-medium text-background" : "text-textSecondary hover:text-textPrimary"}`}>
+                <Link key={s.key} href={s.href} className={`rounded-full px-3 py-1.5 text-sm transition ${active ? "bg-primary font-semibold text-white" : "text-textSecondary hover:text-textPrimary"}`}>
                   {s.label}
                 </Link>
               );
@@ -319,7 +324,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
                 const active = item.href === activeHref;
                 const Icon = item.icon;
                 return (
-                  <Link key={item.href} href={item.href} className={`mb-0.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition ${active ? "bg-sidebarActive font-medium text-sidebarText" : "text-sidebarMuted hover:bg-sidebarActive hover:text-sidebarText"}`}>
+                  <Link key={item.href} href={item.href} className={`mb-0.5 flex items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm transition ${active ? "border-accent bg-primary/15 font-semibold text-accent" : "border-transparent text-sidebarMuted hover:bg-sidebarActive hover:text-sidebarText"}`}>
                     <Icon className="shrink-0" />
                     <span>{item.label}</span>
                   </Link>

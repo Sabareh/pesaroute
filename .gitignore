@@ -47,3 +47,7 @@ google-services.json
 .claude/
 /*.txt
 apps/mobile/*-current.png
+
+# Claude Design handoff exports (local reference only)
+.design-full/
+.design-handoff/

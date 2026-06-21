@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { PremiumCard, TrustBadge } from "../../components/maliprime";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { TrustBadge } from "../../components/maliprime";
 import { useAuth } from "../../lib/auth";
 import {
   postProductSpecific,
@@ -22,188 +23,348 @@ const freshnessBadgeTone: Record<string, "emerald" | "amber" | "danger" | "muted
   unknown: "muted"
 };
 
-const WEB_RATE_MODES: { key: WebRateMode; label: string }[] = [
-  { key: "latest_available_rate", label: "Latest available rate" },
+const RATE_MODES: { key: WebRateMode; label: string; requiresRate?: boolean }[] = [
+  { key: "latest_available_rate", label: "Latest", requiresRate: true },
   { key: "conservative_scenario", label: "Conservative" },
   { key: "neutral_scenario", label: "Neutral" },
   { key: "optimistic_scenario", label: "Optimistic" },
-  { key: "custom_educational_rate", label: "Custom rate" }
+  { key: "custom_educational_rate", label: "Custom" }
 ];
 
-export function SimulationForm({
-  product,
-  hasRate,
-  children
-}: {
-  product: InvestmentProductDetail;
-  hasRate: boolean;
-  children?: React.ReactNode;
-}) {
+function fmtShort(currency: string, n: number): string {
+  if (n >= 1_000_000) return `${currency} ${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 1000) return `${currency} ${Math.round(n / 1000)}k`;
+  return `${currency} ${Math.round(n)}`;
+}
+
+// Client-side projection curve, scaled so its endpoint matches the backend's
+// headline estimate. The chart is illustrative; the numbers come from the API.
+function buildChart(P: number, PMT: number, months: number, annualRate: number, estValue: number) {
+  const W = 620;
+  const H = 190;
+  const topPad = 14;
+  const rm = annualRate / 100 / 12;
+  const valueAt = (m: number) => (rm > 0 ? P * Math.pow(1 + rm, m) + PMT * ((Math.pow(1 + rm, m) - 1) / rm) : P + PMT * m);
+  const contribAt = (m: number) => P + PMT * m;
+  const rawEnd = valueAt(months) || 1;
+  const scale = estValue > 0 && rawEnd > 0 ? estValue / rawEnd : 1;
+  const step = Math.max(1, Math.ceil(months / 60));
+  const ms: number[] = [];
+  for (let m = 0; m <= months; m += step) ms.push(m);
+  if (ms[ms.length - 1] !== months) ms.push(months);
+  const maxY = Math.max(valueAt(months) * scale, contribAt(months)) * 1.06 || 1;
+  const X = (m: number) => (m / Math.max(1, months)) * W;
+  const Y = (v: number) => H - topPad - (v / maxY) * (H - topPad);
+  const line = ms.map((m) => `${X(m).toFixed(1)},${Y(valueAt(m) * scale).toFixed(1)}`);
+  const contrib = ms.map((m) => `${X(m).toFixed(1)},${Y(contribAt(m)).toFixed(1)}`);
+  return {
+    line: "M" + line.join(" L"),
+    contrib: "M" + contrib.join(" L"),
+    area: `M0,${H} L` + line.join(" L") + ` L${W},${H} Z`
+  };
+}
+
+export function SimulationForm({ product, hasRate }: { product: InvestmentProductDetail; hasRate: boolean }) {
   const { token, isAuthenticated } = useAuth();
-  const [amount, setAmount] = useState("50000");
-  const [monthlyTopup, setMonthlyTopup] = useState("0");
-  const [timeline, setTimeline] = useState("12");
+  const [amount, setAmount] = useState(50000);
+  const [topup, setTopup] = useState(2000);
+  const [months, setMonths] = useState(36);
   const [rateMode, setRateMode] = useState<WebRateMode>(hasRate ? "latest_available_rate" : "neutral_scenario");
   const [customRate, setCustomRate] = useState("10");
   const [includeFees, setIncludeFees] = useState(true);
   const [includeTax, setIncludeTax] = useState(false);
-  const [goal, setGoal] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ProductSpecificResult | null>(null);
 
-  async function run(event: React.FormEvent) {
-    event.preventDefault();
-    setLoading(true);
+  const [result, setResult] = useState<ProductSpecificResult | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const rate = product.current_rate_snapshot ?? product.current_rate;
+  const baseRate = rate?.rate_value;
+
+  const run = useCallback(async () => {
+    setUpdating(true);
     setError(null);
     try {
       const simulation = await postProductSpecific(
         {
           product_slug: product.slug,
-          initial_amount: Number(amount || "0").toFixed(2),
-          monthly_topup: Number(monthlyTopup || "0").toFixed(2),
-          timeline_months: Math.max(1, Math.round(Number(timeline || "12"))),
+          initial_amount: amount.toFixed(2),
+          monthly_topup: topup.toFixed(2),
+          timeline_months: Math.max(1, Math.round(months)),
           rate_mode: rateMode,
           include_fees: includeFees,
           include_tax_estimate: includeTax,
-          ...(rateMode === "custom_educational_rate" ? { custom_rate: Number(customRate || "0").toFixed(4) } : {}),
-          ...(goal ? { goal } : {})
+          ...(rateMode === "custom_educational_rate" ? { custom_rate: Number(customRate || "0").toFixed(4) } : {})
         },
         token
       );
       setResult(simulation);
     } catch {
-      setError("Simulation failed. Try again, or use a custom educational rate.");
+      setError("Could not update the estimate. Try a custom educational rate.");
     } finally {
-      setLoading(false);
+      setUpdating(false);
     }
-  }
+  }, [product.slug, amount, topup, months, rateMode, customRate, includeFees, includeTax, token]);
+
+  // Live: recompute (debounced) whenever any input changes - no run button.
+  useEffect(() => {
+    const t = setTimeout(() => void run(), 350);
+    return () => clearTimeout(t);
+  }, [run]);
+
+  const yearsLabel = months < 12 ? `${months} months` : `${(months / 12).toFixed(months % 12 === 0 ? 0 : 1)} years`;
+
+  const estValueStr = result
+    ? result.estimated_maturity_value ?? result.estimated_net_value ?? result.estimated_gross_value ?? "0"
+    : "0";
+  const estValue = Number(estValueStr);
+  const chart = useMemo(
+    () => buildChart(amount, topup, Math.max(1, Math.round(months)), result?.rate_used ? Number(result.rate_used) : 0, estValue),
+    [amount, topup, months, result?.rate_used, estValue]
+  );
 
   return (
-    <>
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div>{children}</div>
-        <div className="lg:sticky lg:top-20 lg:self-start">
-          <PremiumCard>
-        <h2 className="text-base font-semibold text-textPrimary">Run an educational simulation</h2>
-        <p className="mt-1 text-xs text-textSecondary">Estimated growth, not guaranteed returns.</p>
-        <form className="mt-4 space-y-4" onSubmit={run}>
-          <Field label={`Initial amount (${product.currency})`} value={amount} onChange={setAmount} type="number" />
-          <Field label={`Monthly top-up (${product.currency})`} value={monthlyTopup} onChange={setMonthlyTopup} type="number" />
-          <Field label="Timeline (months)" value={timeline} onChange={setTimeline} type="number" />
+    <div className="flex flex-col gap-4 pb-10">
+      <Link href="/simulate" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-textSecondary transition hover:text-textPrimary">
+        ← Back to compare
+      </Link>
 
-          <div>
-            <p className="text-xs font-semibold uppercase text-textTertiary">Rate mode</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {WEB_RATE_MODES.map((mode) => {
-                const active = rateMode === mode.key;
-                const disabled = mode.key === "latest_available_rate" && !hasRate;
+      {/* product header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-textTertiary">{product.category?.name ?? product.product_type}</p>
+          <h1 className="mt-1.5 text-[22px] font-semibold tracking-[-0.02em] text-textPrimary">{product.name}</h1>
+          <p className="mt-1 text-[13px] font-medium text-textSecondary">{product.provider?.name ?? "Provider not listed"}</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <TrustBadge tone={freshnessBadgeTone[product.freshness_status] ?? "muted"}>{freshnessLabel(product.freshness_status)}</TrustBadge>
+          <TrustBadge tone="muted">{product.risk_level.replace(/_/g, " ")} risk</TrustBadge>
+          <TrustBadge tone="muted">{product.liquidity_level} liquidity</TrustBadge>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[380px_1fr]">
+        {/* INPUT PANEL */}
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-card lg:sticky lg:top-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-textPrimary">Your plan</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+              <span className={`h-1.5 w-1.5 rounded-full bg-primary ${updating ? "animate-pulse" : ""}`} aria-hidden />
+              {updating ? "Updating" : "Live estimate"}
+            </span>
+          </div>
+
+          <Slider label="Initial amount" value={fmtShort(product.currency, amount)} min={0} max={1_000_000} step={1000} raw={amount} onChange={setAmount} />
+          <Slider label="Monthly top-up" value={topup > 0 ? `${fmtShort(product.currency, topup)}/mo` : "None"} min={0} max={50_000} step={500} raw={topup} onChange={setTopup} />
+          <Slider label="Timeline" value={yearsLabel} min={3} max={120} step={1} raw={months} onChange={setMonths} />
+
+          <div className="mt-5">
+            <span className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">Rate mode</span>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {RATE_MODES.map((m) => {
+                const active = rateMode === m.key;
+                const disabled = m.requiresRate && !hasRate;
+                const label = m.key === "latest_available_rate" && baseRate ? `Latest ${baseRate}%` : m.label;
                 return (
                   <button
-                    key={mode.key}
+                    key={m.key}
                     type="button"
                     disabled={disabled}
-                    onClick={() => setRateMode(mode.key)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    onClick={() => setRateMode(m.key)}
+                    className={`rounded-full border px-3 py-[7px] text-xs font-semibold transition ${
                       active ? "border-primary bg-primary text-white" : "border-border bg-surface text-textSecondary hover:border-borderStrong"
                     } ${disabled ? "opacity-40" : ""}`}
                   >
-                    {mode.label}
+                    {label}
                   </button>
                 );
               })}
             </div>
-            {!hasRate ? (
-              <p className="mt-2 text-xs font-semibold text-amber">Latest rate unavailable - use a scenario or custom educational rate.</p>
+            {rateMode === "custom_educational_rate" ? (
+              <div className="mt-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">Custom rate (% / yr)</span>
+                <input
+                  type="number"
+                  value={customRate}
+                  onChange={(e) => setCustomRate(e.target.value)}
+                  className="mt-2 w-full rounded-[10px] border border-border bg-surface px-3 py-2.5 text-sm font-semibold text-textPrimary focus:border-borderStrong focus:outline-none"
+                />
+              </div>
             ) : null}
           </div>
 
-          {rateMode === "custom_educational_rate" ? (
-            <Field label="Custom educational rate (% per year)" value={customRate} onChange={setCustomRate} type="number" />
-          ) : null}
+          <div className="mt-5 flex gap-2.5">
+            <ToggleBtn label="Include fees" on={includeFees} onClick={() => setIncludeFees((v) => !v)} />
+            <ToggleBtn label="Estimate tax" on={includeTax} onClick={() => setIncludeTax((v) => !v)} />
+          </div>
+        </div>
 
-          <div className="flex flex-wrap gap-4">
-            <Toggle label="Include fees" checked={includeFees} onChange={setIncludeFees} />
-            <Toggle label="Estimate tax" checked={includeTax} onChange={setIncludeTax} />
+        {/* RESULTS */}
+        <div className="flex min-w-0 flex-col gap-3.5">
+          {error ? <p className="rounded-2xl border border-danger/20 bg-danger/[0.06] px-4 py-3 text-sm font-medium text-danger">{error}</p> : null}
+
+          {/* hero result + chart */}
+          <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">Estimated value in {yearsLabel} · not guaranteed</p>
+                <p className="mt-1.5 text-[38px] font-bold leading-none tracking-[-0.025em] text-primary">
+                  {result ? formatKes(result.currency, estValueStr) : "—"}
+                </p>
+                <p className="mt-2 text-[13px] font-semibold text-textSecondary">
+                  {result ? `${formatKes(result.currency, result.estimated_growth)} growth on ${formatKes(result.currency, result.total_contributions)} contributed` : "Adjust your plan to see an estimate."}
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <Legend swatch={<span className="h-[3px] w-3.5 rounded-sm bg-primary" />}>Projected value</Legend>
+                <Legend swatch={<span className="h-0 w-3.5 border-t-2 border-dashed border-textTertiary" />}>Contributions</Legend>
+              </div>
+            </div>
+            <div className="mt-[18px]">
+              <svg viewBox="0 0 620 190" preserveAspectRatio="none" className="block h-[190px] w-full" aria-hidden>
+                <defs>
+                  <linearGradient id="sim-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgb(var(--c-primary))" stopOpacity="0.22" />
+                    <stop offset="100%" stopColor="rgb(var(--c-primary))" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <line x1="0" y1="63" x2="620" y2="63" stroke="rgb(var(--c-border) / 0.5)" strokeWidth="1" />
+                <line x1="0" y1="126" x2="620" y2="126" stroke="rgb(var(--c-border) / 0.5)" strokeWidth="1" />
+                <path d={chart.area} fill="url(#sim-fill)" />
+                <path d={chart.contrib} fill="none" stroke="rgb(var(--c-textTertiary))" strokeWidth="2" strokeDasharray="5 5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={chart.line} fill="none" stroke="rgb(var(--c-primary))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div className="mt-2 flex justify-between text-[11px] text-textTertiary">
+                <span>Now</span>
+                <span>{yearsLabel}</span>
+              </div>
+            </div>
           </div>
 
-          <Field label="Goal (optional)" value={goal} onChange={setGoal} placeholder="e.g. emergency fund" />
+          {/* breakdown */}
+          <div className="grid gap-3.5 sm:grid-cols-3">
+            <Stat label="Total contributions" value={result ? formatKes(result.currency, result.total_contributions) : "—"} />
+            <Stat label="Estimated growth" value={result ? formatKes(result.currency, result.estimated_growth) : "—"} accent />
+            <Stat label="Rate applied" value={result?.rate_used ? `${result.rate_used}%` : "—"} />
+          </div>
 
-          {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primaryDark focus:outline-none focus:ring-4 focus:ring-accent/20 disabled:opacity-60"
-          >
-            {loading ? "Running..." : "Run simulation"}
-          </button>
-        </form>
-          </PremiumCard>
+          {/* source + watch */}
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+              <p className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">Source &amp; freshness</p>
+              <p className="mt-2 text-[13.5px] leading-[1.55] text-textSecondary">{result?.rate_source_label ?? "Source-linked rate applied once available."}</p>
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {result ? <TrustBadge tone={freshnessBadgeTone[result.freshness] ?? "muted"}>{freshnessLabel(result.freshness)}</TrustBadge> : null}
+                {result ? <TrustBadge tone="muted">{confidenceLabel(result.source_confidence)}</TrustBadge> : null}
+                {result?.snapshot_date ? <TrustBadge tone="muted">as of {result.snapshot_date}</TrustBadge> : null}
+              </div>
+              {result?.source_url ? (
+                <a href={result.source_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-[13px] font-semibold text-accent">
+                  View source ↗
+                </a>
+              ) : null}
+            </div>
+            <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+              <p className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">What to watch</p>
+              <ul className="mt-2.5 flex flex-col gap-1.5">
+                {(result?.warnings ?? ["Past performance does not guarantee future returns."]).map((w) => (
+                  <li key={w} className="flex gap-2 text-[13px] leading-[1.5] text-textSecondary">
+                    <span className="shrink-0 text-amber">•</span>
+                    {w}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {result ? <NextSteps result={result} isAuthenticated={isAuthenticated} token={token} /> : null}
+
+          {result ? <MoreDetail result={result} /> : null}
+
+          {result?.disclaimer ? <p className="text-[11.5px] leading-[1.5] text-textTertiary">{result.disclaimer}</p> : null}
         </div>
       </div>
-
-      {result ? (
-        <div className="mt-8">
-          <ResultCard result={result} productSlug={product.slug} token={token} isAuthenticated={isAuthenticated} />
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }
 
-function Field({
+function Slider({
   label,
   value,
-  onChange,
-  type = "text",
-  placeholder
+  min,
+  max,
+  step,
+  raw,
+  onChange
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
+  min: number;
+  max: number;
+  step: number;
+  raw: number;
+  onChange: (n: number) => void;
 }) {
   return (
-    <label className="block">
-      <span className="text-xs font-semibold uppercase text-textTertiary">{label}</span>
+    <div className="mt-[18px]">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">{label}</span>
+        <span className="text-sm font-bold text-textPrimary">{value}</span>
+      </div>
       <input
-        type={type}
-        inputMode={type === "number" ? "decimal" : undefined}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-textPrimary focus:border-borderStrong focus:outline-none"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={raw}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
+        className="mt-2.5 w-full accent-primary"
       />
-    </label>
+    </div>
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ToggleBtn({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
-    <label className="flex items-center gap-2 text-sm font-medium text-textSecondary">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-border" />
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`flex-1 rounded-[10px] border px-3 py-2.5 text-[13px] font-semibold transition ${
+        on ? "border-primary bg-primary text-white" : "border-border bg-surface text-textSecondary hover:border-borderStrong"
+      }`}
+    >
+      {on ? "✓ " : ""}
       {label}
-    </label>
+    </button>
   );
 }
 
-function ResultCard({
-  result,
-  productSlug,
-  token,
-  isAuthenticated
-}: {
-  result: ProductSpecificResult;
-  productSlug: string;
-  token: string | null;
-  isAuthenticated: boolean;
-}) {
-  const currency = result.currency;
-  const estimatedValue = result.estimated_maturity_value ?? result.estimated_gross_value;
+function Legend({ swatch, children }: { swatch: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-textSecondary">
+      {swatch}
+      {children}
+    </span>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface px-[18px] py-4 shadow-card">
+      <p className="text-xs font-semibold text-textTertiary">{label}</p>
+      <p className={`mt-1.5 text-[19px] font-bold tracking-[-0.01em] ${accent ? "text-primary" : "text-textPrimary"}`}>{value}</p>
+    </div>
+  );
+}
+
+function NextSteps({ result, isAuthenticated, token }: { result: ProductSpecificResult; isAuthenticated: boolean; token: string | null }) {
   const [status, setStatus] = useState<string | null>(null);
   const [signInOpen, setSignInOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const runIdRef = useRef(result.product_simulation_run_id);
+  runIdRef.current = result.product_simulation_run_id;
 
   async function save() {
     if (!token) {
@@ -212,7 +373,7 @@ function ResultCard({
     }
     setBusy(true);
     try {
-      await saveSimulationToJournal(result.product_simulation_run_id, token);
+      await saveSimulationToJournal(runIdRef.current, token);
       setStatus("Saved to your journal as an amount range (not exact).");
     } catch {
       setStatus("Could not save to journal. Please try again.");
@@ -228,7 +389,7 @@ function ResultCard({
     }
     setBusy(true);
     try {
-      await requestSimulationReview(result.product_simulation_run_id, token);
+      await requestSimulationReview(runIdRef.current, token);
       setStatus("Professional review requested with an amount range (exact amount not shared).");
     } catch {
       setStatus("Could not request review. Please try again.");
@@ -238,110 +399,58 @@ function ResultCard({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <PremiumCard className="border-emerald/20 bg-mint md:col-span-2 xl:col-span-3">
-        <p className="text-xs font-semibold uppercase text-textTertiary">Estimated value (not guaranteed)</p>
-        <p className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-emerald">
-          {estimatedValue ? formatKes(currency, estimatedValue) : "Not available"}
-        </p>
-        <dl className="mt-4 space-y-2 text-sm">
-          <Row label="Total contributions" value={formatKes(currency, result.total_contributions)} />
-          <Row label="Estimated growth" value={formatKes(currency, result.estimated_growth)} />
-          {result.estimated_net_value ? <Row label="Estimated value after fees/tax" value={formatKes(currency, result.estimated_net_value)} /> : null}
-          {result.estimated_interest ? <Row label="Estimated interest" value={formatKes(currency, result.estimated_interest)} /> : null}
-          {result.estimated_total_coupons ? <Row label="Estimated total coupons" value={formatKes(currency, result.estimated_total_coupons)} /> : null}
-          {result.estimated_dividend ? <Row label="Estimated dividend" value={formatKes(currency, result.estimated_dividend)} /> : null}
-          <Row label="Rate used" value={result.rate_used ? `${result.rate_used}%` : "None applied"} />
-        </dl>
-      </PremiumCard>
-
-      <PremiumCard>
-        <p className="text-xs font-semibold uppercase text-textTertiary">Source &amp; freshness</p>
-        <p className="mt-2 text-sm text-textSecondary">{result.rate_source_label}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <TrustBadge tone={freshnessBadgeTone[result.freshness] ?? "muted"}>{freshnessLabel(result.freshness)}</TrustBadge>
-          <TrustBadge tone="muted">{confidenceLabel(result.source_confidence)}</TrustBadge>
-          {result.snapshot_date ? <TrustBadge tone="muted">as of {result.snapshot_date}</TrustBadge> : null}
-        </div>
-        {result.source_url ? (
-          <a href={result.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-accent underline">
-            View source
-          </a>
-        ) : null}
-      </PremiumCard>
-
-      {result.warnings.length > 0 ? (
-        <PremiumCard className="border-amber/30 bg-surfaceSubtle">
-          <p className="text-xs font-semibold uppercase text-textTertiary">What to watch</p>
-          <ul className="mt-2 space-y-1 text-sm text-textSecondary">
-            {result.warnings.map((warning) => (
-              <li key={warning}>• {warning}</li>
-            ))}
-          </ul>
-        </PremiumCard>
-      ) : null}
-
-      <ListCard title="Assumptions" items={result.assumptions} />
-      <ListCard title="Fee notes" items={result.fees_notes} />
-      <ListCard title="Tax notes" items={result.tax_notes} />
-      <ListCard title="Withdrawal & liquidity" items={result.liquidity_notes} />
-      <ListCard title="Risk" items={result.risk_notes} />
-      <ListCard title="Beginner mistakes" items={result.beginner_mistakes} />
-      <ListCard title="Questions to ask the provider or a professional" items={result.questions_to_ask} />
-
-      <PremiumCard className="md:col-span-2 xl:col-span-3">
-        <p className="text-xs font-semibold uppercase text-textTertiary">Next steps</p>
-        {status ? <p className="mt-2 text-sm font-medium text-emerald">{status}</p> : null}
-        <div className="mt-3 flex flex-wrap gap-3">
-          <button type="button" onClick={save} disabled={busy} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primaryDark disabled:opacity-60">
-            Save to journal
-          </button>
-          <button type="button" onClick={review} disabled={busy} className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
-            Request professional review
-          </button>
-          <Link href="/simulate/virtual-portfolio" className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
-            Add to a what-if portfolio
-          </Link>
-          <Link href="/simulate" className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
-            Compare another product
-          </Link>
-          <Link href="/learn" className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
-            Related learning
-          </Link>
-        </div>
-        {!isAuthenticated ? (
-          <p className="mt-3 text-xs text-textTertiary">Sign in to save to your journal or request a review. Browsing and simulating stay open to everyone.</p>
-        ) : null}
-        <Link href={`/simulate/${productSlug}#sources`} className="mt-3 inline-block text-sm font-semibold text-accent underline">
-          View sources
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <p className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">Next steps</p>
+      {status ? <p className="mt-2 text-sm font-medium text-primary">{status}</p> : null}
+      <div className="mt-3 flex flex-wrap gap-2.5">
+        <button type="button" onClick={save} disabled={busy} className="rounded-full bg-primary px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-primaryDark disabled:opacity-60">
+          Save to journal
+        </button>
+        <button type="button" onClick={review} disabled={busy} className="rounded-full border border-border bg-surface px-4 py-2.5 text-[13px] font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
+          Request professional review
+        </button>
+        <Link href="/simulate/virtual-portfolio" className="rounded-full border border-border bg-surface px-4 py-2.5 text-[13px] font-semibold text-textPrimary transition hover:bg-surfaceSubtle">
+          Add to what-if portfolio
         </Link>
-      </PremiumCard>
-
-      <p className="text-xs leading-5 text-textTertiary md:col-span-2 xl:col-span-3">{result.disclaimer}</p>
+      </div>
+      <p className="mt-3.5 text-[11.5px] leading-[1.5] text-textTertiary">
+        Saved to your journal as an amount range, never the exact figure. Estimates only, verify the rate with the provider or regulator before committing real money.
+      </p>
+      {!isAuthenticated ? (
+        <p className="mt-2 text-[11.5px] text-textTertiary">Sign in to save or request a review. Browsing and simulating stay open to everyone.</p>
+      ) : null}
       <SignInModal open={signInOpen} onClose={() => setSignInOpen(false)} />
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function MoreDetail({ result }: { result: ProductSpecificResult }) {
+  const groups: Array<[string, string[]]> = [
+    ["Assumptions", result.assumptions],
+    ["Fee notes", result.fees_notes],
+    ["Tax notes", result.tax_notes],
+    ["Withdrawal & liquidity", result.liquidity_notes],
+    ["Risk", result.risk_notes],
+    ["Beginner mistakes", result.beginner_mistakes],
+    ["Questions to ask the provider or a professional", result.questions_to_ask]
+  ];
+  const visible = groups.filter(([, items]) => items && items.length > 0);
+  if (visible.length === 0) return null;
   return (
-    <div className="flex justify-between">
-      <dt className="text-textSecondary">{label}</dt>
-      <dd className="font-semibold text-textPrimary">{value}</dd>
-    </div>
-  );
-}
-
-function ListCard({ title, items }: { title: string; items: string[] }) {
-  if (!items || items.length === 0) return null;
-  return (
-    <PremiumCard>
-      <p className="text-xs font-semibold uppercase text-textTertiary">{title}</p>
-      <ul className="mt-2 space-y-1 text-sm text-textSecondary">
-        {items.map((item) => (
-          <li key={item}>• {item}</li>
+    <details className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <summary className="cursor-pointer text-sm font-semibold text-textPrimary">More detail (assumptions, fees, tax, risk)</summary>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {visible.map(([title, items]) => (
+          <div key={title}>
+            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-textTertiary">{title}</p>
+            <ul className="mt-2 space-y-1 text-sm text-textSecondary">
+              {items.map((item) => (
+                <li key={item}>• {item}</li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
-    </PremiumCard>
+      </div>
+    </details>
   );
 }

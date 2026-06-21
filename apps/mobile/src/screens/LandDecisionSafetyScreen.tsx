@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import type { PesaRouteApiClient } from "../api/client";
 import {
@@ -23,13 +24,152 @@ import type {
   LandRiskScoreResult
 } from "../types";
 
-type LandView = "intro" | "list" | "create" | "detail" | "compare";
+// Land module accent (matches the web "MaliPrime Liquid" primary green and the
+// Land Mobile.dc.html design). The shared mobile theme uses ink-black as its
+// primary, so the Land surfaces define their own green accent locally.
+const ACCENT = "#1A6B45";
+const ACCENT_SOFT = "#E6F2EA";
+const MAP_BG = "#E7EEE7";
+const TRACK = "#ECEAE2";
+const INK = "#11110F";
+const INK2 = "#5B5A55";
+const INK3 = "#85827A";
+const AMBER = "#8D6A2E";
+const AMBER_SOFT = "rgba(141,106,46,0.14)";
+const DANGER = "#A33B32";
+const DANGER_SOFT = "rgba(163,59,50,0.1)";
+const SURFACE_INK = "#10182B";
 
-type Props = {
-  apiClient: PesaRouteApiClient;
-  auth: AuthCredentials | null;
-  onRequestAuth: () => void;
+const SCREEN = Dimensions.get("window");
+const MAP_H = Math.max(470, Math.round(SCREEN.height - 250));
+// The screen renders inside App.tsx's content padding (18) plus this screen's
+// own ScrollView padding (maliPrime.spacing.lg = 16). The map breaks out of both
+// to sit edge-to-edge under the app header.
+const OUTER_PAD = 18;
+const BREAKOUT = OUTER_PAD + maliPrime.spacing.lg;
+const PEEK_H = 250;
+const EXPANDED_H = Math.max(360, MAP_H - 96);
+
+type LandView = "map" | "checklist" | "compare" | "guide" | "create" | "detail" | "list";
+
+type CountyMarket = {
+  id: string;
+  name: string;
+  region: string;
+  hotspot: boolean;
+  avgAcre: string;
+  appreciation: string;
+  yieldPct: string;
+  // marker position as a percent of the map area
+  mx: number;
+  my: number;
+  r: number;
+  tone: string;
+  totalReturn: { land: number; mmf: number; tbill: number };
+  sponsored: { name: string; meta: string; price: string };
 };
+
+// Placeholder county market data. Structured so it can be swapped for a backend
+// feed (e.g. apiClient.landCountyMarket()) without touching the UI.
+const COUNTIES: CountyMarket[] = [
+  {
+    id: "kiambu",
+    name: "Kiambu",
+    region: "Central",
+    hotspot: true,
+    avgAcre: "KES 18M",
+    appreciation: "+12%",
+    yieldPct: "6%",
+    mx: 55,
+    my: 60,
+    r: 25,
+    tone: "#2E8659",
+    totalReturn: { land: 18, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "Tilisi Gardens", meta: "Serviced plots · Limuru", price: "KES 4.9M" }
+  },
+  {
+    id: "kajiado",
+    name: "Kajiado",
+    region: "Rift Valley",
+    hotspot: true,
+    avgAcre: "KES 9M",
+    appreciation: "+15%",
+    yieldPct: "4%",
+    mx: 60,
+    my: 82,
+    r: 20,
+    tone: "#1A6B45",
+    totalReturn: { land: 20, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "Kitengela Acacia", meta: "50x100 plots · Kitengela", price: "KES 1.4M" }
+  },
+  {
+    id: "nakuru",
+    name: "Nakuru",
+    region: "Rift Valley",
+    hotspot: false,
+    avgAcre: "KES 6.5M",
+    appreciation: "+9%",
+    yieldPct: "5%",
+    mx: 38,
+    my: 70,
+    r: 20,
+    tone: "#5FAE81",
+    totalReturn: { land: 14, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "Greenpark Estate", meta: "Quarter-acre · Nakuru East", price: "KES 2.1M" }
+  },
+  {
+    id: "machakos",
+    name: "Machakos",
+    region: "Eastern",
+    hotspot: false,
+    avgAcre: "KES 4.8M",
+    appreciation: "+8%",
+    yieldPct: "5%",
+    mx: 74,
+    my: 73,
+    r: 20,
+    tone: "#9FCBB0",
+    totalReturn: { land: 12, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "Malaa Ridge", meta: "Eighth-acre · Malaa", price: "KES 0.9M" }
+  },
+  {
+    id: "nyeri",
+    name: "Nyeri",
+    region: "Central",
+    hotspot: false,
+    avgAcre: "KES 5.2M",
+    appreciation: "+7%",
+    yieldPct: "6%",
+    mx: 50,
+    my: 48,
+    r: 18,
+    tone: "#5FAE81",
+    totalReturn: { land: 11, mmf: 11.8, tbill: 16 },
+    sponsored: { name: "Mt. Kenya View", meta: "Quarter-acre · Nyeri", price: "KES 1.8M" }
+  }
+];
+
+const METRICS = [
+  { key: "price", label: "Avg price" },
+  { key: "appreciation", label: "Appreciation" },
+  { key: "yield", label: "Yield" }
+] as const;
+type MetricKey = (typeof METRICS)[number]["key"];
+
+const BEFORE_YOU_PAY_STEPS = [
+  {
+    title: "See the title first",
+    body: "Confirm the parcel number matches the plot. A title you haven't seen is a red flag."
+  },
+  {
+    title: "Do an official search",
+    body: "Via Ardhisasa / Ministry of Lands, ideally through an advocate."
+  },
+  {
+    title: "Use a qualified advocate",
+    body: "Review title, search, and agreement before any money moves."
+  }
+];
 
 const SELLER_TYPES = ["individual", "company", "agent", "chama", "family_member", "unknown"];
 const TITLE_STATUSES = ["title_seen", "title_not_seen", "mother_title", "allotment_letter", "unknown"];
@@ -37,17 +177,24 @@ const INTENDED_USES = ["residential", "agricultural", "commercial", "speculation
 const SCENARIOS = ["conservative", "neutral", "optimistic"];
 const REVIEW_TYPES = ["land_lawyer", "surveyor", "valuer", "diaspora_land_adviser", "chama_land_adviser"];
 
-const DISCLAIMER =
-  "PesaRoute does not verify land ownership, provide legal advice, or guarantee that a land deal is safe " +
-  "or will appreciate. Always verify through official sources (Ardhisasa / Ministry of Lands) and qualified " +
-  "professionals before sending money.";
-
 function label(value: string): string {
   return value.replace(/_/g, " ");
 }
 
+function metricValue(county: CountyMarket, metric: MetricKey): string {
+  if (metric === "appreciation") return county.appreciation;
+  if (metric === "yield") return county.yieldPct;
+  return county.avgAcre;
+}
+
+type Props = {
+  apiClient: PesaRouteApiClient;
+  auth: AuthCredentials | null;
+  onRequestAuth: () => void;
+};
+
 export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Props) {
-  const [view, setView] = useState<LandView>("intro");
+  const [view, setView] = useState<LandView>("map");
   const [opportunities, setOpportunities] = useState<LandOpportunity[]>([]);
   const [selected, setSelected] = useState<LandOpportunity | null>(null);
   const [risk, setRisk] = useState<LandRiskScoreResult | null>(null);
@@ -55,6 +202,13 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Map state
+  const [countyId, setCountyId] = useState<string>(COUNTIES[0].id);
+  const [metric, setMetric] = useState<MetricKey>("price");
+  const [expanded, setExpanded] = useState(false);
+  const sheetH = useRef(new Animated.Value(PEEK_H)).current;
+  const county = COUNTIES.find((c) => c.id === countyId) ?? COUNTIES[0];
 
   // Create form
   const [form, setForm] = useState({
@@ -80,6 +234,14 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
 
   const setField = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
+  useEffect(() => {
+    Animated.timing(sheetH, {
+      toValue: expanded ? EXPANDED_H : PEEK_H,
+      duration: 240,
+      useNativeDriver: false
+    }).start();
+  }, [expanded, sheetH]);
+
   const loadList = useCallback(async () => {
     if (!auth) return;
     setLoading(true);
@@ -97,6 +259,12 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     if (view === "list") void loadList();
   }, [view, loadList]);
 
+  // When the user opens the checklist with nothing selected, surface their most
+  // recent saved land check so the design's checklist screen has real data.
+  useEffect(() => {
+    if (view === "checklist" && !selected && auth) void loadList();
+  }, [view, selected, auth, loadList]);
+
   async function openDetail(id: number) {
     if (!auth) return;
     setLoading(true);
@@ -108,6 +276,21 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
       setView("detail");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open this land check.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openChecklistFor(id: number) {
+    if (!auth) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const opp = await apiClient.getLandOpportunity(id, auth);
+      setSelected(opp);
+      setView("checklist");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not open this checklist.");
     } finally {
       setLoading(false);
     }
@@ -141,7 +324,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
         auth
       );
       setSelected(opp);
-      setView("detail");
+      setView("checklist");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save this land check.");
     } finally {
@@ -163,16 +346,17 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     }
   }
 
-  async function cycleItem(item: LandDueDiligenceItem) {
-    if (!auth || !selected) return;
-    const next =
-      item.status === "not_started"
-        ? "requested"
-        : item.status === "requested"
-          ? "verified_by_user"
-          : item.status === "verified_by_user"
-            ? "failed"
-            : "not_started";
+  function nextStatus(status: string): string {
+    // Checklist tap toggles done <-> not done (design is a binary checkbox).
+    return status === "verified_by_user" || status === "reviewed_by_professional" ? "not_started" : "verified_by_user";
+  }
+
+  async function toggleItem(item: LandDueDiligenceItem) {
+    if (!auth || !selected) {
+      onRequestAuth();
+      return;
+    }
+    const next = nextStatus(item.status);
     try {
       await apiClient.updateLandChecklistItem(item.id, { status: next }, auth);
       setSelected((prev) =>
@@ -241,45 +425,421 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     }
   }
 
-  // --- Renders ---------------------------------------------------------------
+  function selectCounty(id: string) {
+    setCountyId(id);
+    setExpanded(true);
+  }
 
-  function renderIntro() {
+  // --- Sub-view chrome -------------------------------------------------------
+
+  function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
     return (
-      <View style={s.stack}>
-        <Text style={maliPrimeText.eyebrow}>Land Decision Safety</Text>
-        <Text style={maliPrimeText.title}>Before you pay a land deposit, check the route.</Text>
-        <Text style={maliPrimeText.subtitle}>
-          Serrari-style platforms compare market prices. PesaRoute helps you make a safe, documented, reviewed
-          decision before you send money — with a due-diligence checklist, visible risk flags, and a handoff to a
-          verified professional.
-        </Text>
-        <PremiumCard tone="warning">
-          <Text style={s.body}>{DISCLAIMER}</Text>
-        </PremiumCard>
-        <PrimaryButton onPress={() => setView(auth ? "list" : "create")}>Start a land check</PrimaryButton>
-        <SecondaryButton onPress={() => setView("compare")}>Compare land vs alternatives</SecondaryButton>
-        {auth ? (
-          <SecondaryButton onPress={() => setView("list")}>My land checks</SecondaryButton>
-        ) : (
-          <Text style={s.muted}>Sign in to save a land check, checklist, and request a professional review.</Text>
-        )}
+      <View style={s.subHeader}>
+        <Pressable accessibilityRole="button" onPress={onBack} style={({ pressed }) => [s.backBtn, pressed && s.pressed]}>
+          <Ionicons name="chevron-back" size={20} color={INK} />
+        </Pressable>
+        <Text style={s.subTitle}>{title}</Text>
       </View>
     );
   }
+
+  // --- 01 / 02  MAP + COUNTY SHEET -------------------------------------------
+
+  function renderMap() {
+    return (
+      <View style={s.mapBreakout}>
+        <View style={[s.mapArea, { height: MAP_H }]}>
+          {/* stylised landmass + markers */}
+          <View style={s.landmass} pointerEvents="none" />
+          {COUNTIES.map((c) => {
+            const active = c.id === countyId;
+            return (
+              <Pressable
+                key={c.id}
+                accessibilityRole="button"
+                onPress={() => selectCounty(c.id)}
+                style={[
+                  s.marker,
+                  {
+                    left: `${c.mx}%`,
+                    top: `${c.my}%`,
+                    width: c.r * 2,
+                    height: c.r * 2,
+                    borderRadius: c.r,
+                    marginLeft: -c.r,
+                    marginTop: -c.r,
+                    backgroundColor: c.tone,
+                    borderColor: active ? INK : "#FFFFFF",
+                    borderWidth: active ? 3 : 2
+                  }
+                ]}
+              >
+                {active ? <Text style={s.markerLabel}>{c.name}</Text> : null}
+              </Pressable>
+            );
+          })}
+
+          {/* floating search bar */}
+          <View style={s.mapTopBar} pointerEvents="box-none">
+            <View style={s.searchPill}>
+              <Ionicons name="search" size={16} color={INK3} />
+              <Text style={s.searchText}>Search a county</Text>
+            </View>
+          </View>
+
+          {/* metric chips */}
+          <View style={s.metricRow} pointerEvents="box-none">
+            {METRICS.map((m) => {
+              const active = m.key === metric;
+              return (
+                <Pressable
+                  key={m.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setMetric(m.key)}
+                  style={[s.metricChip, active && s.metricChipActive]}
+                >
+                  <Text style={[s.metricChipText, active && s.metricChipTextActive]}>{m.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* bottom sheet */}
+          <Animated.View style={[s.sheet, { height: sheetH }]}>
+            <Pressable onPress={() => setExpanded((v) => !v)} style={s.handleHit} accessibilityRole="button">
+              <View style={s.handle} />
+            </Pressable>
+
+            <View style={s.sheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.sheetEyebrow}>{county.region}</Text>
+                <Text style={s.sheetTitle}>{county.name} County</Text>
+              </View>
+              {county.hotspot ? (
+                <View style={s.hotspotBadge}>
+                  <Text style={s.hotspotText}>Hotspot</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {expanded ? (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.sheetScroll}>
+                <Text style={s.sheetSection}>Total return vs alternatives</Text>
+                <View style={{ gap: 10, marginTop: 11 }}>
+                  <ReturnBar name="Kiambu land" value={`~${county.totalReturn.land}%`} pct={Math.min(100, county.totalReturn.land * 3.6)} tone={ACCENT} strong />
+                  <ReturnBar name="MMF" value={`${county.totalReturn.mmf}%`} pct={Math.min(100, county.totalReturn.mmf * 3.6)} tone="#9FCBB0" />
+                  <ReturnBar name="T-bill" value={`${county.totalReturn.tbill}%`} pct={Math.min(100, county.totalReturn.tbill * 3.6)} tone="#9FCBB0" />
+                </View>
+
+                <View style={s.sheetCtaRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setView("compare")}
+                    style={({ pressed }) => [s.sheetPrimary, pressed && s.pressed]}
+                  >
+                    <Text style={s.sheetPrimaryText}>Compare</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setView(selected ? "checklist" : auth ? "list" : "create")}
+                    style={({ pressed }) => [s.sheetGhost, pressed && s.pressed]}
+                  >
+                    <Text style={s.sheetGhostText}>Checklist</Text>
+                  </Pressable>
+                </View>
+
+                <Text style={[s.sheetSection, { marginTop: 18 }]}>Sponsored in {county.name}</Text>
+                <View style={s.sponsorCard}>
+                  <View style={s.sponsorThumb}>
+                    <Ionicons name="home-outline" size={30} color="rgba(255,255,255,0.85)" />
+                    <View style={s.sponsorTag}>
+                      <Text style={s.sponsorTagText}>Sponsored</Text>
+                    </View>
+                  </View>
+                  <View style={s.sponsorBody}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.sponsorName}>{county.sponsored.name}</Text>
+                      <Text style={s.sponsorMeta}>{county.sponsored.meta}</Text>
+                    </View>
+                    <Text style={s.sponsorPrice}>{county.sponsored.price}</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            ) : (
+              <View>
+                <View style={s.statRow}>
+                  <Stat label="Avg/acre" value={county.avgAcre} />
+                  <Stat label="Apprec." value={county.appreciation} tone={ACCENT} />
+                  <Stat label="Yield" value={county.yieldPct} />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setExpanded(true)}
+                  style={({ pressed }) => [s.sheetPrimaryFull, pressed && s.pressed]}
+                >
+                  <Text style={s.sheetPrimaryText}>View county details</Text>
+                </Pressable>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+      </View>
+    );
+  }
+
+  // --- 03  CHECKLIST ---------------------------------------------------------
+
+  function renderChecklist() {
+    if (!selected) {
+      return (
+        <View style={s.stack}>
+          <SubHeader title="Land checklist" onBack={() => setView("map")} />
+          {!auth ? (
+            <>
+              <EmptyState title="Sign in required" body="Sign in to build and track a before-you-pay checklist for a specific plot." />
+              <PrimaryButton onPress={onRequestAuth}>Sign in</PrimaryButton>
+            </>
+          ) : loading ? (
+            <LoadingState label="Loading your land checks..." />
+          ) : opportunities.length ? (
+            <>
+              <Text style={s.muted}>Pick a land check to open its checklist.</Text>
+              {opportunities.map((opp) => (
+                <Pressable key={opp.id} onPress={() => openChecklistFor(opp.id)} style={({ pressed }) => [s.pickRow, pressed && s.pressed]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.pickTitle}>{opp.title}</Text>
+                    <Text style={s.muted}>{opp.location_text}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={INK3} />
+                </Pressable>
+              ))}
+              <SecondaryButton onPress={() => setView("create")}>New land check</SecondaryButton>
+            </>
+          ) : (
+            <>
+              <EmptyState title="No land check yet" body="Start a land check to build a before-you-pay due-diligence checklist." />
+              <PrimaryButton onPress={() => setView("create")}>Start a land check</PrimaryButton>
+            </>
+          )}
+        </View>
+      );
+    }
+
+    const items = selected.due_diligence_items ?? [];
+    const done = items.filter((i) => i.status === "verified_by_user" || i.status === "reviewed_by_professional").length;
+    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+
+    return (
+      <View style={s.stack}>
+        <SubHeader title="Land checklist" onBack={() => setView("map")} />
+        <Text style={s.muted}>{selected.title}</Text>
+
+        <View style={s.progressRow}>
+          <Text style={s.progressCaption}>Before you send money</Text>
+          <Text style={s.progressCount}>
+            {done}/{items.length || 8}
+          </Text>
+        </View>
+        <View style={s.progressTrack}>
+          <View style={[s.progressFill, { width: `${pct}%` }]} />
+        </View>
+
+        <View style={{ gap: 9, marginTop: 4 }}>
+          {items.map((item) => {
+            const checked = item.status === "verified_by_user" || item.status === "reviewed_by_professional";
+            const failed = item.status === "failed";
+            return (
+              <Pressable
+                key={item.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                onPress={() => toggleItem(item)}
+                style={({ pressed }) => [s.checkItem, checked && s.checkItemDone, pressed && s.pressed]}
+              >
+                <View style={[s.checkBox, checked && s.checkBoxOn, failed && s.checkBoxFail]}>
+                  {checked ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.checkTitleRow}>
+                    <Text style={[s.checkTitle, checked && s.checkTitleDone]}>{item.title}</Text>
+                    {item.importance === "critical" ? (
+                      <Pill text="Critical" color={DANGER} bg={DANGER_SOFT} />
+                    ) : item.importance === "high" ? (
+                      <Pill text="High" color={AMBER} bg={AMBER_SOFT} />
+                    ) : null}
+                  </View>
+                  {!checked && item.source_note ? <Text style={s.checkNote}>{item.source_note}</Text> : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={s.dangerCard}>
+          <Text style={s.dangerCardText}>
+            PesaRoute does not verify ownership or guarantee a deal is safe. Verify with official sources (Ardhisasa /
+            Ministry of Lands) and a qualified advocate before sending money.
+          </Text>
+        </View>
+
+        <SecondaryButton onPress={saveToJournal}>Save reasoning to journal</SecondaryButton>
+        <Text style={s.fieldLabel}>Request a verified professional</Text>
+        <View style={s.chips}>
+          {REVIEW_TYPES.map((t) => (
+            <GoalChip key={t} label={label(t)} onPress={() => requestReview(t)} />
+          ))}
+        </View>
+        {notice ? (
+          <PremiumCard tone="success">
+            <Text style={s.body}>{notice}</Text>
+          </PremiumCard>
+        ) : null}
+        <SecondaryButton onPress={() => openDetail(selected.id)}>Open full risk view</SecondaryButton>
+      </View>
+    );
+  }
+
+  // --- 04  COMPARE -----------------------------------------------------------
+
+  function renderCompare() {
+    const landValue = comparison ? String((comparison.land_scenario as Record<string, unknown>).estimated_value) : null;
+    return (
+      <View style={s.stack}>
+        <SubHeader title="Compare land" onBack={() => setView("map")} />
+
+        <View style={s.compareCard}>
+          <Text style={s.inputLabel}>Land price (KES)</Text>
+          <TextInput
+            style={s.input}
+            value={compareForm.land_price}
+            onChangeText={(t) => setCompareForm((f) => ({ ...f, land_price: t }))}
+            keyboardType="numeric"
+            placeholderTextColor={INK3}
+          />
+          <View style={s.compareInputRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.inputLabel}>Years</Text>
+              <TextInput
+                style={s.input}
+                value={compareForm.holding_period_years}
+                onChangeText={(t) => setCompareForm((f) => ({ ...f, holding_period_years: t }))}
+                keyboardType="numeric"
+                placeholderTextColor={INK3}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.inputLabel}>Scenario</Text>
+              <View style={s.scenarioRow}>
+                {SCENARIOS.map((sc) => {
+                  const active = compareForm.appreciation_scenario === sc;
+                  return (
+                    <Pressable
+                      key={sc}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setCompareForm((f) => ({ ...f, appreciation_scenario: sc }))}
+                      style={[s.scenarioChip, active && s.scenarioChipActive]}
+                    >
+                      <Text style={[s.scenarioText, active && s.scenarioTextActive]}>{sc}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={s.warnRow}>
+          <Ionicons name="warning-outline" size={16} color={AMBER} />
+          <Text style={s.warnText}>Appreciation not guaranteed. Land is illiquid with legal &amp; transfer costs.</Text>
+        </View>
+
+        <PrimaryButton disabled={loading} onPress={runComparison}>
+          {loading ? "Comparing..." : "Compare"}
+        </PrimaryButton>
+
+        {comparison ? (
+          <>
+            <View style={s.resultCard}>
+              <View style={s.resultHead}>
+                <Text style={s.resultName}>Land</Text>
+                <Pill text="liquidity: low" color={INK2} bg="#F6F5F0" border />
+              </View>
+              <Text style={s.resultMeta}>
+                After {compareForm.holding_period_years} yr: <Text style={s.resultStrong}>KES {landValue}</Text>
+              </Text>
+            </View>
+            <View style={s.altRow}>
+              {comparison.alternatives.map((alt, idx) => (
+                <View key={idx} style={s.altCard}>
+                  <Text style={s.altName}>{String(alt.label)}</Text>
+                  <Text style={s.altMeta}>
+                    <Text style={s.resultStrong}>KES {String(alt.estimated_value)}</Text>
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={s.muted}>{comparison.liquidity_comparison}</Text>
+            <Text style={s.muted}>{comparison.disclaimer}</Text>
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
+  // --- 05  BEFORE YOU PAY ----------------------------------------------------
+
+  function renderGuide() {
+    return (
+      <View style={s.stack}>
+        <SubHeader title="Before you pay" onBack={() => setView("map")} />
+
+        <View style={s.guideHero}>
+          <Text style={s.guideEyebrow}>Public guide</Text>
+          <Text style={s.guideHeadline}>Most land losses happen when money moves before verification.</Text>
+        </View>
+
+        <View style={{ gap: 10 }}>
+          {BEFORE_YOU_PAY_STEPS.map((step, idx) => (
+            <View key={idx} style={s.stepCard}>
+              <View style={s.stepNum}>
+                <Text style={s.stepNumText}>{idx + 1}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.stepTitle}>{step.title}</Text>
+                <Text style={s.stepBody}>{step.body}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setView(selected ? "checklist" : auth ? "list" : "create")}
+          style={({ pressed }) => [s.sheetPrimaryFull, pressed && s.pressed]}
+        >
+          <Text style={s.sheetPrimaryText}>Open the full checklist →</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // --- Workflow: list / create / detail (wired, lightly reskinned) -----------
 
   function renderList() {
     if (!auth) {
       return (
         <View style={s.stack}>
+          <SubHeader title="My land checks" onBack={() => setView("map")} />
           <EmptyState title="Sign in required" body="Sign in from the Profile tab to save and track land checks." />
           <PrimaryButton onPress={onRequestAuth}>Sign in</PrimaryButton>
-          <SecondaryButton onPress={() => setView("intro")}>Back</SecondaryButton>
         </View>
       );
     }
     return (
       <View style={s.stack}>
-        <Text style={maliPrimeText.sectionTitle}>My land checks</Text>
+        <SubHeader title="My land checks" onBack={() => setView("map")} />
         <PrimaryButton onPress={() => setView("create")}>New land opportunity</PrimaryButton>
         {loading ? <LoadingState /> : null}
         {!loading && opportunities.length === 0 ? (
@@ -293,10 +853,9 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
               <RiskBadge level={opp.risk_level} />
               <TrustBadge tone="muted">{label(opp.decision_stage)}</TrustBadge>
             </View>
-            <SecondaryButton onPress={() => openDetail(opp.id)}>Open</SecondaryButton>
+            <SecondaryButton onPress={() => openChecklistFor(opp.id)}>Open checklist</SecondaryButton>
           </PremiumCard>
         ))}
-        <SecondaryButton onPress={() => setView("intro")}>Back</SecondaryButton>
       </View>
     );
   }
@@ -323,7 +882,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
           value={form[key]}
           onChangeText={(t) => setField(key, t)}
           placeholder={placeholder}
-          placeholderTextColor={maliPrime.colors.textTertiary}
+          placeholderTextColor={INK3}
           keyboardType={numeric ? "numeric" : "default"}
         />
       </View>
@@ -333,7 +892,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
   function renderCreate() {
     return (
       <View style={s.stack}>
-        <Text style={maliPrimeText.sectionTitle}>New land opportunity</Text>
+        <SubHeader title="New land check" onBack={() => setView(auth ? "list" : "map")} />
         <Text style={s.muted}>This is your private decision workspace. Nothing is shared unless you choose to.</Text>
         {input("Title", "title", "e.g. 2 acres in Kitengela")}
         {input("Location", "location_text", "Town, county")}
@@ -347,7 +906,6 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
         <PrimaryButton disabled={loading} onPress={createOpportunity}>
           Save and build checklist
         </PrimaryButton>
-        <SecondaryButton onPress={() => setView(auth ? "list" : "intro")}>Cancel</SecondaryButton>
       </View>
     );
   }
@@ -357,7 +915,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     const items = selected.due_diligence_items ?? [];
     return (
       <View style={s.stack}>
-        <Text style={maliPrimeText.sectionTitle}>{selected.title}</Text>
+        <SubHeader title={selected.title} onBack={() => setView("checklist")} />
         <Text style={s.muted}>{selected.location_text}</Text>
 
         <PremiumCard tone={risk && (risk.risk_level === "high" || risk.risk_level === "very_high") ? "danger" : "alt"}>
@@ -377,9 +935,7 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
                   {f.suggested_action ? <Text style={s.muted}>→ {f.suggested_action}</Text> : null}
                 </View>
               ))}
-              {risk.suggested_next_steps.length ? (
-                <Text style={s.muted}>Next: {risk.suggested_next_steps[0]}</Text>
-              ) : null}
+              {risk.suggested_next_steps.length ? <Text style={s.muted}>Next: {risk.suggested_next_steps[0]}</Text> : null}
             </>
           ) : (
             <Text style={s.muted}>Run the check to see visible risk based on your checklist.</Text>
@@ -407,119 +963,90 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
               </TrustBadge>
               {item.importance === "critical" ? <TrustBadge tone="danger">critical</TrustBadge> : null}
             </View>
-            {item.source_note ? <Text style={s.muted}>{item.source_note}</Text> : null}
-            <SecondaryButton onPress={() => cycleItem(item)}>Update status</SecondaryButton>
+            <SecondaryButton onPress={() => toggleItem(item)}>Toggle done</SecondaryButton>
           </PremiumCard>
         ))}
-
-        <Text style={maliPrimeText.sectionTitle}>Actions</Text>
-        {notice ? (
-          <PremiumCard tone="success">
-            <Text style={s.body}>{notice}</Text>
-          </PremiumCard>
-        ) : null}
-        <SecondaryButton onPress={saveToJournal}>Save reasoning to journal</SecondaryButton>
-        <Text style={s.fieldLabel}>Request a verified professional</Text>
-        <View style={s.chips}>
-          {REVIEW_TYPES.map((t) => (
-            <GoalChip key={t} label={label(t)} onPress={() => requestReview(t)} />
-          ))}
-        </View>
-        <Text style={s.muted}>
-          Sharing is off by default: documents stay private and your exact amount is hidden. Access expires
-          automatically.
-        </Text>
-        <SecondaryButton onPress={() => setView("list")}>Back to my checks</SecondaryButton>
+        <SecondaryButton onPress={() => setView("checklist")}>Back to checklist</SecondaryButton>
       </View>
     );
   }
 
-  function renderCompare() {
-    return (
-      <View style={s.stack}>
-        <Text style={maliPrimeText.sectionTitle}>Land vs alternatives</Text>
-        <Text style={s.muted}>Educational comparison only. Land appreciation is not guaranteed and land is illiquid.</Text>
-        <View style={s.field}>
-          <Text style={s.fieldLabel}>Land price (KES)</Text>
-          <TextInput
-            style={s.input}
-            value={compareForm.land_price}
-            onChangeText={(t) => setCompareForm((f) => ({ ...f, land_price: t }))}
-            keyboardType="numeric"
-            placeholderTextColor={maliPrime.colors.textTertiary}
-          />
-        </View>
-        <View style={s.field}>
-          <Text style={s.fieldLabel}>Holding period (years)</Text>
-          <TextInput
-            style={s.input}
-            value={compareForm.holding_period_years}
-            onChangeText={(t) => setCompareForm((f) => ({ ...f, holding_period_years: t }))}
-            keyboardType="numeric"
-            placeholderTextColor={maliPrime.colors.textTertiary}
-          />
-        </View>
-        <View style={s.field}>
-          <Text style={s.fieldLabel}>Appreciation scenario</Text>
-          <View style={s.chips}>
-            {SCENARIOS.map((sc) => (
-              <GoalChip
-                key={sc}
-                active={compareForm.appreciation_scenario === sc}
-                label={sc}
-                onPress={() => setCompareForm((f) => ({ ...f, appreciation_scenario: sc }))}
-              />
-            ))}
-          </View>
-        </View>
-        <PrimaryButton disabled={loading} onPress={runComparison}>
-          Compare
-        </PrimaryButton>
+  // --- Land sub-navigation (shown under the map) -----------------------------
 
-        {comparison ? (
-          <>
-            <PremiumCard tone="warning">
-              <Text style={s.body}>{comparison.warning}</Text>
-            </PremiumCard>
-            <PremiumCard>
-              <Text style={maliPrimeText.sectionTitle}>Land</Text>
-              <Text style={s.body}>
-                Estimated value: KES {String((comparison.land_scenario as Record<string, unknown>).estimated_value)}
-              </Text>
-              <Text style={s.muted}>{String((comparison.land_scenario as Record<string, unknown>).note)}</Text>
-              <View style={s.row}>
-                <TrustBadge tone="muted">liquidity: low</TrustBadge>
-                <TrustBadge tone="danger">due diligence: high</TrustBadge>
-              </View>
-            </PremiumCard>
-            {comparison.alternatives.map((alt, idx) => (
-              <PremiumCard key={idx}>
-                <Text style={maliPrimeText.sectionTitle}>{String(alt.label)}</Text>
-                <Text style={s.body}>Estimated value: KES {String(alt.estimated_value)}</Text>
-                <View style={s.row}>
-                  <TrustBadge tone="muted">liquidity: {String(alt.liquidity)}</TrustBadge>
-                  <TrustBadge tone="muted">risk: {String(alt.risk)}</TrustBadge>
-                </View>
-              </PremiumCard>
-            ))}
-            <Text style={s.muted}>{comparison.liquidity_comparison}</Text>
-            <Text style={s.muted}>{comparison.disclaimer}</Text>
-          </>
-        ) : null}
-        <SecondaryButton onPress={() => setView("intro")}>Back</SecondaryButton>
+  function LandNav() {
+    const tabs: Array<{ key: LandView; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+      { key: "map", label: "Map", icon: "map-outline" },
+      { key: "checklist", label: "Checklist", icon: "checkbox-outline" },
+      { key: "compare", label: "Compare", icon: "stats-chart-outline" },
+      { key: "guide", label: "Before you pay", icon: "shield-checkmark-outline" }
+    ];
+    return (
+      <View style={s.landNav}>
+        {tabs.map((t) => {
+          const active = view === t.key || (t.key === "checklist" && (view === "create" || view === "detail" || view === "list"));
+          return (
+            <Pressable
+              key={t.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              onPress={() => setView(t.key)}
+              style={({ pressed }) => [s.landNavItem, active && s.landNavItemActive, pressed && s.pressed]}
+            >
+              <Ionicons name={t.icon} size={16} color={active ? "#FFFFFF" : INK2} />
+              <Text style={[s.landNavText, active && s.landNavTextActive]}>{t.label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled" scrollEnabled={view !== "map"}>
       {error ? <ErrorState message={error} /> : null}
-      {view === "intro" && renderIntro()}
+      {view === "map" ? renderMap() : null}
+      {view !== "map" ? <LandNav /> : null}
+      {view === "checklist" && renderChecklist()}
+      {view === "compare" && renderCompare()}
+      {view === "guide" && renderGuide()}
       {view === "list" && renderList()}
       {view === "create" && renderCreate()}
       {view === "detail" && renderDetail()}
-      {view === "compare" && renderCompare()}
+      {view === "map" ? <LandNav /> : null}
     </ScrollView>
+  );
+}
+
+// --- small presentational helpers --------------------------------------------
+
+function Stat({ label: l, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <View style={s.statTile}>
+      <Text style={s.statLabel}>{l}</Text>
+      <Text style={[s.statValue, tone ? { color: tone } : null]}>{value}</Text>
+    </View>
+  );
+}
+
+function ReturnBar({ name, value, pct, tone, strong }: { name: string; value: string; pct: number; tone: string; strong?: boolean }) {
+  return (
+    <View>
+      <View style={s.returnRow}>
+        <Text style={[s.returnName, strong && { color: INK }]}>{name}</Text>
+        <Text style={[s.returnValue, strong && { color: ACCENT }]}>{value}</Text>
+      </View>
+      <View style={s.returnTrack}>
+        <View style={[s.returnFill, { width: `${pct}%`, backgroundColor: tone }]} />
+      </View>
+    </View>
+  );
+}
+
+function Pill({ text, color, bg, border }: { text: string; color: string; bg: string; border?: boolean }) {
+  return (
+    <View style={[s.pill, { backgroundColor: bg }, border ? s.pillBorder : null]}>
+      <Text style={[s.pillText, { color }]}>{text}</Text>
+    </View>
   );
 }
 
@@ -528,20 +1055,280 @@ const s = StyleSheet.create({
   stack: { gap: maliPrime.spacing.md },
   row: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginVertical: 6 },
   chips: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  field: { gap: 6 },
-  fieldLabel: { color: maliPrime.colors.textTertiary, fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
+  pressed: { opacity: 0.82 },
+
+  // sub-view header
+  subHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: maliPrime.colors.surface,
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border
+  },
+  subTitle: { fontSize: 18, fontWeight: "700", color: INK },
+
+  // Land sub-nav
+  landNav: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+  landNavItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: maliPrime.colors.surface,
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border
+  },
+  landNavItemActive: { backgroundColor: ACCENT, borderColor: ACCENT },
+  landNavText: { fontSize: 12.5, fontWeight: "700", color: INK2 },
+  landNavTextActive: { color: "#FFFFFF" },
+
+  // --- MAP ---
+  mapBreakout: { marginHorizontal: -BREAKOUT, marginTop: -BREAKOUT },
+  mapArea: { backgroundColor: MAP_BG, overflow: "hidden", position: "relative" },
+  landmass: {
+    position: "absolute",
+    left: "14%",
+    right: "12%",
+    top: "16%",
+    bottom: "12%",
+    backgroundColor: "rgba(255,255,255,0.55)",
+    borderColor: "rgba(17,17,15,0.12)",
+    borderWidth: 1.5,
+    borderRadius: 140,
+    transform: [{ rotate: "-8deg" }]
+  },
+  marker: { position: "absolute", alignItems: "center", justifyContent: "center" },
+  markerLabel: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
+
+  mapTopBar: { position: "absolute", top: 12, left: 16, right: 16, zIndex: 3 },
+  searchPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: "#11110F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3
+  },
+  searchText: { color: INK3, fontSize: 13 },
+
+  metricRow: { position: "absolute", top: 64, left: 16, flexDirection: "row", gap: 6, zIndex: 3 },
+  metricChip: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    shadowColor: "#11110F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2
+  },
+  metricChipActive: { backgroundColor: ACCENT },
+  metricChipText: { fontSize: 11.5, fontWeight: "700", color: INK2 },
+  metricChipTextActive: { color: "#FFFFFF" },
+
+  // bottom sheet
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    shadowColor: "#11110F",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 30,
+    elevation: 12
+  },
+  handleHit: { alignItems: "center", paddingVertical: 4 },
+  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: "#D9D5CC", marginBottom: 10 },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  sheetEyebrow: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: INK3 },
+  sheetTitle: { fontSize: 19, fontWeight: "700", color: INK, marginTop: 3 },
+  hotspotBadge: { backgroundColor: AMBER_SOFT, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
+  hotspotText: { fontSize: 11, fontWeight: "700", color: AMBER },
+  sheetScroll: { paddingBottom: 24 },
+  sheetSection: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase", color: INK3, marginTop: 18 },
+
+  statRow: { flexDirection: "row", gap: 9, marginTop: 14 },
+  statTile: { flex: 1, backgroundColor: "#F6F5F0", borderRadius: 12, padding: 11 },
+  statLabel: { fontSize: 10, fontWeight: "700", color: INK3 },
+  statValue: { fontSize: 15, fontWeight: "800", color: INK, marginTop: 4 },
+
+  returnRow: { flexDirection: "row", justifyContent: "space-between" },
+  returnName: { fontSize: 12.5, fontWeight: "700", color: INK2 },
+  returnValue: { fontSize: 12.5, fontWeight: "800", color: INK },
+  returnTrack: { height: 8, borderRadius: 999, backgroundColor: TRACK, marginTop: 6, overflow: "hidden" },
+  returnFill: { height: "100%", borderRadius: 999 },
+
+  sheetCtaRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+  sheetPrimary: { flex: 1, alignItems: "center", backgroundColor: ACCENT, borderRadius: 999, paddingVertical: 12 },
+  sheetPrimaryFull: { alignItems: "center", backgroundColor: ACCENT, borderRadius: 999, paddingVertical: 14, marginTop: 14 },
+  sheetPrimaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  sheetGhost: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border,
+    borderRadius: 999,
+    paddingVertical: 12
+  },
+  sheetGhostText: { color: INK, fontSize: 14, fontWeight: "700" },
+
+  // sponsored
+  sponsorCard: { borderWidth: 1, borderColor: maliPrime.colors.border, borderRadius: 14, overflow: "hidden", marginTop: 10 },
+  sponsorThumb: { height: 90, backgroundColor: "#3E5A47", alignItems: "center", justifyContent: "center" },
+  sponsorTag: { position: "absolute", top: 8, left: 8, backgroundColor: "rgba(17,17,15,0.55)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  sponsorTagText: { fontSize: 9, fontWeight: "800", textTransform: "uppercase", color: "#FFFFFF" },
+  sponsorBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 12, gap: 10 },
+  sponsorName: { fontSize: 14, fontWeight: "700", color: INK },
+  sponsorMeta: { fontSize: 11, color: INK2, marginTop: 2 },
+  sponsorPrice: { fontSize: 13, fontWeight: "800", color: INK },
+
+  // --- CHECKLIST ---
+  progressRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  progressCaption: { fontSize: 13, color: INK2 },
+  progressCount: { fontSize: 22, fontWeight: "800", color: ACCENT },
+  progressTrack: { height: 8, borderRadius: 999, backgroundColor: TRACK, overflow: "hidden" },
+  progressFill: { height: "100%", backgroundColor: ACCENT, borderRadius: 999 },
+  checkItem: {
+    flexDirection: "row",
+    gap: 11,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border,
+    borderRadius: 13,
+    padding: 13
+  },
+  checkItemDone: { borderColor: "rgba(31,158,99,0.35)" },
+  checkBox: {
+    width: 21,
+    height: 21,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "rgba(17,17,15,0.25)",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  checkBoxOn: { backgroundColor: ACCENT, borderColor: ACCENT },
+  checkBoxFail: { borderColor: DANGER },
+  checkTitleRow: { flexDirection: "row", gap: 7, alignItems: "center", flexWrap: "wrap" },
+  checkTitle: { fontSize: 13.5, fontWeight: "600", color: INK },
+  checkTitleDone: { color: INK3, textDecorationLine: "line-through" },
+  checkNote: { fontSize: 12, color: INK2, marginTop: 6, lineHeight: 17 },
+
+  dangerCard: { backgroundColor: "#FBF7EF", borderWidth: 1, borderColor: "rgba(141,106,46,0.2)", borderRadius: 12, padding: 13 },
+  dangerCardText: { fontSize: 12, color: INK2, lineHeight: 18 },
+
+  pickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border,
+    borderRadius: 13,
+    padding: 14
+  },
+  pickTitle: { fontSize: 14, fontWeight: "700", color: INK },
+
+  // --- COMPARE ---
+  compareCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: maliPrime.colors.border, borderRadius: 16, padding: 16 },
+  compareInputRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  inputLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase", color: INK3 },
   input: {
     backgroundColor: maliPrime.colors.surface,
-    borderColor: maliPrime.colors.border,
-    borderRadius: maliPrime.radius.md,
+    borderColor: maliPrime.colors.borderStrong,
+    borderRadius: 10,
     borderWidth: 1,
-    color: maliPrime.colors.textPrimary,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15
+    color: INK,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 7
   },
-  body: { color: maliPrime.colors.textPrimary, fontSize: 14, lineHeight: 21 },
-  muted: { color: maliPrime.colors.textSecondary, fontSize: 13, lineHeight: 19 },
+  scenarioRow: { flexDirection: "row", gap: 6, marginTop: 7, flexWrap: "wrap" },
+  scenarioChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border,
+    backgroundColor: "#FFFFFF"
+  },
+  scenarioChipActive: { backgroundColor: ACCENT, borderColor: ACCENT },
+  scenarioText: { fontSize: 13, fontWeight: "700", color: INK2, textTransform: "capitalize" },
+  scenarioTextActive: { color: "#FFFFFF" },
+
+  warnRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+    backgroundColor: "#FBF7EF",
+    borderWidth: 1,
+    borderColor: "rgba(141,106,46,0.2)",
+    borderRadius: 12,
+    padding: 12
+  },
+  warnText: { flex: 1, fontSize: 11.5, lineHeight: 17, color: INK2 },
+
+  resultCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: maliPrime.colors.border, borderRadius: 16, padding: 15 },
+  resultHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  resultName: { fontSize: 14, fontWeight: "700", color: INK },
+  resultMeta: { fontSize: 12.5, color: INK2, marginTop: 9 },
+  resultStrong: { color: INK, fontWeight: "800", fontSize: 15 },
+  altRow: { flexDirection: "row", gap: 10 },
+  altCard: { flex: 1, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: maliPrime.colors.border, borderRadius: 14, padding: 13 },
+  altName: { fontSize: 12, fontWeight: "700", color: INK },
+  altMeta: { fontSize: 13, color: INK2, marginTop: 6 },
+
+  // --- GUIDE ---
+  guideHero: { backgroundColor: SURFACE_INK, borderRadius: 18, padding: 16 },
+  guideEyebrow: { fontSize: 10.5, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(237,241,248,0.55)" },
+  guideHeadline: { fontSize: 16, fontWeight: "700", color: "#EDF1F8", marginTop: 7, lineHeight: 21 },
+  stepCard: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: maliPrime.colors.border,
+    borderRadius: 14,
+    padding: 14
+  },
+  stepNum: { width: 26, height: 26, borderRadius: 999, backgroundColor: ACCENT_SOFT, alignItems: "center", justifyContent: "center" },
+  stepNumText: { fontSize: 12, fontWeight: "800", color: ACCENT },
+  stepTitle: { fontSize: 13.5, fontWeight: "700", color: INK },
+  stepBody: { fontSize: 12, color: INK2, marginTop: 4, lineHeight: 17 },
+
+  // shared text
+  body: { color: INK, fontSize: 14, lineHeight: 21 },
+  muted: { color: INK2, fontSize: 13, lineHeight: 19 },
+  field: { gap: 6 },
+  fieldLabel: { color: INK3, fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
   flag: { borderTopColor: maliPrime.colors.border, borderTopWidth: 1, paddingVertical: 8, gap: 2 },
-  flagTitle: { color: maliPrime.colors.textPrimary, fontSize: 13, fontWeight: "700", textTransform: "capitalize" }
+  flagTitle: { color: INK, fontSize: 13, fontWeight: "700", textTransform: "capitalize" },
+
+  pill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  pillBorder: { borderWidth: 1, borderColor: "rgba(17,17,15,0.08)" },
+  pillText: { fontSize: 9.5, fontWeight: "800", textTransform: "uppercase" }
 });

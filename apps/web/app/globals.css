@@ -3,60 +3,103 @@
 @tailwind utilities;
 
 /*
-  PesaRoute theme tokens. Colours are stored as space-separated RGB channels so
-  Tailwind's `<alpha-value>` modifiers (e.g. bg-primary/40) keep working. Light
-  values live in :root; dark values apply when <html> has the `dark` class. A
-  no-flash script in the root layout sets that class from the saved preference,
-  falling back to the OS/browser preference. Border and shadow tokens carry baked
-  alpha, so they are full values.
+  PesaRoute "MaliPrime Liquid" theme tokens.
+
+  The system is a consolidated, single-source palette: ~30 raw colour variables
+  with near-duplicate jobs collapse into 17 SEMANTIC tokens with clear,
+  non-overlapping roles (see Canvas.dc.html design handoff). The 17 canonical
+  tokens are the single source of truth; every legacy name is kept as an ALIAS
+  pointing at a canonical token via CSS var() indirection, so the whole codebase
+  keeps compiling while rendering one unified palette.
+
+  Colours are space-separated RGB channels so Tailwind's `<alpha-value>` modifiers
+  (e.g. bg-primary/40) keep working - var() indirection nests fine inside
+  `rgb(var(--c-x) / <alpha>)`. Light values live in :root; dark values apply when
+  <html> has the `dark` class (a no-flash script in the root layout sets it from
+  the saved preference, falling back to the OS/browser preference). Border and
+  shadow tokens carry baked alpha, so they are full values.
+
+  Token map (canonical -> the legacy names it absorbs):
+    page          #F6F5F0  background
+    surface       #FFFFFF  surface, surfaceElevated
+    surfaceSubtle #ECEAE2  surfaceSubtle, surfaceAlt
+    ink           #11110F  textPrimary, ink
+    ink2          #5B5A55  textSecondary, clay
+    ink3          #85827A  textTertiary
+    primary       #1A6B45  primary  (+ green TEXT: emerald, success, leaf, teal)
+    primaryStrong #125436  primaryDark
+    accent        #1F9E63  accent   (rings/badges/tiles, NON-text only)
+    greenSoft     #E6F2EA  accentSoft, mint
+    warning       #8D6A2E  warning, amber, sunrise
+    danger        #A33B32  danger
+    info          #247AC4  sky
+    violet        #6D5BAA  violet, purple, purpleAccent
+    surfaceInk    #10182B  sidebarBg, bannerBg, and the old #11110F hero/CTA dark
+    border        rgba(17,17,15,.10)
+    borderStrong  rgba(17,17,15,.22)
+
+  NOTE: the spec merges emerald/success/leaf/teal into `accent` (#1F9E63), but
+  those names are used as TEXT across the app and #1F9E63 fails AA contrast on
+  light surfaces. So the green TEXT family aliases to `primary` (#1A6B45, AA-safe)
+  while `accent` keeps #1F9E63 for its non-text rings/badges/tiles role.
 */
 :root {
   color-scheme: light;
 
-  --c-background: 246 245 240;
-  --c-surface: 255 255 255;
-  --c-surfaceElevated: 255 255 255;
-  --c-surfaceAlt: 240 239 233;
-  --c-surfaceSubtle: 236 234 226;
-  --c-textPrimary: 17 17 15;
-  --c-textSecondary: 91 90 85;
-  --c-textTertiary: 133 130 122;
-  --c-primary: 26 107 69; /* deep emerald CTA - always paired with white text */
-  --c-primaryDark: 18 84 54;
-  --c-emerald: 31 122 82;
-  --c-success: 31 122 82;
-  --c-accent: 31 158 99; /* brighter green for rings/badges/tiles (non-text) */
-  --c-accentSoft: 230 242 234;
-  --c-amber: 141 106 46;
-  --c-warning: 141 106 46;
-  --c-danger: 163 59 50;
-  --c-purpleAccent: 109 91 170;
-  --c-purple: 109 91 170;
-  --c-violet: 124 92 214;
-  --c-sky: 36 122 196;
-  --c-teal: 47 107 79;
-  --c-ink: 17 17 15;
-  --c-leaf: 47 107 79;
-  --c-mint: 230 242 234;
-  --c-clay: 91 90 85;
-  --c-sunrise: 141 106 46;
+  /* ---- 17 canonical MaliPrime Liquid tokens (single source of truth) ---- */
+  --c-page: 246 245 240; /* #F6F5F0 warm app background behind all panels */
+  --c-surface: 255 255 255; /* #FFFFFF cards, panels, navbar, inputs */
+  --c-surfaceSubtle: 236 234 226; /* #ECEAE2 insets, hover fills, tracks */
+  --c-ink: 17 17 15; /* #11110F primary text, headings, icons */
+  --c-ink2: 91 90 85; /* #5B5A55 secondary / body copy */
+  --c-ink3: 133 130 122; /* #85827A tertiary, captions, eyebrows */
+  --c-primary: 26 107 69; /* #1A6B45 CTA fills (white text) + green text */
+  --c-primaryStrong: 18 84 54; /* #125436 hover / pressed CTA */
+  --c-accent: 31 158 99; /* #1F9E63 rings, badges, tiles - non-text only */
+  --c-greenSoft: 230 242 234; /* #E6F2EA success / brand tint backgrounds */
+  --c-warning: 141 106 46; /* #8D6A2E caution, medium-risk */
+  --c-danger: 163 59 50; /* #A33B32 errors, destructive, high-risk */
+  --c-info: 36 122 196; /* #247AC4 informational accents & links */
+  --c-violet: 109 91 170; /* #6D5BAA learning / XP accent */
+  --c-surfaceInk: 16 24 43; /* #10182B sidebar, banners, hero panels */
 
   --c-border: rgba(17, 17, 15, 0.1);
   --c-borderStrong: rgba(17, 17, 15, 0.22);
 
-  --shadow-card: 0 1px 0 rgba(17, 17, 15, 0.04);
-  --shadow-soft: 0 16px 40px rgba(17, 17, 15, 0.08);
-  --shadow-subtle: 0 1px 0 rgba(17, 17, 15, 0.04);
+  /* ---- Legacy aliases -> canonical (no new colours, just indirection) ---- */
+  --c-background: var(--c-page);
+  --c-surfaceElevated: var(--c-surface);
+  --c-surfaceAlt: var(--c-surfaceSubtle);
+  --c-textPrimary: var(--c-ink);
+  --c-textSecondary: var(--c-ink2);
+  --c-textTertiary: var(--c-ink3);
+  --c-clay: var(--c-ink2);
+  --c-primaryDark: var(--c-primaryStrong);
+  --c-emerald: var(--c-primary);
+  --c-success: var(--c-primary);
+  --c-leaf: var(--c-primary);
+  --c-teal: var(--c-primary);
+  --c-accentSoft: var(--c-greenSoft);
+  --c-mint: var(--c-greenSoft);
+  --c-amber: var(--c-warning);
+  --c-sunrise: var(--c-warning);
+  --c-sky: var(--c-info);
+  --c-purple: var(--c-violet);
+  --c-purpleAccent: var(--c-violet);
 
-  /* Sidebar stays dark navy in BOTH themes (DataCamp-style). */
-  --c-sidebarBg: 13 19 34;
+  /* ---- Elevation: two shadows only ---- */
+  --shadow-card: 0 1px 0 rgba(17, 17, 15, 0.04); /* hairline lift - all cards */
+  --shadow-soft: 0 16px 40px rgba(17, 17, 15, 0.08); /* hero, modals, popovers */
+  --shadow-subtle: var(--shadow-card);
+
+  /* ---- Dark surface (sidebar + banner) - one navy in both themes ---- */
+  --c-sidebarBg: var(--c-surfaceInk);
   --c-sidebarText: 226 231 242;
   --c-sidebarMuted: 139 149 170;
   --c-sidebarActive: 30 41 66;
   --c-sidebarBorder: rgba(255, 255, 255, 0.08);
 
-  /* Coloured page banner (deep navy hero). Dark in both themes. */
-  --c-bannerBg: 16 24 43;
+  --c-bannerBg: var(--c-surfaceInk);
   --c-bannerText: 237 241 248;
   --c-bannerMuted: 165 175 196;
 }
@@ -64,40 +107,32 @@
 html.dark {
   color-scheme: dark;
 
-  --c-background: 14 21 37; /* deep PesaRoute navy */
-    --c-surface: 22 30 48;
-    --c-surfaceElevated: 28 39 64;
-    --c-surfaceAlt: 28 39 64;
-    --c-surfaceSubtle: 33 44 70;
-    --c-textPrimary: 244 246 250;
-    --c-textSecondary: 174 182 198;
-    --c-textTertiary: 123 132 153;
-    --c-primary: 31 138 85; /* visible green on navy, white text safe */
-    --c-primaryDark: 24 112 69;
-    --c-emerald: 56 199 114;
-    --c-success: 56 199 114;
-    --c-accent: 47 197 120;
-    --c-accentSoft: 47 197 120;
-    --c-amber: 224 165 59;
-    --c-warning: 224 165 59;
-    --c-danger: 226 104 94;
-    --c-purpleAccent: 154 132 232;
-    --c-purple: 154 132 232;
-    --c-violet: 154 132 232;
-    --c-sky: 84 162 230;
-    --c-teal: 56 199 114;
-    --c-ink: 244 246 250;
-    --c-leaf: 56 199 114;
-    --c-mint: 30 58 47;
-    --c-clay: 174 182 198;
-    --c-sunrise: 224 165 59;
+  /* ---- 17 canonical tokens, dark-tuned for the navy theme ---- */
+  --c-page: 14 21 37; /* deep PesaRoute navy */
+  --c-surface: 22 30 48;
+  --c-surfaceSubtle: 33 44 70;
+  --c-ink: 244 246 250;
+  --c-ink2: 174 182 198;
+  --c-ink3: 123 132 153;
+  --c-primary: 31 138 85; /* visible green on navy, white text safe */
+  --c-primaryStrong: 24 112 69;
+  --c-accent: 47 197 120;
+  --c-greenSoft: 30 58 47;
+  --c-warning: 224 165 59;
+  --c-danger: 226 104 94;
+  --c-info: 84 162 230;
+  --c-violet: 154 132 232;
+  --c-surfaceInk: 16 24 43;
 
-    --c-border: rgba(255, 255, 255, 0.1);
-    --c-borderStrong: rgba(255, 255, 255, 0.2);
+  --c-border: rgba(255, 255, 255, 0.1);
+  --c-borderStrong: rgba(255, 255, 255, 0.2);
 
-    --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.4);
-    --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.5);
-    --shadow-subtle: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  /* Aliases inherit from :root (they reference canonical vars, which are
+     re-declared above) - no need to repeat them here. */
+
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-subtle: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 * {
@@ -143,6 +178,37 @@ select {
 :focus-visible {
   outline: 3px solid rgb(var(--c-accent) / 0.3);
   outline-offset: 3px;
+}
+
+/* Landing page: FX ticker marquee + card hover lift (light-fixed marketing). */
+@keyframes fx-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.fx-ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: fx-ticker 42s linear infinite;
+  will-change: transform;
+}
+.fx-ticker-mask:hover .fx-ticker-track {
+  animation-play-state: paused;
+}
+.pr-card-hover {
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.pr-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(17, 17, 15, 0.2);
+  box-shadow: 0 12px 30px rgba(17, 17, 15, 0.07);
 }
 
 /* PesaRoute brand gradient - used sparingly on hero borders/accents. */
