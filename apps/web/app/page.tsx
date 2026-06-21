@@ -112,12 +112,9 @@ export default function HomePage() {
       {/* ===================== NAV ===================== */}
       <header className="sticky top-0 z-50 border-b border-[rgba(17,17,15,0.08)] bg-white/[0.92] backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto flex h-[70px] max-w-[1200px] items-center gap-5 px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="PesaRoute home">
-            <BrandMark inkColor="#fff" routeColor={NAVY} />
-            <span className="text-[21px] font-extrabold tracking-[-0.02em]">
-              <span style={{ color: INK }}>Pesa</span>
-              <span style={{ color: ACCENT }}>Route</span>
-            </span>
+          <Link href="/" className="flex items-center" aria-label="PesaRoute — Learn. Simulate. Invest better.">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-9 w-auto" />
           </Link>
           <nav className="ml-4 hidden items-center gap-[26px] lg:flex">
             {NAV_LINKS.map(([label, href, caret]) => (

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PesaRouteApiClient } from "./src/api/client";
 import type { BillingEntitlementSnapshot } from "./src/api/client";
@@ -624,6 +624,7 @@ function AppShell() {
     if (initializing) {
       return (
         <View style={styles.centerState}>
+          <Image source={require("./assets/pesaroute-mark.png")} style={styles.loadingMark} resizeMode="contain" accessibilityIgnoresInvertColors />
           <Text style={styles.centerTitle}>Loading PesaRoute</Text>
           <Text style={styles.centerCopy}>Checking whether this device has a saved account session.</Text>
         </View>
@@ -673,6 +674,7 @@ function AppShell() {
               <Ionicons name="menu" size={24} color={maliPrime.colors.textPrimary} />
             </Pressable>
           ) : null}
+          <Image source={require("./assets/pesaroute-mark.png")} style={styles.brandMark} resizeMode="contain" accessibilityIgnoresInvertColors />
           <View>
             <Text style={styles.brand}>PesaRoute</Text>
             <Text style={styles.headerScreen}>{needsPrivacyOnboarding ? "Privacy setup" : title}</Text>
@@ -740,6 +742,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   brand: { color: maliPrime.colors.textPrimary, fontSize: 22, fontWeight: "900" },
+  brandMark: { height: 30, width: 30 },
+  loadingMark: { height: 72, marginBottom: 16, width: 72 },
   headerRight: { alignItems: "flex-end", gap: 2 },
   mode: { color: maliPrime.colors.primary, fontSize: 10, fontWeight: "900" },
   headerScreen: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", marginTop: 2 },
