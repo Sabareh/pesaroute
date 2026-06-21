@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Dimensions, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path as SvgPath, Text as SvgText } from "react-native-svg";
 
@@ -328,6 +328,68 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
   };
   const selPath = MAP_PROJ.paths.find((p) => p.name === selectedName);
 
+  // --- map pan (1-finger drag) + zoom (pinch / +- buttons) -------------------
+  const mapPan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const mapScale = useRef(new Animated.Value(1)).current;
+  const mapScaleCur = useRef(1);
+  const pinchStartDist = useRef(0);
+  const pinchStartScale = useRef(1);
+  useEffect(() => {
+    const id = mapScale.addListener(({ value }) => {
+      mapScaleCur.current = value;
+    });
+    return () => mapScale.removeListener(id);
+  }, [mapScale]);
+  const shouldPan = (e: { nativeEvent: { touches: unknown[] } }, g: { dx: number; dy: number }) =>
+    e.nativeEvent.touches.length === 2 || Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6;
+  const mapResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: shouldPan,
+      onMoveShouldSetPanResponderCapture: shouldPan,
+      onPanResponderGrant: (e) => {
+        mapPan.extractOffset();
+        const t = e.nativeEvent.touches;
+        pinchStartDist.current =
+          t.length === 2 ? Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY) : 0;
+        pinchStartScale.current = mapScaleCur.current;
+      },
+      onPanResponderMove: (e, g) => {
+        const t = e.nativeEvent.touches;
+        if (t.length === 2) {
+          const d = Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY);
+          if (pinchStartDist.current === 0) {
+            pinchStartDist.current = d;
+            pinchStartScale.current = mapScaleCur.current;
+          }
+          mapScale.setValue(Math.max(1, Math.min(5, pinchStartScale.current * (d / pinchStartDist.current))));
+        } else {
+          mapPan.setValue({ x: g.dx, y: g.dy });
+        }
+      },
+      onPanResponderRelease: () => {
+        mapPan.flattenOffset();
+        pinchStartDist.current = 0;
+      },
+      onPanResponderTerminate: () => {
+        mapPan.flattenOffset();
+        pinchStartDist.current = 0;
+      }
+    })
+  ).current;
+  function zoomMap(factor: number) {
+    const next = Math.max(1, Math.min(5, mapScaleCur.current * factor));
+    Animated.timing(mapScale, { toValue: next, duration: 140, useNativeDriver: false }).start();
+  }
+  function recenterMap() {
+    mapPan.flattenOffset();
+    Animated.parallel([
+      Animated.spring(mapPan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }),
+      Animated.timing(mapScale, { toValue: 1, duration: 180, useNativeDriver: false })
+    ]).start();
+  }
+
   // Create form
   const [form, setForm] = useState({
     title: "",
@@ -553,7 +615,8 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
 
   function selectCounty(name: string) {
     setSelectedName(name);
-    setExpanded(true);
+    // Keep the map visible — show the peek card, not the full-height sheet.
+    setExpanded(false);
   }
 
   // --- Sub-view chrome -------------------------------------------------------
@@ -575,27 +638,45 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
     return (
       <View style={s.mapBreakout}>
         <View style={[s.mapArea, { height: MAP_H }]}>
-          {/* real Kenya county boundaries (choropleth by the selected metric) */}
-          <Svg width="100%" height="100%" viewBox={`0 0 ${MAP_PROJ.W} ${MAP_PROJ.H}`} style={s.mapSvg}>
-            {MAP_PROJ.paths.map((p) => {
-              const active = p.name === selectedName;
-              return (
-                <SvgPath
-                  key={p.name}
-                  d={p.d}
-                  fill={colorForCounty(p.name)}
-                  stroke={active ? "#11110F" : "#ffffff"}
-                  strokeWidth={active ? 1.6 : 0.4}
-                  onPress={() => selectCounty(p.name)}
-                />
-              );
-            })}
-            {selPath ? (
-              <SvgText x={selPath.cx} y={selPath.cy} fontSize={11} fontWeight="700" fill="#11110F" textAnchor="middle">
-                {selectedName}
-              </SvgText>
-            ) : null}
-          </Svg>
+          {/* real Kenya county boundaries — drag to pan, pinch / +- to zoom */}
+          <Animated.View
+            style={[s.mapSvg, { transform: [{ translateX: mapPan.x }, { translateY: mapPan.y }, { scale: mapScale }] }]}
+            {...mapResponder.panHandlers}
+          >
+            <Svg width="100%" height="100%" viewBox={`0 0 ${MAP_PROJ.W} ${MAP_PROJ.H}`}>
+              {MAP_PROJ.paths.map((p) => {
+                const active = p.name === selectedName;
+                return (
+                  <SvgPath
+                    key={p.name}
+                    d={p.d}
+                    fill={colorForCounty(p.name)}
+                    stroke={active ? "#11110F" : "#ffffff"}
+                    strokeWidth={active ? 1.6 : 0.4}
+                    onPress={() => selectCounty(p.name)}
+                  />
+                );
+              })}
+              {selPath ? (
+                <SvgText x={selPath.cx} y={selPath.cy} fontSize={11} fontWeight="700" fill="#11110F" textAnchor="middle">
+                  {selectedName}
+                </SvgText>
+              ) : null}
+            </Svg>
+          </Animated.View>
+
+          {/* zoom + recenter controls */}
+          <View style={s.zoomControls} pointerEvents="box-none">
+            <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" onPress={() => zoomMap(1.5)} style={({ pressed }) => [s.zoomBtn, pressed && s.pressed]}>
+              <Ionicons name="add" size={22} color={INK} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" onPress={() => zoomMap(1 / 1.5)} style={({ pressed }) => [s.zoomBtn, pressed && s.pressed]}>
+              <Ionicons name="remove" size={22} color={INK} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Recenter map" onPress={recenterMap} style={({ pressed }) => [s.zoomBtn, pressed && s.pressed]}>
+              <Ionicons name="scan-outline" size={18} color={INK} />
+            </Pressable>
+          </View>
 
           {/* floating search bar */}
           <View style={s.mapTopBar} pointerEvents="box-none">
@@ -625,8 +706,14 @@ export function LandDecisionSafetyScreen({ apiClient, auth, onRequestAuth }: Pro
 
           {/* bottom sheet */}
           <Animated.View style={[s.sheet, { height: sheetH }]}>
-            <Pressable onPress={() => setExpanded((v) => !v)} style={s.handleHit} accessibilityRole="button">
+            <Pressable
+              onPress={() => setExpanded((v) => !v)}
+              style={s.handleHit}
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? "Collapse details, back to map" : "Expand county details"}
+            >
               <View style={s.handle} />
+              {expanded ? <Ionicons name="chevron-down" size={16} color={INK3} style={{ marginTop: 2 }} /> : null}
             </Pressable>
 
             <View style={s.sheetHeader}>
@@ -1214,6 +1301,22 @@ const s = StyleSheet.create({
   mapBreakout: { marginHorizontal: -BREAKOUT, marginTop: -BREAKOUT },
   mapArea: { backgroundColor: MAP_BG, overflow: "hidden", position: "relative" },
   mapSvg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  zoomControls: { position: "absolute", right: 14, top: 110, gap: 8, zIndex: 4 },
+  zoomBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(17,17,15,0.08)",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3
+  },
   landmass: {
     position: "absolute",
     left: "14%",
@@ -1280,7 +1383,7 @@ const s = StyleSheet.create({
     shadowRadius: 30,
     elevation: 12
   },
-  handleHit: { alignItems: "center", paddingVertical: 4 },
+  handleHit: { alignItems: "center", paddingTop: 8, paddingBottom: 6 },
   handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: "#D9D5CC", marginBottom: 10 },
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   sheetEyebrow: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: INK3 },
