@@ -275,7 +275,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
           </button>
           <Link href="/" className="flex shrink-0 items-center lg:w-[13rem]" aria-label="PesaRoute home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-8 w-auto dark:hidden" />
+            <img src="/brand/pesaroute-logo.png?v=2" alt="PesaRoute" className="h-8 w-auto dark:hidden" />
             <span className="hidden dark:inline-flex">
               <BrandLockup markSize={24} textClassName="text-[16px]" />
             </span>

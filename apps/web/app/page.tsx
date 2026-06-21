@@ -131,11 +131,11 @@ export default function HomePage() {
       />
 
       {/* ===================== NAV ===================== */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(17,17,15,0.08)] bg-white/[0.92] backdrop-blur-md backdrop-saturate-150">
+      <header className="sticky top-0 z-50 border-b border-[rgba(17,17,15,0.08)] bg-white">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-5 px-5 sm:px-8">
           <Link href="/" className="flex items-center" aria-label="PesaRoute home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-9 w-auto" />
+            <img src="/brand/pesaroute-logo.png?v=2" alt="PesaRoute" className="h-8 w-auto" />
           </Link>
           <nav className="ml-4 hidden items-center gap-[26px] lg:flex">
             {NAV_LINKS.map(([label, href, caret]) => (

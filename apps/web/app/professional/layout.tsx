@@ -52,7 +52,7 @@ export default function ProfessionalLayout({ children }: { children: ReactNode }
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-surface pr-4 sm:pr-6">
         <Link href="/" className="flex h-16 flex-none items-center gap-2.5 border-r border-border pl-5 sm:w-[248px] sm:pl-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/pesaroute-logo.png" alt="PesaRoute" className="h-8 w-auto dark:hidden" />
+          <img src="/brand/pesaroute-logo.png?v=2" alt="PesaRoute" className="h-8 w-auto dark:hidden" />
           <span className="hidden dark:inline-flex">
             <BrandLockup markSize={24} textClassName="text-[16px]" />
           </span>
