@@ -285,16 +285,15 @@ export default function HomePage() {
 
       {/* ===================== NAVY BAND ===================== */}
       <section className="relative overflow-hidden" style={{ background: NAVY }}>
-        <svg viewBox="0 0 1440 280" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full opacity-50" fill="none" stroke={ACCENT} strokeWidth="1.6" aria-hidden>
-          <path d="M0 240 H1440" strokeOpacity="0.4" />
-          <path d="M60 240 V150 H110 V200 H150 V120 H200 V240" strokeOpacity="0.45" />
-          <path d="M250 240 V170 H300 V110 H340 V240" strokeOpacity="0.4" />
-          <path d="M420 240 V90 H470 V140 H510 V70 H540 V240" strokeOpacity="0.5" />
-          <path d="M620 240 V160 H670 V120 H710 V190 H750 V240" strokeOpacity="0.4" />
-          <path d="M840 240 V100 H880 V60 H915 V130 H960 V240" strokeOpacity="0.5" />
-          <path d="M1040 240 V150 H1090 V110 H1130 V240" strokeOpacity="0.4" />
-          <path d="M1210 240 V80 H1250 V130 H1290 V100 H1330 V240" strokeOpacity="0.45" />
-        </svg>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/nairobi-skyline.jpg"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-bottom opacity-80"
+        />
+        {/* scrim keeps the centred copy legible over the skyline */}
+        <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,24,43,0.45) 0%, rgba(16,24,43,0.15) 50%, rgba(16,24,43,0.45) 100%)" }} aria-hidden />
         <div className="relative mx-auto max-w-[1200px] px-5 py-[76px] text-center sm:px-8">
           <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-white/50">Practice today · Invest tomorrow</p>
           <h2 className="mt-3.5 text-[34px] font-extrabold tracking-[-0.03em] text-white sm:text-[48px]">
