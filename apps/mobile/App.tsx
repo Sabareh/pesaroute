@@ -691,7 +691,7 @@ function AppShell() {
       </View>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardWrap}>
         <ScrollView
-          contentContainerStyle={[styles.content, !showTabs && styles.contentNoTabs]}
+          contentContainerStyle={[styles.content, active === "land" && styles.contentEdgeToEdge, !showTabs && styles.contentNoTabs]}
           keyboardShouldPersistTaps="handled"
         >
           {mainContent()}
@@ -748,6 +748,7 @@ const styles = StyleSheet.create({
   mode: { color: maliPrime.colors.primary, fontSize: 10, fontWeight: "900" },
   headerScreen: { color: maliPrime.colors.textSecondary, fontSize: 12, fontWeight: "700", marginTop: 2 },
   content: { padding: 18, paddingBottom: 118 },
+  contentEdgeToEdge: { paddingHorizontal: 0 },
   contentNoTabs: { paddingBottom: 32 },
   keyboardWrap: { flex: 1 },
   centerState: {

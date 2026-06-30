@@ -45,12 +45,14 @@ const DANGER_SOFT = "rgba(163,59,50,0.1)";
 const SURFACE_INK = "#10182B";
 
 const SCREEN = Dimensions.get("window");
+const MAP_W = SCREEN.width;
 const MAP_H = Math.max(470, Math.round(SCREEN.height - 250));
-// The screen renders inside App.tsx's content padding (18) plus this screen's
-// own ScrollView padding (maliPrime.spacing.lg = 16). The map breaks out of both
-// to sit edge-to-edge under the app header.
-const OUTER_PAD = 18;
-const BREAKOUT = OUTER_PAD + maliPrime.spacing.lg;
+// The Land screen opts out of App.tsx's horizontal padding. The map only needs
+// to break out of this screen's own padding on the x-axis, while the top edge
+// still accounts for the app-level top padding.
+const OUTER_TOP_PAD = 18;
+const BREAKOUT_X = maliPrime.spacing.lg;
+const BREAKOUT_TOP = OUTER_TOP_PAD + maliPrime.spacing.lg;
 const PEEK_H = 250;
 const EXPANDED_H = Math.max(360, MAP_H - 96);
 
@@ -1298,8 +1300,8 @@ const s = StyleSheet.create({
   landNavTextActive: { color: "#FFFFFF" },
 
   // --- MAP ---
-  mapBreakout: { marginHorizontal: -BREAKOUT, marginTop: -BREAKOUT },
-  mapArea: { backgroundColor: MAP_BG, overflow: "hidden", position: "relative" },
+  mapBreakout: { alignSelf: "flex-start", marginLeft: -BREAKOUT_X, marginRight: -BREAKOUT_X, marginTop: -BREAKOUT_TOP, width: MAP_W },
+  mapArea: { backgroundColor: MAP_BG, overflow: "hidden", position: "relative", width: "100%" },
   mapSvg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   zoomControls: { position: "absolute", right: 14, top: 110, gap: 8, zIndex: 4 },
   zoomBtn: {
